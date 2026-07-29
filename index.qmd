@@ -1,0 +1,174 @@
+---
+title: "Ritu Project — Local/Early Stage Cohort Summary"
+author: "Tianqi Ouyang"
+date: "2026-07-29"
+---
+
+# Project Overview
+
+Creatinine-to-cystatin C discordance and adverse events in patients receiving
+platinum-based chemotherapy, **restricted to locally staged / early-stage
+disease**.
+
+This project repeats the Jiaxuan analysis on a single restricted cohort. Every
+exposure, model, table, figure and download is carried over unchanged; the only
+substantive difference is that all advanced/metastatic patients are excluded.
+
+| | Details |
+|---|---|
+| **Cohort restriction** | `tumor_stage == "Local/Early"` (stage I–II / local / neoadjuvant) |
+| **Excluded** | `tumor_stage == "Advanced/Metastatic"` (stage III–IV) — 620 patients |
+| **Primary exposure** | `egfr_diff_pct_per10` — eGFR difference (%) per 10-percentage-point decline |
+| **Follow-up** | 90 days from baseline sample date |
+| **Framework** | Competing risks (death as competing event for non-fatal outcomes) |
+| **Parent project** | [Jiaxuan project](https://tianqi-ouyang.github.io/Cys-C-project-/) |
+
+# Cohort Sizes
+
+| Page | Cohort | Jiaxuan (all stages) | Ritu (Local/Early) |
+|---|---|---|---|
+| [Whole Cohort](qmd/ritu_whole.qmd) | all platinum | 943 | **323** |
+| [Carboplatin Cohort](qmd/ritu_carbo.qmd) | carboplatin | 596 | **190** |
+| [Carboplatin AUC ≥ 3](qmd/ritu_carbo_auc3.qmd) | carboplatin, AUC ≥ 3 | 463 | **143** |
+
+Within the 323 Local/Early patients: 190 carboplatin, 133 cisplatin.
+
+# Exclusion Flow
+
+Inherited from the Jiaxuan pipeline, plus one new step:
+
+1. REDCap records restricted to EMPIs present in `N=596 for tianqi.xlsx`
+2. Patients with no matching RPDR lab records excluded
+3. Missing baseline cystatin C (`cys_c_baseline` = NA) excluded
+4. Missing platinum group (`platin_group` = NA) excluded
+5. Record 911 dropped (all RPDR pre-baseline labs fall outside the 45-day window)
+6. **New — `tumor_stage != "Local/Early"` excluded (620 patients) → N = 323**
+
+Details in [Data Management](qmd/ritu_data.qmd).
+
+# What Changed Relative to the Jiaxuan Project
+
+Four kinds of change, nothing else:
+
+**1. Cohort source.** `ritu_data.qmd` applies the stage restriction and writes
+`ritu_final_master.rds`; the three analysis pages read that file.
+
+**2. `tumor_stage` dropped as a covariate.** It is constant within this cohort,
+so it carries no information and would make the design matrix rank-deficient.
+It is removed from Table 1 and from the adjuster set of every Fine-Gray,
+cause-specific hazard, Cox PH and linear-subHR model.
+
+**3. Two covariate fixes on the AUC ≥ 3 page only.** That subgroup's filter
+empties the `cancer_type_cat_7` "GI" level (0 of 143) and leaves `steroids`
+constant at 1 (all 143 received steroids). Together these made the design matrix
+rank-deficient — rank 19 of 21 — so `cmprsk::crr` failed for *every* outcome,
+including composite grade 2 AEs with 64 events, while the formula interface
+silently returned blank coefficient rows. `droplevels()` is re-applied after the
+cohort filter and `steroids` is dropped from that page's adjuster sets (it stays
+as a descriptive Table 1 row). The whole and carboplatin cohorts are full rank
+throughout and keep the original adjuster set.
+
+**4. Sparse-outcome guards.** Several outcomes have very few events in 323
+patients (90-day death = 2). Each model helper is wrapped so that a model which
+cannot be estimated emits a short note instead of aborting the render. No model
+specification is altered.
+
+Unchanged: primary and sensitivity exposures, the `dose_discrep_per25increase`
+predictor in the carboplatin pages, reference categories (`sex` = Female,
+`ecog_score_cat2` = "0"), the competing-risks framework, Cox PH for 90-day
+death, eGFR capping rules, 2.5/97.5-percentile plot trimming, Word and
+PowerPoint downloads, and all section numbering.
+
+# Power Caveats
+
+These follow arithmetically from the smaller cohort. The analyses are reported
+as specified; read the sparse ones with the event counts in view.
+
+| Outcome | Events in 323 | Multivariable estimate |
+|---|---|---|
+| Composite grade 2 AEs | 149 | adequately powered |
+| Anemia grade 2 | 138 | adequately powered |
+| Overall hospitalization | 68 | borderline |
+| Platinum-related hospitalization | 46 | over-parameterised |
+| Composite grade 3 AEs | 43 | over-parameterised |
+| Anemia grade 3 | 40 | over-parameterised |
+| Thrombocytopenia grade 2 | 37 | over-parameterised |
+| AKI (KDIGO) | 33 | over-parameterised |
+| AKI grade 2 | 26 | over-parameterised |
+| Thrombocytopenia grade 3 | 9 | not interpretable |
+| Individual hospitalization reasons | 5–25 | not interpretable |
+| **90-day death** | **2** | **not estimable** |
+
+The multivariable models carry roughly 20 covariate degrees of freedom against a
+conventional target of 10 events per covariate. Univariable columns remain
+readable throughout.
+
+Two further consequences worth stating in any write-up:
+
+- **90-day mortality is 2/323 (0.6 %).** Early-stage patients rarely die within
+  90 days of starting platinum — a finding in its own right, not just a
+  limitation.
+- **The competing-risks correction barely bites.** With death nearly absent,
+  Fine-Gray subdistribution hazards and cause-specific hazards are close to
+  identical in this cohort.
+
+# Outcomes
+
+## Grade 2/3 Adverse Events (within 90 days)
+
+| Outcome | Definition |
+|---|---|
+| Anemia grade 2 | HGB < 10 g/dL |
+| Anemia grade 3 | HGB < 8 g/dL |
+| Thrombocytopenia grade 2 | PLT < 75 x10^9/L |
+| Thrombocytopenia grade 3 | PLT < 50 x10^9/L |
+| AKI grade 2 | Post-baseline CRE > 1.5x pre-baseline CRE (KDIGO) |
+| AKI grade 3 | Post-baseline CRE > 3.0x pre-baseline CRE (KDIGO) |
+| Composite grade 2 | Any of anemia/thrombocytopenia/AKI grade 2 |
+| Composite grade 3 | Any of anemia/thrombocytopenia/AKI grade 3 |
+
+## Hospitalizations & Mortality
+
+- **Hospitalizations:** 11 reason categories; reasons 1–7 define `side_effect` (platinum-related)
+- **90-day mortality** (`death_90`): derived from `pt_status` and `days_last_follow_up`
+- All outcomes censored at 90 days
+
+# Key Variables
+
+## Exposure
+
+| Variable | Description |
+|---|---|
+| `egfr_diff_pct` | 100 × (CKD-EPI Cr-Cys unindexed − Cockcroft-Gault) / Cockcroft-Gault |
+| `egfr_diff_pct_per10` | Primary reporting scale: per 10-percentage-point **decline** |
+| `egfr_diff_pct_sens_per10` | Sensitivity: CKD-EPI 2012 CysC vs CKD-EPI 2021 Cr, per 10 % decline |
+| `dose_discrep_per25increase` | Carboplatin dose discrepancy (actual − predicted mg) / 25 |
+
+## eGFR & Kidney Function
+
+| Variable | Description |
+|---|---|
+| `ckd_epi_gfr_cre_cys` | CKD-EPI 2012 combined creatinine + cystatin C eGFR (mL/min/1.73m²) |
+| `ckd_epi_gfr_cre_cys_unindex` | Combined CKD-EPI eGFR adjusted for BSA (mL/min) |
+| `cockcroft` | Cockcroft-Gault creatinine clearance |
+| `ckd_stage_cg` | CKD stage from Cockcroft-Gault |
+
+Only `ckd_epi_gfr_cre_cys_unindex` is capped at 125 mL/min; the indexed value
+and `cockcroft` are uncapped. Uncapped values feed the eGFR difference; capped
+values feed the dose-discrepancy calculation.
+
+## Competing Risk Variables
+
+| Pattern | Description |
+|---|---|
+| `cmp_time_<outcome>` | Time for the competing-risk model |
+| `cmp_status_<outcome>` | 0 = censored, 1 = event, 2 = death |
+
+# Reproducing
+
+```bash
+cd "/Users/to909/Desktop/Meg/Cystain C redcap/Ritu project" && quarto render
+```
+
+`ritu_data.qmd` renders first and produces the `ritu_final_master.rds` that the
+three analysis pages read. Full project notes are in `RITU_PROJECT.md`.

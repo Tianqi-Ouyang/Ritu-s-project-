@@ -1,0 +1,15 @@
+.DS_Store
+*.html
+!docs/**/*.html
+*.xlsx
+*.xls
+*.pdf
+*.rds
+/.quarto/
+**/*.quarto_ipynb
+# Transient Quarto render intermediates (the rendered copies under docs/ are kept)
+*.rmarkdown
+/qmd/*_files/
+Data/
+Reference code/
+*.csv

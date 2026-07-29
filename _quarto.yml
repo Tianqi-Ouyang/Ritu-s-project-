@@ -1,0 +1,44 @@
+project:
+  type: website
+  output-dir: docs
+  render:
+    - index.qmd
+    - qmd/ritu_data.qmd
+    - qmd/ritu_whole.qmd
+    - qmd/ritu_carbo.qmd
+    - qmd/ritu_carbo_auc3.qmd
+
+website:
+  title: "Ritu Project – Local/Early Stage Platinum AE"
+  navbar:
+    left:
+      - href: index.qmd
+        text: Summary
+      - text: Ritu Project
+        menu:
+          - href: qmd/ritu_data.qmd
+            text: Data Management
+          - href: qmd/ritu_whole.qmd
+            text: Whole Cohort
+          - href: qmd/ritu_carbo.qmd
+            text: Carboplatin Cohort
+          - href: qmd/ritu_carbo_auc3.qmd
+            text: Carboplatin AUC ≥ 3
+
+format:
+  html:
+    theme:
+      - lumen
+      - custom.scss
+    toc: true
+    toc-depth: 4
+    code-fold: true
+
+execute:
+  eval: false
+  warning: false
+  message: false
+
+knitr:
+  opts_knit:
+    root.dir: "/Users/to909/Desktop/Meg/Cystain C redcap/Ritu project"

@@ -1,0 +1,14 @@
+/*-- scss:defaults --*/
+$dropdown-link-color: #333333;
+$dropdown-link-hover-color: #000000;
+$dropdown-link-hover-bg: #e9ecef;
+
+/*-- scss:rules --*/
+.dropdown-menu .dropdown-item {
+  color: #333333;
+}
+.dropdown-menu .dropdown-item:hover,
+.dropdown-menu .dropdown-item:focus {
+  color: #000000;
+  background-color: #e9ecef;
+}
