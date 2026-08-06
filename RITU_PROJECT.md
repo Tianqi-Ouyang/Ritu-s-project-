@@ -138,7 +138,40 @@ Hardcoded denominators in narrative text ("0/943 missing") were updated to the
 Ritu denominators, and each page carries a header note stating the restriction,
 its N, and which of its outcomes are underpowered.
 
-### 2.5 Explicitly unchanged
+### 2.5 CKD stage added to Table 1
+
+Two derived variables were added on request, in Section 5.6 of `ritu_data.qmd`:
+
+| Variable | Source eGFR |
+|---|---|
+| `ckd_stage_cre` | `baseline_cre_egfr` — CKD-EPI 2021 creatinine, BSA-indexed |
+| `ckd_stage_cre_cys` | `ckd_epi_gfr_cre_cys` — CKD-EPI 2012 combined, BSA-indexed |
+
+Standard KDIGO G categories: G1 ≥ 90, G2 60–89, G3a 45–59, G3b 30–44, G4 15–29,
+G5 < 15 mL/min/1.73m². The **indexed** eGFRs are used because that is the scale
+KDIGO staging is defined on — the `_unindex` variables are never staged. No
+patient in this cohort reaches G5, so the level is cleared by the existing
+`droplevels()` step rather than printed as an empty row.
+
+These are descriptive Table 1 rows on all three analysis pages. **No model
+adjusts for them** — the continuous eGFRs are already in the adjuster sets, and
+adding a categorical recoding of the same measurement would be collinear.
+
+Cell sizes in the whole cohort (323) are thin at the bottom of the range:
+
+| Stage | `ckd_stage_cre` | `ckd_stage_cre_cys` |
+|---|---|---|
+| G1 (≥ 90) | 142 | 130 |
+| G2 (60–89) | 156 | 153 |
+| G3a (45–59) | 19 | 28 |
+| G3b (30–44) | 4 | 9 |
+| G4 (15–29) | 2 | 3 |
+
+G3b and G4 fall below the project's default small-cell threshold of 11, and the
+site is public. Collapsing the bottom into a single "G3b–G5 (< 45)" row is a
+one-line change if that is preferred.
+
+### 2.6 Explicitly unchanged
 
 - Primary exposure: `egfr_diff_pct_per10` — eGFR difference (%) per 10-percentage-point decline
 - Sensitivity exposure: `egfr_diff_pct_sens_per10` (CKD-EPI 2012 CysC vs CKD-EPI 2021 Cr)

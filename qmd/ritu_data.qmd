@@ -60,6 +60,15 @@ These variables are stored as numeric codes in the REDCap CSV and labeled in sec
 | `ckd_epi_gfr_cre_cys_unindex` | Combined CKD-EPI eGFR adjusted for body surface area (mL/min) |
 | `baseline_cre_egfr_unindexed` | CKD-EPI creatinine eGFR adjusted for body surface area (mL/min) |
 | `baseline_cys_c_egfr_unindexed` | CKD-EPI cystatin C eGFR adjusted for body surface area (mL/min) |
+| `ckd_stage_cre` | KDIGO G-stage from `baseline_cre_egfr` (CKD-EPI 2021 creatinine, indexed) |
+| `ckd_stage_cre_cys` | KDIGO G-stage from `ckd_epi_gfr_cre_cys` (CKD-EPI 2012 combined, indexed) |
+
+Both stage variables use the standard KDIGO G categories — G1 ≥ 90, G2 60–89,
+G3a 45–59, G3b 30–44, G4 15–29, G5 < 15 mL/min/1.73m². They are built from the
+**BSA-indexed** eGFRs because that is the scale KDIGO staging is defined on; the
+`_unindex` variables are never staged. No patient in this cohort falls in G5, so
+that level is cleared by the `droplevels()` step in Section 5.16 and does not
+appear as an empty row in Table 1.
 
 ## 1.4 Derived — RPDR Pre-baseline Labs (within 45 days before baseline)
 
@@ -1141,8 +1150,26 @@ table(final_master$cr_cys_7)
 # bmi_cat: 1=underweight <18.5, 2=normal 18.5–25, 3=overweight 25–30, 4=obese ≥30
 # age_cat: 1=≤65, 2=66–80, 3=>80
 # ici: immunotherapy co-administration (Atezolizumab OR Pembrolizumab OR Durvalumab)
+# ckd_stage_cre / ckd_stage_cre_cys: KDIGO G-stage from the two BSA-indexed
+#   CKD-EPI eGFRs. Staging is defined on mL/min/1.73m², so the *indexed*
+#   variables are used here, never the _unindex versions.
+ckd_stage <- function(egfr) {
+  factor(case_when(
+    egfr <  15               ~ "G5 (<15)",
+    egfr >= 15 & egfr <  30 ~ "G4 (15-29)",
+    egfr >= 30 & egfr <  45 ~ "G3b (30-44)",
+    egfr >= 45 & egfr <  60 ~ "G3a (45-59)",
+    egfr >= 60 & egfr <  90 ~ "G2 (60-89)",
+    egfr >= 90               ~ "G1 (>=90)",
+    TRUE ~ NA_character_
+  ), levels = c("G1 (>=90)", "G2 (60-89)", "G3a (45-59)",
+                "G3b (30-44)", "G4 (15-29)", "G5 (<15)"))
+}
+
 final_master <- final_master %>%
   mutate(
+    ckd_stage_cre     = ckd_stage(baseline_cre_egfr),
+    ckd_stage_cre_cys = ckd_stage(ckd_epi_gfr_cre_cys),
     bmi = weight / (height / 100)^2,
     bmi_cat = factor(case_when(
       bmi < 18.5              ~ "Underweight (<18.5)",
@@ -1662,6 +1689,7 @@ shared_vars <- c(
   "baseline_cys_c", "baseline_cre", "cr_cys",
   "baseline_cre_egfr", "baseline_cys_c_egfr",
   "ckd_epi_gfr_cre_cys", "ckd_epi_gfr_cre_cys_unindex",
+  "ckd_stage_cre", "ckd_stage_cre_cys",
   "cockcroft"
 )
 

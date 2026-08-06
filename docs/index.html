@@ -507,24 +507,33 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </thead>
 <tbody>
 <tr class="odd">
+<td><code>baseline_cre_egfr</code></td>
+<td>CKD-EPI 2021 creatinine eGFR (mL/min/1.73m²)</td>
+</tr>
+<tr class="even">
 <td><code>ckd_epi_gfr_cre_cys</code></td>
 <td>CKD-EPI 2012 combined creatinine + cystatin C eGFR (mL/min/1.73m²)</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>ckd_epi_gfr_cre_cys_unindex</code></td>
 <td>Combined CKD-EPI eGFR adjusted for BSA (mL/min)</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>cockcroft</code></td>
 <td>Cockcroft-Gault creatinine clearance</td>
 </tr>
+<tr class="odd">
+<td><code>ckd_stage_cre</code></td>
+<td>KDIGO G-stage from <code>baseline_cre_egfr</code></td>
+</tr>
 <tr class="even">
-<td><code>ckd_stage_cg</code></td>
-<td>CKD stage from Cockcroft-Gault</td>
+<td><code>ckd_stage_cre_cys</code></td>
+<td>KDIGO G-stage from <code>ckd_epi_gfr_cre_cys</code></td>
 </tr>
 </tbody>
 </table>
 <p>Only <code>ckd_epi_gfr_cre_cys_unindex</code> is capped at 125 mL/min; the indexed value and <code>cockcroft</code> are uncapped. Uncapped values feed the eGFR difference; capped values feed the dose-discrepancy calculation.</p>
+<p>Both CKD stage variables use the standard KDIGO G categories — G1 ≥ 90, G2 60–89, G3a 45–59, G3b 30–44, G4 15–29, G5 &lt; 15 mL/min/1.73m² — and are built from the <strong>BSA-indexed</strong> eGFRs, the scale KDIGO staging is defined on. No patient in this cohort reaches G5, so that level is dropped rather than shown as an empty Table 1 row. They are descriptive Table 1 rows only; no model adjusts for them (the continuous eGFRs already appear in the adjuster sets).</p>
 </section>
 <section id="competing-risk-variables" class="level2">
 <h2 class="anchored" data-anchor-id="competing-risk-variables">Competing Risk Variables</h2>

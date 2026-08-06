@@ -221,6 +221,7 @@ dat %>%
     baseline_cys_c, baseline_cre, cr_cys,
     baseline_cre_egfr, baseline_cys_c_egfr,
     ckd_epi_gfr_cre_cys, ckd_epi_gfr_cre_cys_unindex,
+    ckd_stage_cre, ckd_stage_cre_cys,
     cockcroft, egfr_ratio
   ) %>%
   tbl_summary(

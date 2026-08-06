@@ -408,8 +408,17 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td><code>baseline_cys_c_egfr_unindexed</code></td>
 <td>CKD-EPI cystatin C eGFR adjusted for body surface area (mL/min)</td>
 </tr>
+<tr class="odd">
+<td><code>ckd_stage_cre</code></td>
+<td>KDIGO G-stage from <code>baseline_cre_egfr</code> (CKD-EPI 2021 creatinine, indexed)</td>
+</tr>
+<tr class="even">
+<td><code>ckd_stage_cre_cys</code></td>
+<td>KDIGO G-stage from <code>ckd_epi_gfr_cre_cys</code> (CKD-EPI 2012 combined, indexed)</td>
+</tr>
 </tbody>
 </table>
+<p>Both stage variables use the standard KDIGO G categories — G1 ≥ 90, G2 60–89, G3a 45–59, G3b 30–44, G4 15–29, G5 &lt; 15 mL/min/1.73m². They are built from the <strong>BSA-indexed</strong> eGFRs because that is the scale KDIGO staging is defined on; the <code>_unindex</code> variables are never staged. No patient in this cohort falls in G5, so that level is cleared by the <code>droplevels()</code> step in Section 5.16 and does not appear as an empty row in Table 1.</p>
 </section>
 <section id="derived-rpdr-pre-baseline-labs-within-45-days-before-baseline" class="level2">
 <h2 class="anchored" data-anchor-id="derived-rpdr-pre-baseline-labs-within-45-days-before-baseline">1.4 Derived — RPDR Pre-baseline Labs (within 45 days before baseline)</h2>
@@ -1876,23 +1885,41 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb43-2"><a href="#cb43-2" aria-hidden="true" tabindex="-1"></a><span class="co"># bmi_cat: 1=underweight &lt;18.5, 2=normal 18.5–25, 3=overweight 25–30, 4=obese ≥30</span></span>
 <span id="cb43-3"><a href="#cb43-3" aria-hidden="true" tabindex="-1"></a><span class="co"># age_cat: 1=≤65, 2=66–80, 3=&gt;80</span></span>
 <span id="cb43-4"><a href="#cb43-4" aria-hidden="true" tabindex="-1"></a><span class="co"># ici: immunotherapy co-administration (Atezolizumab OR Pembrolizumab OR Durvalumab)</span></span>
-<span id="cb43-5"><a href="#cb43-5" aria-hidden="true" tabindex="-1"></a>final_master <span class="ot">&lt;-</span> final_master <span class="sc">%&gt;%</span></span>
-<span id="cb43-6"><a href="#cb43-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
-<span id="cb43-7"><a href="#cb43-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">bmi =</span> weight <span class="sc">/</span> (height <span class="sc">/</span> <span class="dv">100</span>)<span class="sc">^</span><span class="dv">2</span>,</span>
-<span id="cb43-8"><a href="#cb43-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">bmi_cat =</span> <span class="fu">factor</span>(<span class="fu">case_when</span>(</span>
-<span id="cb43-9"><a href="#cb43-9" aria-hidden="true" tabindex="-1"></a>      bmi <span class="sc">&lt;</span> <span class="fl">18.5</span>              <span class="sc">~</span> <span class="st">"Underweight (&lt;18.5)"</span>,</span>
-<span id="cb43-10"><a href="#cb43-10" aria-hidden="true" tabindex="-1"></a>      bmi <span class="sc">&gt;=</span> <span class="fl">18.5</span> <span class="sc">&amp;</span> bmi <span class="sc">&lt;</span> <span class="dv">25</span> <span class="sc">~</span> <span class="st">"Normal (18.5-25)"</span>,</span>
-<span id="cb43-11"><a href="#cb43-11" aria-hidden="true" tabindex="-1"></a>      bmi <span class="sc">&gt;=</span> <span class="dv">25</span>   <span class="sc">&amp;</span> bmi <span class="sc">&lt;</span> <span class="dv">30</span> <span class="sc">~</span> <span class="st">"Overweight (25-30)"</span>,</span>
-<span id="cb43-12"><a href="#cb43-12" aria-hidden="true" tabindex="-1"></a>      bmi <span class="sc">&gt;=</span> <span class="dv">30</span>               <span class="sc">~</span> <span class="st">"Obese (&gt;=30)"</span>,</span>
-<span id="cb43-13"><a href="#cb43-13" aria-hidden="true" tabindex="-1"></a>      <span class="cn">TRUE</span> <span class="sc">~</span> <span class="cn">NA_character_</span></span>
-<span id="cb43-14"><a href="#cb43-14" aria-hidden="true" tabindex="-1"></a>    ), <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"Underweight (&lt;18.5)"</span>, <span class="st">"Normal (18.5-25)"</span>, <span class="st">"Overweight (25-30)"</span>, <span class="st">"Obese (&gt;=30)"</span>)),</span>
-<span id="cb43-15"><a href="#cb43-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">age_cat =</span> <span class="fu">factor</span>(<span class="fu">case_when</span>(</span>
-<span id="cb43-16"><a href="#cb43-16" aria-hidden="true" tabindex="-1"></a>      age <span class="sc">&lt;=</span> <span class="dv">65</span>             <span class="sc">~</span> <span class="st">"&lt;=65"</span>,</span>
-<span id="cb43-17"><a href="#cb43-17" aria-hidden="true" tabindex="-1"></a>      age <span class="sc">&gt;</span> <span class="dv">65</span> <span class="sc">&amp;</span> age <span class="sc">&lt;=</span> <span class="dv">80</span> <span class="sc">~</span> <span class="st">"66-80"</span>,</span>
-<span id="cb43-18"><a href="#cb43-18" aria-hidden="true" tabindex="-1"></a>      age <span class="sc">&gt;</span> <span class="dv">80</span>              <span class="sc">~</span> <span class="st">"&gt;80"</span></span>
-<span id="cb43-19"><a href="#cb43-19" aria-hidden="true" tabindex="-1"></a>    ), <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"&lt;=65"</span>, <span class="st">"66-80"</span>, <span class="st">"&gt;80"</span>)),</span>
-<span id="cb43-20"><a href="#cb43-20" aria-hidden="true" tabindex="-1"></a>    <span class="at">ici =</span> <span class="fu">ifelse</span>(Atezolizumab <span class="sc">==</span> <span class="dv">1</span> <span class="sc">|</span> Pembrolizumab <span class="sc">==</span> <span class="dv">1</span> <span class="sc">|</span> Durvalumab <span class="sc">==</span> <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">0</span>)</span>
-<span id="cb43-21"><a href="#cb43-21" aria-hidden="true" tabindex="-1"></a>  )</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb43-5"><a href="#cb43-5" aria-hidden="true" tabindex="-1"></a><span class="co"># ckd_stage_cre / ckd_stage_cre_cys: KDIGO G-stage from the two BSA-indexed</span></span>
+<span id="cb43-6"><a href="#cb43-6" aria-hidden="true" tabindex="-1"></a><span class="co">#   CKD-EPI eGFRs. Staging is defined on mL/min/1.73m², so the *indexed*</span></span>
+<span id="cb43-7"><a href="#cb43-7" aria-hidden="true" tabindex="-1"></a><span class="co">#   variables are used here, never the _unindex versions.</span></span>
+<span id="cb43-8"><a href="#cb43-8" aria-hidden="true" tabindex="-1"></a>ckd_stage <span class="ot">&lt;-</span> <span class="cf">function</span>(egfr) {</span>
+<span id="cb43-9"><a href="#cb43-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">factor</span>(<span class="fu">case_when</span>(</span>
+<span id="cb43-10"><a href="#cb43-10" aria-hidden="true" tabindex="-1"></a>    egfr <span class="sc">&lt;</span>  <span class="dv">15</span>               <span class="sc">~</span> <span class="st">"G5 (&lt;15)"</span>,</span>
+<span id="cb43-11"><a href="#cb43-11" aria-hidden="true" tabindex="-1"></a>    egfr <span class="sc">&gt;=</span> <span class="dv">15</span> <span class="sc">&amp;</span> egfr <span class="sc">&lt;</span>  <span class="dv">30</span> <span class="sc">~</span> <span class="st">"G4 (15-29)"</span>,</span>
+<span id="cb43-12"><a href="#cb43-12" aria-hidden="true" tabindex="-1"></a>    egfr <span class="sc">&gt;=</span> <span class="dv">30</span> <span class="sc">&amp;</span> egfr <span class="sc">&lt;</span>  <span class="dv">45</span> <span class="sc">~</span> <span class="st">"G3b (30-44)"</span>,</span>
+<span id="cb43-13"><a href="#cb43-13" aria-hidden="true" tabindex="-1"></a>    egfr <span class="sc">&gt;=</span> <span class="dv">45</span> <span class="sc">&amp;</span> egfr <span class="sc">&lt;</span>  <span class="dv">60</span> <span class="sc">~</span> <span class="st">"G3a (45-59)"</span>,</span>
+<span id="cb43-14"><a href="#cb43-14" aria-hidden="true" tabindex="-1"></a>    egfr <span class="sc">&gt;=</span> <span class="dv">60</span> <span class="sc">&amp;</span> egfr <span class="sc">&lt;</span>  <span class="dv">90</span> <span class="sc">~</span> <span class="st">"G2 (60-89)"</span>,</span>
+<span id="cb43-15"><a href="#cb43-15" aria-hidden="true" tabindex="-1"></a>    egfr <span class="sc">&gt;=</span> <span class="dv">90</span>               <span class="sc">~</span> <span class="st">"G1 (&gt;=90)"</span>,</span>
+<span id="cb43-16"><a href="#cb43-16" aria-hidden="true" tabindex="-1"></a>    <span class="cn">TRUE</span> <span class="sc">~</span> <span class="cn">NA_character_</span></span>
+<span id="cb43-17"><a href="#cb43-17" aria-hidden="true" tabindex="-1"></a>  ), <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"G1 (&gt;=90)"</span>, <span class="st">"G2 (60-89)"</span>, <span class="st">"G3a (45-59)"</span>,</span>
+<span id="cb43-18"><a href="#cb43-18" aria-hidden="true" tabindex="-1"></a>                <span class="st">"G3b (30-44)"</span>, <span class="st">"G4 (15-29)"</span>, <span class="st">"G5 (&lt;15)"</span>))</span>
+<span id="cb43-19"><a href="#cb43-19" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb43-20"><a href="#cb43-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb43-21"><a href="#cb43-21" aria-hidden="true" tabindex="-1"></a>final_master <span class="ot">&lt;-</span> final_master <span class="sc">%&gt;%</span></span>
+<span id="cb43-22"><a href="#cb43-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb43-23"><a href="#cb43-23" aria-hidden="true" tabindex="-1"></a>    <span class="at">ckd_stage_cre     =</span> <span class="fu">ckd_stage</span>(baseline_cre_egfr),</span>
+<span id="cb43-24"><a href="#cb43-24" aria-hidden="true" tabindex="-1"></a>    <span class="at">ckd_stage_cre_cys =</span> <span class="fu">ckd_stage</span>(ckd_epi_gfr_cre_cys),</span>
+<span id="cb43-25"><a href="#cb43-25" aria-hidden="true" tabindex="-1"></a>    <span class="at">bmi =</span> weight <span class="sc">/</span> (height <span class="sc">/</span> <span class="dv">100</span>)<span class="sc">^</span><span class="dv">2</span>,</span>
+<span id="cb43-26"><a href="#cb43-26" aria-hidden="true" tabindex="-1"></a>    <span class="at">bmi_cat =</span> <span class="fu">factor</span>(<span class="fu">case_when</span>(</span>
+<span id="cb43-27"><a href="#cb43-27" aria-hidden="true" tabindex="-1"></a>      bmi <span class="sc">&lt;</span> <span class="fl">18.5</span>              <span class="sc">~</span> <span class="st">"Underweight (&lt;18.5)"</span>,</span>
+<span id="cb43-28"><a href="#cb43-28" aria-hidden="true" tabindex="-1"></a>      bmi <span class="sc">&gt;=</span> <span class="fl">18.5</span> <span class="sc">&amp;</span> bmi <span class="sc">&lt;</span> <span class="dv">25</span> <span class="sc">~</span> <span class="st">"Normal (18.5-25)"</span>,</span>
+<span id="cb43-29"><a href="#cb43-29" aria-hidden="true" tabindex="-1"></a>      bmi <span class="sc">&gt;=</span> <span class="dv">25</span>   <span class="sc">&amp;</span> bmi <span class="sc">&lt;</span> <span class="dv">30</span> <span class="sc">~</span> <span class="st">"Overweight (25-30)"</span>,</span>
+<span id="cb43-30"><a href="#cb43-30" aria-hidden="true" tabindex="-1"></a>      bmi <span class="sc">&gt;=</span> <span class="dv">30</span>               <span class="sc">~</span> <span class="st">"Obese (&gt;=30)"</span>,</span>
+<span id="cb43-31"><a href="#cb43-31" aria-hidden="true" tabindex="-1"></a>      <span class="cn">TRUE</span> <span class="sc">~</span> <span class="cn">NA_character_</span></span>
+<span id="cb43-32"><a href="#cb43-32" aria-hidden="true" tabindex="-1"></a>    ), <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"Underweight (&lt;18.5)"</span>, <span class="st">"Normal (18.5-25)"</span>, <span class="st">"Overweight (25-30)"</span>, <span class="st">"Obese (&gt;=30)"</span>)),</span>
+<span id="cb43-33"><a href="#cb43-33" aria-hidden="true" tabindex="-1"></a>    <span class="at">age_cat =</span> <span class="fu">factor</span>(<span class="fu">case_when</span>(</span>
+<span id="cb43-34"><a href="#cb43-34" aria-hidden="true" tabindex="-1"></a>      age <span class="sc">&lt;=</span> <span class="dv">65</span>             <span class="sc">~</span> <span class="st">"&lt;=65"</span>,</span>
+<span id="cb43-35"><a href="#cb43-35" aria-hidden="true" tabindex="-1"></a>      age <span class="sc">&gt;</span> <span class="dv">65</span> <span class="sc">&amp;</span> age <span class="sc">&lt;=</span> <span class="dv">80</span> <span class="sc">~</span> <span class="st">"66-80"</span>,</span>
+<span id="cb43-36"><a href="#cb43-36" aria-hidden="true" tabindex="-1"></a>      age <span class="sc">&gt;</span> <span class="dv">80</span>              <span class="sc">~</span> <span class="st">"&gt;80"</span></span>
+<span id="cb43-37"><a href="#cb43-37" aria-hidden="true" tabindex="-1"></a>    ), <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"&lt;=65"</span>, <span class="st">"66-80"</span>, <span class="st">"&gt;80"</span>)),</span>
+<span id="cb43-38"><a href="#cb43-38" aria-hidden="true" tabindex="-1"></a>    <span class="at">ici =</span> <span class="fu">ifelse</span>(Atezolizumab <span class="sc">==</span> <span class="dv">1</span> <span class="sc">|</span> Pembrolizumab <span class="sc">==</span> <span class="dv">1</span> <span class="sc">|</span> Durvalumab <span class="sc">==</span> <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">0</span>)</span>
+<span id="cb43-39"><a href="#cb43-39" aria-hidden="true" tabindex="-1"></a>  )</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 </div>
 </section>
@@ -2462,39 +2489,40 @@ Carboplatin   Cisplatin
 <span id="cb66-10"><a href="#cb66-10" aria-hidden="true" tabindex="-1"></a>  <span class="st">"baseline_cys_c"</span>, <span class="st">"baseline_cre"</span>, <span class="st">"cr_cys"</span>,</span>
 <span id="cb66-11"><a href="#cb66-11" aria-hidden="true" tabindex="-1"></a>  <span class="st">"baseline_cre_egfr"</span>, <span class="st">"baseline_cys_c_egfr"</span>,</span>
 <span id="cb66-12"><a href="#cb66-12" aria-hidden="true" tabindex="-1"></a>  <span class="st">"ckd_epi_gfr_cre_cys"</span>, <span class="st">"ckd_epi_gfr_cre_cys_unindex"</span>,</span>
-<span id="cb66-13"><a href="#cb66-13" aria-hidden="true" tabindex="-1"></a>  <span class="st">"cockcroft"</span></span>
-<span id="cb66-14"><a href="#cb66-14" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb66-15"><a href="#cb66-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb66-16"><a href="#cb66-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Shared variables: missing across all patients</span></span>
-<span id="cb66-17"><a href="#cb66-17" aria-hidden="true" tabindex="-1"></a>shared_missing <span class="ot">&lt;-</span> final_master <span class="sc">%&gt;%</span></span>
-<span id="cb66-18"><a href="#cb66-18" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(<span class="fu">any_of</span>(shared_vars)) <span class="sc">%&gt;%</span></span>
-<span id="cb66-19"><a href="#cb66-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="fu">across</span>(<span class="fu">everything</span>(), <span class="sc">~</span> <span class="fu">sum</span>(<span class="fu">is.na</span>(.)))) <span class="sc">%&gt;%</span></span>
-<span id="cb66-20"><a href="#cb66-20" aria-hidden="true" tabindex="-1"></a>  tidyr<span class="sc">::</span><span class="fu">pivot_longer</span>(<span class="fu">everything</span>(), <span class="at">names_to =</span> <span class="st">"variable"</span>, <span class="at">values_to =</span> <span class="st">"n_missing"</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb66-21"><a href="#cb66-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">pct_missing =</span> <span class="fu">round</span>(<span class="dv">100</span> <span class="sc">*</span> n_missing <span class="sc">/</span> <span class="fu">nrow</span>(final_master), <span class="dv">1</span>),</span>
-<span id="cb66-22"><a href="#cb66-22" aria-hidden="true" tabindex="-1"></a>         <span class="at">note =</span> <span class="st">""</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb66-23"><a href="#cb66-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(n_missing <span class="sc">&gt;</span> <span class="dv">0</span>)</span>
-<span id="cb66-24"><a href="#cb66-24" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb66-25"><a href="#cb66-25" aria-hidden="true" tabindex="-1"></a><span class="co"># Platinum-type-specific: check within their own subgroup</span></span>
-<span id="cb66-26"><a href="#cb66-26" aria-hidden="true" tabindex="-1"></a>carbo_pts <span class="ot">&lt;-</span> final_master <span class="sc">%&gt;%</span> <span class="fu">filter</span>(platin_group <span class="sc">==</span> <span class="st">"Carboplatin"</span>)</span>
-<span id="cb66-27"><a href="#cb66-27" aria-hidden="true" tabindex="-1"></a>cis_pts   <span class="ot">&lt;-</span> final_master <span class="sc">%&gt;%</span> <span class="fu">filter</span>(platin_group <span class="sc">==</span> <span class="st">"Cisplatin"</span>)</span>
-<span id="cb66-28"><a href="#cb66-28" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb66-29"><a href="#cb66-29" aria-hidden="true" tabindex="-1"></a>platin_missing <span class="ot">&lt;-</span> <span class="fu">tibble</span>(</span>
-<span id="cb66-30"><a href="#cb66-30" aria-hidden="true" tabindex="-1"></a>  <span class="at">variable   =</span> <span class="fu">c</span>(<span class="st">"carbo_AUC"</span>, <span class="st">"carbo_AUC_cat"</span>, <span class="st">"cis_dose"</span>, <span class="st">"cis_dose_cat"</span>),</span>
-<span id="cb66-31"><a href="#cb66-31" aria-hidden="true" tabindex="-1"></a>  <span class="at">n_missing  =</span> <span class="fu">c</span>(<span class="fu">sum</span>(<span class="fu">is.na</span>(carbo_pts<span class="sc">$</span>carbo_AUC)),</span>
-<span id="cb66-32"><a href="#cb66-32" aria-hidden="true" tabindex="-1"></a>                 <span class="fu">sum</span>(<span class="fu">is.na</span>(carbo_pts<span class="sc">$</span>carbo_AUC_cat)),</span>
-<span id="cb66-33"><a href="#cb66-33" aria-hidden="true" tabindex="-1"></a>                 <span class="fu">sum</span>(<span class="fu">is.na</span>(cis_pts<span class="sc">$</span>cis_dose)),</span>
-<span id="cb66-34"><a href="#cb66-34" aria-hidden="true" tabindex="-1"></a>                 <span class="fu">sum</span>(<span class="fu">is.na</span>(cis_pts<span class="sc">$</span>cis_dose_cat))),</span>
-<span id="cb66-35"><a href="#cb66-35" aria-hidden="true" tabindex="-1"></a>  <span class="at">pct_missing =</span> <span class="fu">round</span>(<span class="dv">100</span> <span class="sc">*</span> n_missing <span class="sc">/</span></span>
-<span id="cb66-36"><a href="#cb66-36" aria-hidden="true" tabindex="-1"></a>                 <span class="fu">c</span>(<span class="fu">nrow</span>(carbo_pts), <span class="fu">nrow</span>(carbo_pts), <span class="fu">nrow</span>(cis_pts), <span class="fu">nrow</span>(cis_pts)), <span class="dv">1</span>),</span>
-<span id="cb66-37"><a href="#cb66-37" aria-hidden="true" tabindex="-1"></a>  <span class="at">note =</span> <span class="fu">c</span>(<span class="fu">paste0</span>(<span class="st">"of "</span>, <span class="fu">nrow</span>(carbo_pts), <span class="st">" carbo pts"</span>),</span>
-<span id="cb66-38"><a href="#cb66-38" aria-hidden="true" tabindex="-1"></a>           <span class="fu">paste0</span>(<span class="st">"of "</span>, <span class="fu">nrow</span>(carbo_pts), <span class="st">" carbo pts"</span>),</span>
-<span id="cb66-39"><a href="#cb66-39" aria-hidden="true" tabindex="-1"></a>           <span class="fu">paste0</span>(<span class="st">"of "</span>, <span class="fu">nrow</span>(cis_pts), <span class="st">" cis pts"</span>),</span>
-<span id="cb66-40"><a href="#cb66-40" aria-hidden="true" tabindex="-1"></a>           <span class="fu">paste0</span>(<span class="st">"of "</span>, <span class="fu">nrow</span>(cis_pts), <span class="st">" cis pts"</span>))</span>
-<span id="cb66-41"><a href="#cb66-41" aria-hidden="true" tabindex="-1"></a>) <span class="sc">%&gt;%</span> <span class="fu">filter</span>(n_missing <span class="sc">&gt;</span> <span class="dv">0</span>)</span>
-<span id="cb66-42"><a href="#cb66-42" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb66-43"><a href="#cb66-43" aria-hidden="true" tabindex="-1"></a><span class="fu">bind_rows</span>(shared_missing, platin_missing) <span class="sc">%&gt;%</span></span>
-<span id="cb66-44"><a href="#cb66-44" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(n_missing)) <span class="sc">%&gt;%</span></span>
-<span id="cb66-45"><a href="#cb66-45" aria-hidden="true" tabindex="-1"></a>  knitr<span class="sc">::</span><span class="fu">kable</span>(<span class="at">caption =</span> <span class="st">"Missing data — Table 1 variables (non-zero only)"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb66-13"><a href="#cb66-13" aria-hidden="true" tabindex="-1"></a>  <span class="st">"ckd_stage_cre"</span>, <span class="st">"ckd_stage_cre_cys"</span>,</span>
+<span id="cb66-14"><a href="#cb66-14" aria-hidden="true" tabindex="-1"></a>  <span class="st">"cockcroft"</span></span>
+<span id="cb66-15"><a href="#cb66-15" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb66-16"><a href="#cb66-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb66-17"><a href="#cb66-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Shared variables: missing across all patients</span></span>
+<span id="cb66-18"><a href="#cb66-18" aria-hidden="true" tabindex="-1"></a>shared_missing <span class="ot">&lt;-</span> final_master <span class="sc">%&gt;%</span></span>
+<span id="cb66-19"><a href="#cb66-19" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(<span class="fu">any_of</span>(shared_vars)) <span class="sc">%&gt;%</span></span>
+<span id="cb66-20"><a href="#cb66-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="fu">across</span>(<span class="fu">everything</span>(), <span class="sc">~</span> <span class="fu">sum</span>(<span class="fu">is.na</span>(.)))) <span class="sc">%&gt;%</span></span>
+<span id="cb66-21"><a href="#cb66-21" aria-hidden="true" tabindex="-1"></a>  tidyr<span class="sc">::</span><span class="fu">pivot_longer</span>(<span class="fu">everything</span>(), <span class="at">names_to =</span> <span class="st">"variable"</span>, <span class="at">values_to =</span> <span class="st">"n_missing"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb66-22"><a href="#cb66-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">pct_missing =</span> <span class="fu">round</span>(<span class="dv">100</span> <span class="sc">*</span> n_missing <span class="sc">/</span> <span class="fu">nrow</span>(final_master), <span class="dv">1</span>),</span>
+<span id="cb66-23"><a href="#cb66-23" aria-hidden="true" tabindex="-1"></a>         <span class="at">note =</span> <span class="st">""</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb66-24"><a href="#cb66-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(n_missing <span class="sc">&gt;</span> <span class="dv">0</span>)</span>
+<span id="cb66-25"><a href="#cb66-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb66-26"><a href="#cb66-26" aria-hidden="true" tabindex="-1"></a><span class="co"># Platinum-type-specific: check within their own subgroup</span></span>
+<span id="cb66-27"><a href="#cb66-27" aria-hidden="true" tabindex="-1"></a>carbo_pts <span class="ot">&lt;-</span> final_master <span class="sc">%&gt;%</span> <span class="fu">filter</span>(platin_group <span class="sc">==</span> <span class="st">"Carboplatin"</span>)</span>
+<span id="cb66-28"><a href="#cb66-28" aria-hidden="true" tabindex="-1"></a>cis_pts   <span class="ot">&lt;-</span> final_master <span class="sc">%&gt;%</span> <span class="fu">filter</span>(platin_group <span class="sc">==</span> <span class="st">"Cisplatin"</span>)</span>
+<span id="cb66-29"><a href="#cb66-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb66-30"><a href="#cb66-30" aria-hidden="true" tabindex="-1"></a>platin_missing <span class="ot">&lt;-</span> <span class="fu">tibble</span>(</span>
+<span id="cb66-31"><a href="#cb66-31" aria-hidden="true" tabindex="-1"></a>  <span class="at">variable   =</span> <span class="fu">c</span>(<span class="st">"carbo_AUC"</span>, <span class="st">"carbo_AUC_cat"</span>, <span class="st">"cis_dose"</span>, <span class="st">"cis_dose_cat"</span>),</span>
+<span id="cb66-32"><a href="#cb66-32" aria-hidden="true" tabindex="-1"></a>  <span class="at">n_missing  =</span> <span class="fu">c</span>(<span class="fu">sum</span>(<span class="fu">is.na</span>(carbo_pts<span class="sc">$</span>carbo_AUC)),</span>
+<span id="cb66-33"><a href="#cb66-33" aria-hidden="true" tabindex="-1"></a>                 <span class="fu">sum</span>(<span class="fu">is.na</span>(carbo_pts<span class="sc">$</span>carbo_AUC_cat)),</span>
+<span id="cb66-34"><a href="#cb66-34" aria-hidden="true" tabindex="-1"></a>                 <span class="fu">sum</span>(<span class="fu">is.na</span>(cis_pts<span class="sc">$</span>cis_dose)),</span>
+<span id="cb66-35"><a href="#cb66-35" aria-hidden="true" tabindex="-1"></a>                 <span class="fu">sum</span>(<span class="fu">is.na</span>(cis_pts<span class="sc">$</span>cis_dose_cat))),</span>
+<span id="cb66-36"><a href="#cb66-36" aria-hidden="true" tabindex="-1"></a>  <span class="at">pct_missing =</span> <span class="fu">round</span>(<span class="dv">100</span> <span class="sc">*</span> n_missing <span class="sc">/</span></span>
+<span id="cb66-37"><a href="#cb66-37" aria-hidden="true" tabindex="-1"></a>                 <span class="fu">c</span>(<span class="fu">nrow</span>(carbo_pts), <span class="fu">nrow</span>(carbo_pts), <span class="fu">nrow</span>(cis_pts), <span class="fu">nrow</span>(cis_pts)), <span class="dv">1</span>),</span>
+<span id="cb66-38"><a href="#cb66-38" aria-hidden="true" tabindex="-1"></a>  <span class="at">note =</span> <span class="fu">c</span>(<span class="fu">paste0</span>(<span class="st">"of "</span>, <span class="fu">nrow</span>(carbo_pts), <span class="st">" carbo pts"</span>),</span>
+<span id="cb66-39"><a href="#cb66-39" aria-hidden="true" tabindex="-1"></a>           <span class="fu">paste0</span>(<span class="st">"of "</span>, <span class="fu">nrow</span>(carbo_pts), <span class="st">" carbo pts"</span>),</span>
+<span id="cb66-40"><a href="#cb66-40" aria-hidden="true" tabindex="-1"></a>           <span class="fu">paste0</span>(<span class="st">"of "</span>, <span class="fu">nrow</span>(cis_pts), <span class="st">" cis pts"</span>),</span>
+<span id="cb66-41"><a href="#cb66-41" aria-hidden="true" tabindex="-1"></a>           <span class="fu">paste0</span>(<span class="st">"of "</span>, <span class="fu">nrow</span>(cis_pts), <span class="st">" cis pts"</span>))</span>
+<span id="cb66-42"><a href="#cb66-42" aria-hidden="true" tabindex="-1"></a>) <span class="sc">%&gt;%</span> <span class="fu">filter</span>(n_missing <span class="sc">&gt;</span> <span class="dv">0</span>)</span>
+<span id="cb66-43"><a href="#cb66-43" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb66-44"><a href="#cb66-44" aria-hidden="true" tabindex="-1"></a><span class="fu">bind_rows</span>(shared_missing, platin_missing) <span class="sc">%&gt;%</span></span>
+<span id="cb66-45"><a href="#cb66-45" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(n_missing)) <span class="sc">%&gt;%</span></span>
+<span id="cb66-46"><a href="#cb66-46" aria-hidden="true" tabindex="-1"></a>  knitr<span class="sc">::</span><span class="fu">kable</span>(<span class="at">caption =</span> <span class="st">"Missing data — Table 1 variables (non-zero only)"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output-display">
 <table class="caption-top">
