@@ -312,7 +312,7 @@ dat %>%
     carbo_AUC, carbo_AUC_cat,
     ici, Bevacizumab, Paclitaxel, Pemetrexed, Doxorubicin, Etoposide,
     Gemcitabine, Pertuzumab, Trastuzumab, Docetaxel, other_chemo, Administered_alone,
-    hiv_rpdr, thyroid, smoking, steroids,
+    hiv_rpdr, thyroid, smoking, steroids, esrd_kt,
     cci, score, ecog_score, bmi, bmi_cat,
     pre_HGB_45days, pre_PLT_45days, pre_ALB_45days, pre_CRE_45days,
     baseline_cys_c, baseline_cre, cr_cys,
@@ -366,6 +366,76 @@ flextable::flextable(followup_tbl) |>
   flextable::set_caption("Follow-up time from baseline to last known status (Carboplatin AUC ≥ 3 cohort). Four alternative definitions.") |>
   flextable::autofit()
 ```
+
+## 3.2 Long-Horizon Kidney Outcomes (CKD / ESKD / AKI)
+
+Ported from the [ICI-CKD project](https://tianqi-ouyang.github.io/ICI-CKD-/data_management.html)
+and built in Sections 5.16–5.19 of [Data Management](ritu_data.qmd). Creatinine
+for these comes from the newer 2022P001091 RPDR pull.
+
+> **These are the only outcomes on this page that are not censored at 90 days.**
+> A qualifying CKD episode has to be *sustained for ≥ 90 days*, so they run over
+> the full length of RPDR creatinine follow-up rather than the 90-day window used
+> by every model above and below. They are reported descriptively here and are
+> **not** in any Fine-Gray, cause-specific or Cox model.
+
+`aki` is also not the same variable as `AKI_g2_90days` / `AKI_kdigo_90days`: it
+compares each creatinine against the patient's own preceding 90-day median (or
+2-day low), across the whole record, rather than against a fixed pre-baseline
+value inside 90 days. The cross-tabulation below shows how far the two diverge.
+
+[📄 Download Word table](../tables/auc3/sec3_kidney_longhorizon.docx)
+
+```{r}
+#| label: ritu-auc3-kidney-lt
+.kid_row <- function(flag, time_var, label) {
+  n <- sum(dat[[flag]] == 1, na.rm = TRUE)
+  tt <- if (!is.null(time_var) && time_var %in% names(dat))
+          dat[[time_var]][dat[[flag]] == 1] else NA_real_
+  tibble::tibble(
+    Outcome = label,
+    `n (%)` = sprintf("%d (%.1f%%)", n, 100 * n / nrow(dat)),
+    `Median days to event (IQR)` = if (n > 0 && any(!is.na(tt)))
+        sprintf("%.0f (%.0f-%.0f)", median(tt, na.rm = TRUE),
+                quantile(tt, .25, na.rm = TRUE), quantile(tt, .75, na.rm = TRUE))
+      else "-"
+  )
+}
+
+kidney_lt <- dplyr::bind_rows(
+  .kid_row("aki",               "aki_days",                "AKI (serial creatinine, KDIGO-style)"),
+  .kid_row("ckd_incidence",     "time_to_ckd_incidence",   "CKD incidence (>30% eGFR drop to <60, sustained)"),
+  .kid_row("ckd_progression",   "time_to_ckd_progression", "CKD progression (eGFR <60 at baseline and after)"),
+  .kid_row("eskd_defination_1", NULL,                      "ESKD (eGFR <10, sustained)"),
+  .kid_row("esrd_kt_after_ici", NULL,                      "ESRD / kidney transplant after baseline"),
+  .kid_row("eskd_composite",    "time_to_eskd_composite",  "ESKD composite"),
+  .kid_row("ckd_composite",     "time_to_ckd_composite",   "CKD composite")
+)
+
+ft_kid <- flextable::flextable(kidney_lt) |>
+  flextable::set_caption(sprintf(
+    "Long-horizon kidney outcomes (N = %d). Not censored at 90 days.", nrow(dat))) |>
+  flextable::autofit()
+flextable::save_as_docx(ft_kid, path = file.path(docx_dir, "sec3_kidney_longhorizon.docx"))
+ft_kid
+```
+
+Creatinine follow-up actually available for these outcomes, and how the two AKI
+definitions compare:
+
+```{r}
+#| label: ritu-auc3-kidney-lt-fu
+cat(sprintf("Days from baseline to last creatinine: median %.0f (IQR %.0f-%.0f), max %.0f\n",
+            median(dat$last_cre_days, na.rm = TRUE),
+            quantile(dat$last_cre_days, .25, na.rm = TRUE),
+            quantile(dat$last_cre_days, .75, na.rm = TRUE),
+            max(dat$last_cre_days, na.rm = TRUE)))
+cat(sprintf("Patients with no post-baseline creatinine: %d\n",
+            sum(is.na(dat$last_cre_days))))
+cat("\nSerial-creatinine AKI (rows) vs 90-day KDIGO AKI (columns):\n")
+print(table(`serial aki` = dat$aki, `AKI_kdigo_90days` = dat$AKI_kdigo_90days))
+```
+
 
 # 4 eGFR Ratio Distribution (Carboplatin AUC ≥ 3)
 

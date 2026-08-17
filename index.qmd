@@ -131,7 +131,52 @@ Two further consequences worth stating in any write-up:
 
 - **Hospitalizations:** 11 reason categories; reasons 1–7 define `side_effect` (platinum-related)
 - **90-day mortality** (`death_90`): derived from `pt_status` and `days_last_follow_up`
-- All outcomes censored at 90 days
+- All outcomes above censored at 90 days
+
+## Long-Horizon Kidney Outcomes (CKD / ESKD / AKI)
+
+Ported from the [ICI-CKD project](https://tianqi-ouyang.github.io/ICI-CKD-/data_management.html),
+re-anchored to `baseline_sample_date`. **These are the only outcomes in the
+project that are not censored at 90 days** — a qualifying CKD episode must be
+*sustained for ≥ 90 days*, so they use the full length of RPDR creatinine
+follow-up (median 446 days, max 1167).
+
+| Outcome | Definition | n (%) of 323 |
+|---|---|---|
+| `aki` | CRE > 1.5 × median of prior 90 d, **or** ≥ 0.3 mg/dL above the prior-2-day low | 63 (19.5 %) |
+| `ckd_incidence` | Sustained ≥ 90 d: `pct_drop > 0.30` & eGFR < 60 & baseline eGFR ≥ 60 | 15 (4.6 %) |
+| `ckd_progression` | Sustained ≥ 90 d: eGFR < 60 & baseline eGFR < 60 | 20 (6.2 %) |
+| `eskd_defination_1` | Sustained ≥ 90 d: eGFR < 10 | 1 (0.3 %) |
+| `esrd_kt_after_ici` | ESRD / KT / dialysis ICD code after baseline | 1 (0.3 %) |
+| `eskd_composite` | `esrd_kt_after_ici == 1 \| eskd_defination_1 == 1` | 1 (0.3 %) |
+| `ckd_composite` | `eskd_composite == 1 \| ckd_incidence == 1 \| ckd_progression == 1` | 35 (10.8 %) |
+
+`esrd_kt` (ESRD / KT **at or before** baseline, n = 1) is a Table 1 row.
+
+These are reported descriptively and are **not** in any Fine-Gray,
+cause-specific or Cox model — mixing a full-follow-up outcome into the 90-day
+competing-risks framework would need its own censoring and competing-event
+decisions.
+
+`aki` is a different variable from the existing `AKI_g2_90days` /
+`AKI_kdigo_90days`: it compares each creatinine against the patient's own
+preceding 90-day median across the whole record, not against a fixed
+pre-baseline value inside 90 days. In the whole cohort they agree on 19
+patients, `aki` alone flags 44, and `AKI_kdigo_90days` alone flags 14.
+
+# Data Sources
+
+| Source | Used for |
+|---|---|
+| REDCap export `CystatinCInPatientsO_DATA_2026-04-27_0819.csv` | Baseline, treatment, outcomes |
+| RPDR **2022P001091** (`mes98_0728261259…`, Aug 2026) | **All creatinine** — 48,843 rows |
+| RPDR **2026-03-19** (`mes98_0318261449…`) | HGB, PLT, ALB, GHBA1C (128,156 rows), plus all diagnoses and medications |
+
+The newer pull is a creatinine-only extract — it has no `Dia` or `Med` file and
+no HGB/PLT/ALB/GHBA1C — so it supplies creatinine and the original pull supplies
+everything else. Both cover the same 973 EMPIs over 1989–2026; the newer one has
+~2,800 more creatinine values, which is what the longitudinal eGFR, CKD and AKI
+outcomes are built from.
 
 # Key Variables
 

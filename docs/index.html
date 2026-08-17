@@ -180,7 +180,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <ul>
   <li><a href="#grade-23-adverse-events-within-90-days" id="toc-grade-23-adverse-events-within-90-days" class="nav-link" data-scroll-target="#grade-23-adverse-events-within-90-days">Grade 2/3 Adverse Events (within 90 days)</a></li>
   <li><a href="#hospitalizations-mortality" id="toc-hospitalizations-mortality" class="nav-link" data-scroll-target="#hospitalizations-mortality">Hospitalizations &amp; Mortality</a></li>
+  <li><a href="#long-horizon-kidney-outcomes-ckd-eskd-aki" id="toc-long-horizon-kidney-outcomes-ckd-eskd-aki" class="nav-link" data-scroll-target="#long-horizon-kidney-outcomes-ckd-eskd-aki">Long-Horizon Kidney Outcomes (CKD / ESKD / AKI)</a></li>
   </ul></li>
+  <li><a href="#data-sources" id="toc-data-sources" class="nav-link" data-scroll-target="#data-sources">Data Sources</a></li>
   <li><a href="#key-variables" id="toc-key-variables" class="nav-link" data-scroll-target="#key-variables">Key Variables</a>
   <ul>
   <li><a href="#exposure" id="toc-exposure" class="nav-link" data-scroll-target="#exposure">Exposure</a></li>
@@ -453,9 +455,97 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <ul>
 <li><strong>Hospitalizations:</strong> 11 reason categories; reasons 1–7 define <code>side_effect</code> (platinum-related)</li>
 <li><strong>90-day mortality</strong> (<code>death_90</code>): derived from <code>pt_status</code> and <code>days_last_follow_up</code></li>
-<li>All outcomes censored at 90 days</li>
+<li>All outcomes above censored at 90 days</li>
 </ul>
 </section>
+<section id="long-horizon-kidney-outcomes-ckd-eskd-aki" class="level2">
+<h2 class="anchored" data-anchor-id="long-horizon-kidney-outcomes-ckd-eskd-aki">Long-Horizon Kidney Outcomes (CKD / ESKD / AKI)</h2>
+<p>Ported from the <a href="https://tianqi-ouyang.github.io/ICI-CKD-/data_management.html">ICI-CKD project</a>, re-anchored to <code>baseline_sample_date</code>. <strong>These are the only outcomes in the project that are not censored at 90 days</strong> — a qualifying CKD episode must be <em>sustained for ≥ 90 days</em>, so they use the full length of RPDR creatinine follow-up (median 446 days, max 1167).</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Outcome</th>
+<th>Definition</th>
+<th>n (%) of 323</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>aki</code></td>
+<td>CRE &gt; 1.5 × median of prior 90 d, <strong>or</strong> ≥ 0.3 mg/dL above the prior-2-day low</td>
+<td>63 (19.5 %)</td>
+</tr>
+<tr class="even">
+<td><code>ckd_incidence</code></td>
+<td>Sustained ≥ 90 d: <code>pct_drop &gt; 0.30</code> &amp; eGFR &lt; 60 &amp; baseline eGFR ≥ 60</td>
+<td>15 (4.6 %)</td>
+</tr>
+<tr class="odd">
+<td><code>ckd_progression</code></td>
+<td>Sustained ≥ 90 d: eGFR &lt; 60 &amp; baseline eGFR &lt; 60</td>
+<td>20 (6.2 %)</td>
+</tr>
+<tr class="even">
+<td><code>eskd_defination_1</code></td>
+<td>Sustained ≥ 90 d: eGFR &lt; 10</td>
+<td>1 (0.3 %)</td>
+</tr>
+<tr class="odd">
+<td><code>esrd_kt_after_ici</code></td>
+<td>ESRD / KT / dialysis ICD code after baseline</td>
+<td>1 (0.3 %)</td>
+</tr>
+<tr class="even">
+<td><code>eskd_composite</code></td>
+<td><code>esrd_kt_after_ici == 1 \| eskd_defination_1 == 1</code></td>
+<td>1 (0.3 %)</td>
+</tr>
+<tr class="odd">
+<td><code>ckd_composite</code></td>
+<td><code>eskd_composite == 1 \| ckd_incidence == 1 \| ckd_progression == 1</code></td>
+<td>35 (10.8 %)</td>
+</tr>
+</tbody>
+</table>
+<p><code>esrd_kt</code> (ESRD / KT <strong>at or before</strong> baseline, n = 1) is a Table 1 row.</p>
+<p>These are reported descriptively and are <strong>not</strong> in any Fine-Gray, cause-specific or Cox model — mixing a full-follow-up outcome into the 90-day competing-risks framework would need its own censoring and competing-event decisions.</p>
+<p><code>aki</code> is a different variable from the existing <code>AKI_g2_90days</code> / <code>AKI_kdigo_90days</code>: it compares each creatinine against the patient’s own preceding 90-day median across the whole record, not against a fixed pre-baseline value inside 90 days. In the whole cohort they agree on 19 patients, <code>aki</code> alone flags 44, and <code>AKI_kdigo_90days</code> alone flags 14.</p>
+</section>
+</section>
+<section id="data-sources" class="level1">
+<h1>Data Sources</h1>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Source</th>
+<th>Used for</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>REDCap export <code>CystatinCInPatientsO_DATA_2026-04-27_0819.csv</code></td>
+<td>Baseline, treatment, outcomes</td>
+</tr>
+<tr class="even">
+<td>RPDR <strong>2022P001091</strong> (<code>mes98_0728261259…</code>, Aug 2026)</td>
+<td><strong>All creatinine</strong> — 48,843 rows</td>
+</tr>
+<tr class="odd">
+<td>RPDR <strong>2026-03-19</strong> (<code>mes98_0318261449…</code>)</td>
+<td>HGB, PLT, ALB, GHBA1C (128,156 rows), plus all diagnoses and medications</td>
+</tr>
+</tbody>
+</table>
+<p>The newer pull is a creatinine-only extract — it has no <code>Dia</code> or <code>Med</code> file and no HGB/PLT/ALB/GHBA1C — so it supplies creatinine and the original pull supplies everything else. Both cover the same 973 EMPIs over 1989–2026; the newer one has ~2,800 more creatinine values, which is what the longitudinal eGFR, CKD and AKI outcomes are built from.</p>
 </section>
 <section id="key-variables" class="level1">
 <h1>Key Variables</h1>

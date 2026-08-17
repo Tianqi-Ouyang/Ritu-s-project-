@@ -193,6 +193,37 @@ Drug indicators (binary 0/1) parsed from `regimen_dose` text by `create_drug_ind
 Competing risk variables: `cmp_time_<outcome>` / `cmp_status_<outcome>` for each outcome.
 Status coding: 0=censored (alive, no event by 90 days), 1=event occurred, 2=death (competing event)
 
+## 1.13 Derived — Long-Horizon Kidney Outcomes (ported from the ICI-CKD project)
+
+Built in Sections 5.16–5.19 from serial creatinine and RPDR diagnoses, following
+[`Kavita ICI CKD/data_management.qmd`](https://tianqi-ouyang.github.io/ICI-CKD-/data_management.html).
+Variable names are kept identical to that project so the two stay comparable;
+the index date is `baseline_sample_date` (first platinum) wherever the source
+used `ICI_Dose_Date`, which is what the `_after_ici` suffix refers to here.
+
+**Unlike every other outcome in this pipeline these are not censored at 90
+days.** A qualifying CKD episode must be *sustained for ≥ 90 days*, so they use
+the full length of RPDR creatinine follow-up.
+
+| In Code | Definition |
+|---|---|
+| `eGFR_CRE_baseline` | CKD-EPI creatinine eGFR at `pre_CRE_45days` (per-patient baseline) |
+| `ckd_stage_baseline` | Numeric KDIGO stage 1–5 from `eGFR_CRE_baseline` |
+| `last_cre_date` / `last_cre_days` | Date of, and days from baseline to, the last creatinine |
+| `aki` / `aki_date` / `aki_days` | KDIGO-style AKI from serial CRE: CRE > 1.5 × median of prior 90 d, **or** ≥ 0.3 mg/dL above the lowest value in the prior 2 d |
+| `ckd_incidence` / `_date` | First sustained (≥ 90 d) episode with `pct_drop > 0.30` & `eGFR_CRE < 60` & `eGFR_CRE_baseline >= 60` |
+| `ckd_progression` / `_date` | First sustained (≥ 90 d) episode with `eGFR_CRE < 60` & `eGFR_CRE_baseline < 60` |
+| `eskd_defination_1` / `_date` | First sustained (≥ 90 d) episode with `eGFR_CRE < 10` |
+| `esrd_kt` | ESRD / kidney transplant / dialysis ICD code **at or before** baseline |
+| `esrd_kt_after_ici` / `_date` | Same codes, first date **after** baseline |
+| `eskd_composite` / `_date` | `esrd_kt_after_ici == 1 \| eskd_defination_1 == 1`; date = `pmin()` of the two |
+| `ckd_composite` | `eskd_composite == 1 \| ckd_incidence == 1 \| ckd_progression == 1` |
+| `time_to_ckd_incidence` / `_progression` / `_eskd_composite` / `_ckd_composite` | Days from `baseline_sample_date` to each event |
+| `aki_before_ckd` | 1 if `aki_days <= time_to_ckd_composite` |
+
+`aki` is **not** the same variable as the existing 90-day `AKI_g2_90days` /
+`AKI_g3_90days` / `AKI_kdigo_90days`; see the note in Section 5.17.
+
 ---
 
 # 2 Setup & Libraries
@@ -530,6 +561,198 @@ dia_list_name <- function(data, listed_names, index_date, excluded_names = NULL,
 }
 ```
 
+## 3.8 dia_list_icd / dia_list_icd_after_index
+
+Ported unchanged from the ICI-CKD project (`Kavita ICI CKD/data_management.qmd`
+§3.6). `dia_list_icd` returns patients with a matching ICD code **on or before**
+the index date (baseline comorbidity); `dia_list_icd_after_index` returns the
+**first date after** the index date (outcome).
+
+```{r}
+#| label: fn-dia-list-icd
+dia_list_icd <- function(data, index_date, icd_code,
+                         excluded_names = NULL, med_data = NULL, med_names = NULL) {
+  if (is.null(excluded_names)) {
+    dia_result <- data %>%
+      filter(Date <= {{index_date}}) %>%
+      filter(grepl(paste(icd_code, collapse = "|"), Code, ignore.case = TRUE)) %>%
+      distinct(EMPI)
+  } else {
+    dia_result <- data %>%
+      filter(Date <= {{index_date}}) %>%
+      filter(grepl(paste(icd_code, collapse = "|"), Code, ignore.case = TRUE),
+            !grepl(paste(excluded_names, collapse = "|"), Diagnosis_Name, ignore.case = TRUE)) %>%
+      distinct(EMPI)
+  }
+
+  if (!is.null(med_data)) {
+    med_result <- med_data %>%
+      filter(Medication_Date <= {{index_date}}) %>%
+      filter(grepl(paste(med_names, collapse = "|"), Medication, ignore.case = TRUE)) %>%
+      distinct(EMPI)
+  } else {
+    med_result <- NULL
+  }
+
+  rbind(dia_result, med_result) %>% distinct(EMPI)
+}
+```
+
+```{r}
+#| label: fn-dia-list-icd-after-index
+dia_list_icd_after_index <- function(data, index_date, icd_code,
+                                     excluded_names = NULL,
+                                     med_data = NULL, med_names = NULL) {
+  dia_subset <- data %>%
+    filter(Date > {{index_date}}) %>%
+    filter(grepl(paste(icd_code, collapse = "|"), Code, ignore.case = TRUE))
+
+  if (!is.null(excluded_names)) {
+    dia_subset <- dia_subset %>%
+      filter(!grepl(paste(excluded_names, collapse = "|"), Diagnosis_Name, ignore.case = TRUE))
+  }
+
+  dia_result <- dia_subset %>%
+    group_by(EMPI) %>%
+    summarise(event_date = min(Date), .groups = "drop")
+
+  med_result <- NULL
+  if (!is.null(med_data) && !is.null(med_names)) {
+    med_result <- med_data %>%
+      filter(Medication_Date > {{index_date}}) %>%
+      filter(grepl(paste(med_names, collapse = "|"), Medication, ignore.case = TRUE)) %>%
+      group_by(EMPI) %>%
+      summarise(event_date = min(Medication_Date), .groups = "drop")
+  }
+
+  bind_rows(dia_result, med_result) %>%
+    group_by(EMPI) %>%
+    summarise(first_event_date = min(event_date), .groups = "drop")
+}
+```
+
+## 3.9 make_ckd_outcome_date — sustained-episode outcomes
+
+Ported unchanged from ICI-CKD §3.7. Finds the first episode where a condition
+(e.g. `eGFR_CRE < 60`) is sustained for at least `days_threshold` days, and
+returns both the binary flag and the episode start date. An episode ends at the
+next observation whose condition status differs, so "sustained" means the
+condition held across every creatinine drawn in that span.
+
+```{r}
+#| label: fn-make-ckd-outcome-date
+make_ckd_outcome_date <- function(data, id_var, date_var, condition_expr,
+                                  days_threshold = 90, outcome_name = "default") {
+  id_var      <- enquo(id_var)
+  date_var    <- enquo(date_var)
+  cond_q      <- enquo(condition_expr)
+  outcome_sym <- ensym(outcome_name)
+  outcome_date_name <- paste0(outcome_name, "_date")
+
+  working <- data %>%
+    arrange(!!id_var, !!date_var) %>%
+    group_by(!!id_var) %>%
+    mutate(
+      .cond   = if_else(!!cond_q, 1L, 0L),
+      .change = .cond != lag(.cond, default = first(.cond)),
+      .run    = cumsum(.change)
+    )
+
+  episodes <- working %>%
+    group_by(!!id_var, .run) %>%
+    summarise(.code = first(.cond),
+              .start = first(!!date_var),
+              .last  = last(!!date_var),
+              .groups = "drop") %>%
+    group_by(!!id_var) %>%
+    mutate(.end  = lead(.start),
+           .end  = if_else(is.na(.end), .last, .end),
+           .days = as.integer(.end - .start)) %>%
+    ungroup()
+
+  episodes %>%
+    group_by(!!id_var) %>%
+    summarise(
+      has_event  = any(.code == 1L & .days >= days_threshold),
+      event_date = if (any(.code == 1L & .days >= days_threshold))
+                      min(.start[.code == 1L & .days >= days_threshold])
+                   else as.Date(NA),
+      .groups = "drop"
+    ) %>%
+    mutate(!!outcome_sym := as.integer(has_event)) %>%
+    rename(!!outcome_date_name := event_date) %>%
+    select(-has_event)
+}
+```
+
+## 3.10 create_aki — KDIGO-style AKI from serial creatinine
+
+Ported unchanged from ICI-CKD §3.8, with the index date defaulting to this
+project's anchor (`baseline_sample_date`) instead of `ICI_Dose_Date`. A
+creatinine drawn after baseline flags AKI if it exceeds **1.5 × the median of
+the preceding 90 days**, or rises **≥ 0.3 mg/dL above the lowest value in the
+preceding 2 days**. Returns the first such date per patient.
+
+```{r}
+#| label: fn-create-aki
+create_aki <- function(data,
+                       index_date = baseline_sample_date,
+                       Group_Id   = EMPI,
+                       median_window_days = 90,
+                       lowest_window_days = 2) {
+  index_date <- enquo(index_date)
+  Group_Id   <- enquo(Group_Id)
+
+  df <- data %>%
+    filter(Group_Id == "CRE", grepl("^\\d+\\.\\d+$", Result)) %>%
+    filter(!is.na(Result)) %>%
+    mutate(Result = as.numeric(Result)) %>%
+    rename(cre_date = Seq_Date_Time, cre = Result) %>%
+    select(EMPI, cre, cre_date, !!index_date) %>%
+    arrange(!!Group_Id, cre_date)
+
+  df %>%
+    filter(cre_date > !!index_date) %>%
+    group_by(!!Group_Id) %>%
+    mutate(
+      median_cre_90days = sapply(seq_along(cre), function(i) {
+        vals <- cre[cre_date >= cre_date[i] - median_window_days &
+                    cre_date <= cre_date[i] - 1]
+        if (length(vals) == 0) NA_real_ else median(vals, na.rm = TRUE)
+      }),
+      lowest_cre_2days = sapply(seq_along(cre), function(i) {
+        vals <- cre[cre_date >= cre_date[i] - lowest_window_days &
+                    cre_date <= cre_date[i] - 1]
+        if (length(vals) == 0) NA_real_ else min(vals, na.rm = TRUE)
+      }),
+      aki_flag = (!is.na(median_cre_90days) & cre > 1.5 * median_cre_90days) |
+                 (!is.na(lowest_cre_2days)  & cre - lowest_cre_2days >= 0.3)
+    ) %>%
+    filter(aki_flag) %>%
+    arrange(!!Group_Id, cre_date) %>%
+    summarise(aki      = 1L,
+              aki_date = min(cre_date), .groups = "drop")
+}
+```
+
+## 3.11 get_ckd_stage — numeric KDIGO stage
+
+Ported unchanged from ICI-CKD §3.3. Returns 1–5 rather than the labelled factor
+used for Table 1 (`ckd_stage_cre` / `ckd_stage_cre_cys`), because the CKD
+outcome logic below compares stages numerically.
+
+```{r}
+#| label: fn-get-ckd-stage
+get_ckd_stage <- function(egfr) {
+  if (is.na(egfr))      return(NA)
+  else if (egfr >= 90)  return(1)
+  else if (egfr >= 60)  return(2)
+  else if (egfr >= 30)  return(3)
+  else if (egfr >= 15)  return(4)
+  else                  return(5)
+}
+```
+
 ---
 
 # 4 Data Loading
@@ -696,11 +919,39 @@ dia <- read.table('/Users/to909/Partners HealthCare Dropbox/Tianqi Ouyang/Thorac
   sep = "|", fill = TRUE, quote = "", header = TRUE)
 dia$Date <- as.Date(dia$Date, "%m/%d/%Y")
 
-# Labs (HGB, PLT, ALB, CRE, K, MG, NA — single pull)
-lab <- read.table('/Users/to909/Partners HealthCare Dropbox/Tianqi Ouyang/Thoracic Oncology Spreadsheets/Carboplatin Paper/RPDR 2026-03-19/mes98_03182614492143216_Lab.txt',
-  sep = "|", fill = TRUE, quote = "", header = TRUE) %>%
-  select(EMPI, Seq_Date_Time, Result, Group_Id, Test_Description)
+# Labs — TWO pulls, combined.
+#
+# CREATININE comes from the newer 2022P001091 pull (mes98_0728261259...), which
+# is a creatinine-only extract: 48,843 CRE rows vs 46,078 in the original pull,
+# same 973 EMPIs, same 1989-2026 span. The extra rows matter here because the
+# longitudinal eGFR / CKD / AKI outcomes below are built from serial creatinine.
+#
+# HGB / PLT / ALB / GHBA1C are NOT in that pull, so they still come from the
+# original 2026-03-19 extract. It is the only source for them, and the anemia
+# and thrombocytopenia outcomes depend on HGB and PLT.
+cre_new_path <- paste0('/Users/to909/Partners HealthCare Dropbox/Tianqi Ouyang/',
+                       'Jiaxuan/RPDR/2022P001091_mes98_072826125900866852/',
+                       'mes98_072826125900866852_Lab.txt')
+lab_old_path <- paste0('/Users/to909/Partners HealthCare Dropbox/Tianqi Ouyang/',
+                       'Thoracic Oncology Spreadsheets/Carboplatin Paper/',
+                       'RPDR 2026-03-19/mes98_03182614492143216_Lab.txt')
+
+lab_cre <- read.table(cre_new_path, sep = "|", fill = TRUE, quote = "",
+                      header = TRUE) %>%
+  select(EMPI, Seq_Date_Time, Result, Group_Id, Test_Description) %>%
+  filter(Group_Id == "CRE")
+
+lab_other <- read.table(lab_old_path, sep = "|", fill = TRUE, quote = "",
+                        header = TRUE) %>%
+  select(EMPI, Seq_Date_Time, Result, Group_Id, Test_Description) %>%
+  filter(Group_Id != "CRE")
+
+lab <- bind_rows(lab_cre, lab_other)
 lab$Seq_Date_Time <- as.Date(lab$Seq_Date_Time, "%m/%d/%Y")
+
+cat("CRE rows (new 2022P001091 pull):", nrow(lab_cre), "\n")
+cat("Non-CRE rows (original 2026-03-19 pull):", nrow(lab_other), "\n")
+print(table(lab$Group_Id))
 
 # Medications
 med <- read.table('/Users/to909/Partners HealthCare Dropbox/Tianqi Ouyang/Thoracic Oncology Spreadsheets/Carboplatin Paper/RPDR 2026-03-19/mes98_03182614492143216_Med.txt',
@@ -1645,7 +1896,217 @@ final_master <- final_master %>%
 # via complete-case analysis anyway. Removing them up front keeps the cohort
 # denominator consistent across tables and plots.
 final_master <- final_master %>% filter(record_id != 911)
+```
 
+## 5.16 Longitudinal creatinine → eGFR trajectory & CKD outcomes
+
+Ported from the ICI-CKD project (§5.7), re-anchored to this project's index date
+and baseline creatinine:
+
+| ICI-CKD | Ritu project |
+|---|---|
+| `ICI_Dose_Date` | `baseline_sample_date` (first platinum dose) |
+| `pre_CRE_180days` | `pre_CRE_45days` (this pipeline's pre-baseline window) |
+
+Every creatinine drawn **after** the baseline draw is converted to an eGFR with
+the same race-free 2021 CKD-EPI function already used for `baseline_cre_egfr`,
+and compared against the patient's own baseline eGFR.
+
+**These are long-horizon outcomes, unlike everything else in this pipeline.** A
+qualifying episode must be *sustained for ≥ 90 days*, so unlike the 90-day
+anemia / thrombocytopenia / AKI / hospitalization outcomes, these use the full
+length of RPDR creatinine follow-up (through 2026) and are not censored at day
+90.
+
+```{r}
+#| label: clean-longitudinal-cre
+# Vectorised CKD-EPI creatinine eGFR (function defined in Section 4.8)
+gfr_calc <- Vectorize(ckd_epi_gfr)
+
+cre_long <- master_lab %>%
+  filter(Group_Id == "CRE", grepl("^\\d+\\.\\d+$", Result)) %>%
+  filter(!is.na(Result)) %>%
+  mutate(Result = as.numeric(Result)) %>%
+  select(EMPI, Seq_Date_Time, Result) %>%
+  inner_join(final_master %>%
+               select(EMPI, male, age, pre_CRE_45days, pre_CRE_45days_date),
+             by = "EMPI") %>%
+  filter(!is.na(pre_CRE_45days_date), Seq_Date_Time > pre_CRE_45days_date) %>%
+  rename(cre = Result, eGFR_CRE_date = Seq_Date_Time,
+         eGFR_CRE_baseline_date = pre_CRE_45days_date)
+
+cre_long$eGFR_CRE_baseline <- gfr_calc(cre_long$pre_CRE_45days,
+                                       cre_long$male, cre_long$age)
+cre_long$eGFR_CRE          <- gfr_calc(cre_long$cre, cre_long$male, cre_long$age)
+
+egfr_traj <- cre_long %>%
+  select(EMPI, eGFR_CRE_baseline, eGFR_CRE_baseline_date,
+         eGFR_CRE, eGFR_CRE_date) %>%
+  mutate(pct_drop = round((eGFR_CRE_baseline - eGFR_CRE) / eGFR_CRE_baseline, 3)) %>%
+  arrange(EMPI, eGFR_CRE_date)
+
+cat("Patients with >=1 post-baseline creatinine:", dplyr::n_distinct(egfr_traj$EMPI), "\n")
+cat("Post-baseline creatinine measurements:", nrow(egfr_traj), "\n")
+
+ckd_incidence <- make_ckd_outcome_date(
+  data = egfr_traj, id_var = EMPI, date_var = eGFR_CRE_date,
+  condition_expr = pct_drop > 0.30 & eGFR_CRE < 60 & eGFR_CRE_baseline >= 60,
+  days_threshold = 90, outcome_name = "ckd_incidence")
+
+ckd_progression <- make_ckd_outcome_date(
+  data = egfr_traj, id_var = EMPI, date_var = eGFR_CRE_date,
+  condition_expr = eGFR_CRE < 60 & eGFR_CRE_baseline < 60,
+  days_threshold = 90, outcome_name = "ckd_progression")
+
+eskd_defination_1 <- make_ckd_outcome_date(
+  data = egfr_traj, id_var = EMPI, date_var = eGFR_CRE_date,
+  condition_expr = eGFR_CRE < 10,
+  days_threshold = 90, outcome_name = "eskd_defination_1")
+
+# Baseline numeric KDIGO stage (1-5) from the same baseline eGFR the outcomes use
+baseline_stage <- egfr_traj %>%
+  distinct(EMPI, eGFR_CRE_baseline) %>%
+  mutate(ckd_stage_baseline = sapply(eGFR_CRE_baseline, get_ckd_stage)) %>%
+  select(EMPI, eGFR_CRE_baseline, ckd_stage_baseline)
+
+# Last creatinine date -> censoring time for the long-horizon outcomes
+last_cre <- master_lab %>%
+  filter(Group_Id == "CRE", grepl("^\\d+\\.\\d+$", Result)) %>%
+  filter(!is.na(Result)) %>%
+  arrange(EMPI, desc(Seq_Date_Time)) %>%
+  distinct(EMPI, .keep_all = TRUE) %>%
+  rename(last_cre_date = Seq_Date_Time) %>%
+  select(EMPI, last_cre_date)
+
+final_master <- final_master %>%
+  left_join(ckd_incidence,     by = "EMPI") %>%
+  left_join(ckd_progression,   by = "EMPI") %>%
+  left_join(eskd_defination_1, by = "EMPI") %>%
+  left_join(baseline_stage,    by = "EMPI") %>%
+  left_join(last_cre,          by = "EMPI") %>%
+  mutate(across(c(ckd_incidence, ckd_progression, eskd_defination_1),
+                ~ ifelse(is.na(.x), 0L, as.integer(.x))))
+```
+
+## 5.17 AKI from serial creatinine (KDIGO-style)
+
+Ported from ICI-CKD §5.11 / §3.8, anchored at `baseline_sample_date`.
+
+> **Distinct from the existing 90-day AKI variables.** `AKI_g2_90days`,
+> `AKI_g3_90days` and `AKI_kdigo_90days` are CTCAE/KDIGO grades restricted to the
+> 90-day window and referenced to `pre_CRE_45days`. `aki` here is the ICI-CKD
+> definition — a rolling comparison against each patient's own recent
+> creatinine, over the **entire** post-baseline record. Both are kept; they
+> answer different questions and will not agree.
+
+```{r}
+#| label: clean-aki-serial
+aki_df <- create_aki(master_lab,
+                     index_date = baseline_sample_date,
+                     Group_Id   = EMPI,
+                     median_window_days = 90,
+                     lowest_window_days = 2)
+
+final_master <- final_master %>%
+  left_join(aki_df, by = "EMPI") %>%
+  mutate(
+    aki      = ifelse(is.na(aki), 0L, as.integer(aki)),
+    aki_days = as.numeric(aki_date - baseline_sample_date)
+  )
+
+cat("AKI (serial-creatinine definition):", sum(final_master$aki == 1), "of",
+    nrow(final_master), "\n")
+```
+
+## 5.18 ESRD / kidney transplant from RPDR diagnoses
+
+Ported from ICI-CKD §5.4 / §8.1. The ICD-9 / ICD-10 list is reproduced exactly.
+
+> The new 2022P001091 RPDR pull is **creatinine only** — it contains no `Dia`
+> file — so these diagnosis-based variables are read from the original
+> 2026-03-19 diagnosis extract, which is the only source for them.
+
+Note that `dia_list_icd()` matches with `grepl()` on the joined code vector, so
+matching is by substring and `.` is a regex wildcard: `T86.1` also captures
+`T86.10`–`T86.19`. This is the source project's behaviour, kept unchanged.
+
+```{r}
+#| label: clean-esrd-kt
+esrd_kt_codes <- c("585.6","N18.6","V45.1","Z94.0","Z99.2","996.81","T86.1","T86.10",
+                   "T86.11","T86.12","T86.13","T86.19","N18.0","V56.1","Z49.0","Z49.1","Z49.2")
+
+esrd_kt_list <- dia_list_icd(master_dia, icd_code = esrd_kt_codes,
+                             index_date = baseline_sample_date)
+
+esrd_kt_after <- dia_list_icd_after_index(master_dia, icd_code = esrd_kt_codes,
+                                          index_date = baseline_sample_date) %>%
+  rename(esrd_kt_after_ici_date = first_event_date)
+
+final_master <- final_master %>%
+  mutate(esrd_kt = ifelse(EMPI %in% esrd_kt_list$EMPI, 1L, 0L)) %>%
+  left_join(esrd_kt_after, by = "EMPI") %>%
+  mutate(esrd_kt_after_ici = ifelse(!is.na(esrd_kt_after_ici_date), 1L, 0L))
+
+cat("esrd_kt (at/before baseline):", sum(final_master$esrd_kt == 1), "\n")
+cat("esrd_kt_after_ici (after baseline):", sum(final_master$esrd_kt_after_ici == 1), "\n")
+```
+
+## 5.19 CKD / ESKD composites & time variables
+
+Ported from ICI-CKD §5.14. Variable names are kept identical to the source
+project — including `eskd_defination_1` and the `_after_ici` suffix on the ESRD
+variables — so the two projects stay directly comparable. In this project the
+`_after_ici` suffix means "after `baseline_sample_date`", i.e. after first
+platinum.
+
+```{r}
+#| label: clean-ckd-composites
+final_master <- final_master %>%
+  mutate(
+    eskd_composite = ifelse(esrd_kt_after_ici == 1 | eskd_defination_1 == 1, 1L, 0L),
+    eskd_composite = ifelse(is.na(eskd_composite), 0L, eskd_composite),
+    eskd_composite_date = pmin(esrd_kt_after_ici_date, eskd_defination_1_date,
+                               na.rm = TRUE),
+
+    time_to_eskd_composite  = as.numeric(eskd_composite_date  - baseline_sample_date),
+    time_to_ckd_incidence   = as.numeric(ckd_incidence_date   - baseline_sample_date),
+    time_to_ckd_progression = as.numeric(ckd_progression_date - baseline_sample_date),
+
+    ckd_composite = ifelse(eskd_composite == 1 | ckd_incidence == 1 |
+                           ckd_progression == 1, 1L, 0L),
+    ckd_composite = ifelse(is.na(ckd_composite), 0L, ckd_composite),
+    time_to_ckd_composite = pmin(time_to_eskd_composite,
+                                 time_to_ckd_incidence,
+                                 time_to_ckd_progression, na.rm = TRUE),
+
+    last_cre_days  = as.numeric(last_cre_date - baseline_sample_date),
+    aki_before_ckd = ifelse(!is.na(aki_days) & !is.na(time_to_ckd_composite) &
+                            aki_days <= time_to_ckd_composite, 1L, 0L)
+  )
+
+ckd_summary <- tibble::tibble(
+  Outcome = c("AKI (serial creatinine)", "CKD incidence", "CKD progression",
+              "ESKD (eGFR < 10, sustained)", "ESRD/KT after baseline",
+              "ESKD composite", "CKD composite"),
+  n = c(sum(final_master$aki == 1),
+        sum(final_master$ckd_incidence == 1),
+        sum(final_master$ckd_progression == 1),
+        sum(final_master$eskd_defination_1 == 1),
+        sum(final_master$esrd_kt_after_ici == 1),
+        sum(final_master$eskd_composite == 1),
+        sum(final_master$ckd_composite == 1))
+) %>%
+  mutate(pct = round(100 * n / nrow(final_master), 1))
+
+knitr::kable(ckd_summary,
+  caption = paste0("Long-horizon kidney outcomes, full pipeline cohort (N = ",
+                   nrow(final_master), ") before the Local/Early restriction"))
+```
+
+## 5.20 Ritu cohort restriction & save
+
+```{r}
+#| label: clean-ritu-restriction
 # --- Ritu cohort restriction: drop advanced/metastatic disease ---------------
 # tumor_stage: 1 = Local/Early (stage I-II / local / neoadjuvant),
 #              2 = Advanced/Metastatic (stage III-IV).

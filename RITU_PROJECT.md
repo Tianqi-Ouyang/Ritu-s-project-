@@ -5,8 +5,15 @@ platinum-based chemotherapy, restricted to **locally staged / early-stage diseas
 
 This project is a direct derivative of the Jiaxuan project. Every analysis,
 table, figure, model specification and output format is carried over unchanged.
-The single substantive difference is the cohort: all advanced/metastatic
-patients are excluded.
+The defining difference is the cohort: all advanced/metastatic patients are
+excluded, leaving 323.
+
+Since then the project has also gained, on request and documented in §2:
+KDIGO CKD stage in Table 1 (§2.5); creatinine sourced from the newer
+2022P001091 RPDR pull (§2.6); and the long-horizon CKD / ESKD / AKI outcome
+family ported from the ICI-CKD project (§2.7). None of these alters the
+Jiaxuan-derived models — the ported kidney outcomes are descriptive additions
+that sit outside the 90-day competing-risks framework.
 
 ---
 
@@ -60,7 +67,7 @@ Inherited from the Jiaxuan pipeline, then one additional step:
 
 ## 2 What changed relative to the Jiaxuan project
 
-Four kinds of change were made. Nothing else in the analysis was touched.
+Six kinds of change were made. Nothing else in the analysis was touched.
 
 ### 2.1 Cohort filter
 
@@ -171,7 +178,88 @@ G3b and G4 fall below the project's default small-cell threshold of 11, and the
 site is public. Collapsing the bottom into a single "G3b–G5 (< 45)" row is a
 one-line change if that is preferred.
 
-### 2.6 Explicitly unchanged
+### 2.6 Creatinine switched to the 2022P001091 RPDR pull
+
+`ritu_data.qmd` §4.7 now reads labs from **two** extracts:
+
+| Extract | Supplies |
+|---|---|
+| `2022P001091_mes98_072826125900866852` (Aug 2026) | **CRE only** — 48,843 rows |
+| `RPDR 2026-03-19/mes98_03182614492143216` | HGB, PLT, ALB, GHBA1C — 128,156 rows; plus all `Dia` and `Med` |
+
+The newer pull is a **creatinine-only** extract. It contains no `Dia` or `Med`
+file and none of HGB / PLT / ALB / GHBA1C, so it cannot be used for "all labs"
+literally — doing that would delete `pre_HGB_45days` and `pre_PLT_45days` and
+with them the anemia, thrombocytopenia and composite grade 2/3 AE outcomes.
+Creatinine therefore comes from the new pull and everything else from the
+original one.
+
+Both extracts cover the same 973 EMPIs over the same 1989–2026 span. The newer
+one has ~2,800 more creatinine values, which is what the longitudinal eGFR / CKD
+/ AKI outcomes in §2.7 are built from.
+
+The cohort flow is unchanged: 946 → 944 after the no-RPDR-labs exclusion (same
+two records, 161 and 352) → 943 after dropping record 911 → **323** Local/Early.
+Record 911 still has no creatinine within 45 days of baseline in *either* pull,
+so its exclusion and the Section 6.1 note remain correct.
+
+A handful of `pre_CRE_45days` values shift slightly because the newer pull has
+denser creatinine sampling; that is why `ckd_incidence` / `ckd_progression`
+differ by one patient from a run against the old pull.
+
+### 2.7 Long-horizon kidney outcomes ported from the ICI-CKD project
+
+Ported from [`Kavita ICI CKD/data_management.qmd`](https://tianqi-ouyang.github.io/ICI-CKD-/data_management.html)
+into `ritu_data.qmd` §§3.8–3.11 (functions) and §§5.16–5.19 (derivations).
+Function bodies are copied unchanged; only the anchor differs:
+
+| ICI-CKD | Ritu project |
+|---|---|
+| `ICI_Dose_Date` | `baseline_sample_date` (first platinum dose) |
+| `pre_CRE_180days` | `pre_CRE_45days` (this pipeline's pre-baseline window) |
+
+Variable names are kept identical to the source project — including the
+`eskd_defination_1` spelling and the `_after_ici` suffix — so the two projects
+stay directly comparable. Here `_after_ici` means "after first platinum".
+
+Results in the 323 Local/Early patients:
+
+| Variable | n (%) |
+|---|---|
+| `aki` | 63 (19.5 %) |
+| `ckd_incidence` | 15 (4.6 %) |
+| `ckd_progression` | 20 (6.2 %) |
+| `eskd_defination_1` | 1 (0.3 %) |
+| `esrd_kt` (at/before baseline) | 1 (0.3 %) |
+| `esrd_kt_after_ici` | 1 (0.3 %) |
+| `eskd_composite` | 1 (0.3 %) |
+| `ckd_composite` | 35 (10.8 %) |
+
+**Time horizon.** Every other outcome in this project is censored at 90 days.
+These are not: a qualifying CKD episode must be *sustained for ≥ 90 days*, so
+they run over the whole RPDR creatinine record (days from baseline to last
+creatinine: median 446, max 1167; no patient has zero post-baseline creatinine).
+Mixing them into the existing 90-day competing-risks models would require its own
+censoring and competing-event decisions, so they are **reported descriptively
+only** — Section 2.2 of the whole-cohort page, Section 3.2 of the two
+carboplatin pages — and appear in no model. `esrd_kt` is the one exception: it is
+a baseline comorbidity and is a Table 1 row.
+
+**`aki` is not the existing AKI variable.** `AKI_g2_90days` / `AKI_g3_90days` /
+`AKI_kdigo_90days` grade against a fixed `pre_CRE_45days` reference inside 90
+days. `aki` compares each creatinine against the patient's own preceding 90-day
+median (or 2-day low) across the entire record. In the whole cohort they agree on
+19 patients, `aki` alone flags 44, `AKI_kdigo_90days` alone flags 14, and only 18
+of the 63 `aki` events fall inside 90 days (median time to AKI 144 days). Both
+are kept; they answer different questions.
+
+**ICD matching caveat.** `dia_list_icd()` matches with `grepl()` on the joined
+code vector, so matching is by substring and `.` acts as a regex wildcard —
+`T86.1` also captures `T86.10`–`T86.19`. This is the source project's behaviour,
+kept unchanged. Diagnoses come from the original 2026-03-19 `Dia` extract, the
+only one available.
+
+### 2.8 Explicitly unchanged
 
 - Primary exposure: `egfr_diff_pct_per10` — eGFR difference (%) per 10-percentage-point decline
 - Sensitivity exposure: `egfr_diff_pct_sens_per10` (CKD-EPI 2012 CysC vs CKD-EPI 2021 Cr)
