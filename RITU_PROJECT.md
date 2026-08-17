@@ -235,15 +235,33 @@ Results in the 323 Local/Early patients:
 | `eskd_composite` | 1 (0.3 %) |
 | `ckd_composite` | 35 (10.8 %) |
 
+**Where they appear.** All of them are **Table 1 rows** on all three analysis
+pages, appended after the eGFR block:
+
+```
+eGFR_CRE_baseline, ckd_stage_baseline, last_cre_days,
+aki, ckd_incidence, ckd_progression, eskd_defination_1,
+esrd_kt_after_ici, eskd_composite, ckd_composite
+```
+
+plus `esrd_kt` in the comorbidity row. `ckd_stage_baseline` is shown as a
+labelled factor; note that `get_ckd_stage()` collapses G3a/G3b into a single
+stage 3, unlike `ckd_stage_cre` / `ckd_stage_cre_cys` from §2.5, which keep them
+apart. One patient has no post-baseline creatinine and shows as *Unknown* for
+`eGFR_CRE_baseline` and `ckd_stage_baseline`.
+
+They also keep a dedicated section — 2.2 on the whole-cohort page, 3.2 on the two
+carboplatin pages — which carries what Table 1 cannot: median time to each event,
+the length of creatinine follow-up, and the cross-tabulation of `aki` against
+`AKI_kdigo_90days`.
+
 **Time horizon.** Every other outcome in this project is censored at 90 days.
 These are not: a qualifying CKD episode must be *sustained for ≥ 90 days*, so
 they run over the whole RPDR creatinine record (days from baseline to last
-creatinine: median 446, max 1167; no patient has zero post-baseline creatinine).
-Mixing them into the existing 90-day competing-risks models would require its own
-censoring and competing-event decisions, so they are **reported descriptively
-only** — Section 2.2 of the whole-cohort page, Section 3.2 of the two
-carboplatin pages — and appear in no model. `esrd_kt` is the one exception: it is
-a baseline comorbidity and is a Table 1 row.
+creatinine: median 446, max 1167). Being Table 1 rows they are **descriptive
+only** — they are in no Fine-Gray, cause-specific or Cox model, because mixing a
+full-follow-up outcome into the 90-day competing-risks framework needs its own
+censoring and competing-event decisions.
 
 **`aki` is not the existing AKI variable.** `AKI_g2_90days` / `AKI_g3_90days` /
 `AKI_kdigo_90days` grade against a fixed `pre_CRE_45days` reference inside 90

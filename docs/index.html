@@ -512,8 +512,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </tr>
 </tbody>
 </table>
-<p><code>esrd_kt</code> (ESRD / KT <strong>at or before</strong> baseline, n = 1) is a Table 1 row.</p>
-<p>These are reported descriptively and are <strong>not</strong> in any Fine-Gray, cause-specific or Cox model — mixing a full-follow-up outcome into the 90-day competing-risks framework would need its own censoring and competing-event decisions.</p>
+<p>All of the above are <strong>Table 1 rows</strong> on all three analysis pages, together with <code>esrd_kt</code> (ESRD / KT at or before baseline, n = 1), <code>eGFR_CRE_baseline</code>, <code>ckd_stage_baseline</code> and <code>last_cre_days</code>. They also keep a dedicated section — 2.2 on the whole-cohort page, 3.2 on the carboplatin pages — carrying the median time to each event, the length of creatinine follow-up, and the <code>aki</code> vs <code>AKI_kdigo_90days</code> cross-tabulation that Table 1 cannot show.</p>
+<p>They are descriptive only: <strong>not</strong> in any Fine-Gray, cause-specific or Cox model, because mixing a full-follow-up outcome into the 90-day competing-risks framework would need its own censoring and competing-event decisions.</p>
 <p><code>aki</code> is a different variable from the existing <code>AKI_g2_90days</code> / <code>AKI_kdigo_90days</code>: it compares each creatinine against the patient’s own preceding 90-day median across the whole record, not against a fixed pre-baseline value inside 90 days. In the whole cohort they agree on 19 patients, <code>aki</code> alone flags 44, and <code>AKI_kdigo_90days</code> alone flags 14.</p>
 </section>
 </section>
@@ -614,11 +614,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </tr>
 <tr class="odd">
 <td><code>ckd_stage_cre</code></td>
-<td>KDIGO G-stage from <code>baseline_cre_egfr</code></td>
+<td>KDIGO G-stage from <code>baseline_cre_egfr</code> (G3a / G3b kept apart)</td>
 </tr>
 <tr class="even">
 <td><code>ckd_stage_cre_cys</code></td>
-<td>KDIGO G-stage from <code>ckd_epi_gfr_cre_cys</code></td>
+<td>KDIGO G-stage from <code>ckd_epi_gfr_cre_cys</code> (G3a / G3b kept apart)</td>
+</tr>
+<tr class="odd">
+<td><code>eGFR_CRE_baseline</code></td>
+<td>CKD-EPI creatinine eGFR at <code>pre_CRE_45days</code> — the baseline the CKD outcomes are referenced to</td>
+</tr>
+<tr class="even">
+<td><code>ckd_stage_baseline</code></td>
+<td>KDIGO stage from <code>eGFR_CRE_baseline</code>, ICI-CKD convention (G3a + G3b collapsed into one stage 3)</td>
 </tr>
 </tbody>
 </table>

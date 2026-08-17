@@ -307,6 +307,12 @@ ggplot() +
 ```{r}
 #| label: ritu-table1-carbo
 dat %>%
+  # Show the numeric KDIGO stage as a labelled factor for Table 1. get_ckd_stage()
+  # collapses G3a/G3b into a single stage 3, unlike ckd_stage_cre / ckd_stage_cre_cys.
+  mutate(ckd_stage_baseline = droplevels(
+           factor(ckd_stage_baseline, levels = 1:5,
+                  labels = c("G1 (>=90)", "G2 (60-89)", "G3 (30-59)",
+                             "G4 (15-29)", "G5 (<15)")))) %>%
   dplyr::select(
     age, age_cat, sex, race, ethnicity, cancer_type_cat_7,
     carbo_AUC, carbo_AUC_cat,
@@ -319,7 +325,14 @@ dat %>%
     baseline_cre_egfr, baseline_cys_c_egfr,
     ckd_epi_gfr_cre_cys, ckd_epi_gfr_cre_cys_unindex,
     ckd_stage_cre, ckd_stage_cre_cys,
-    cockcroft, egfr_ratio
+    cockcroft, egfr_ratio,
+    # Long-horizon kidney variables (Sections 5.16-5.19 of ritu_data.qmd).
+    # eGFR_CRE_baseline / ckd_stage_baseline are baseline; last_cre_days is
+    # creatinine follow-up length; the rest are outcomes over that full window,
+    # NOT censored at 90 days like every other outcome in this project.
+    eGFR_CRE_baseline, ckd_stage_baseline, last_cre_days,
+    aki, ckd_incidence, ckd_progression, eskd_defination_1,
+    esrd_kt_after_ici, eskd_composite, ckd_composite
   ) %>%
   tbl_summary(
     statistic = list(age ~ "{mean} ({sd})")

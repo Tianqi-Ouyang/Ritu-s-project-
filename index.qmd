@@ -151,12 +151,16 @@ follow-up (median 446 days, max 1167).
 | `eskd_composite` | `esrd_kt_after_ici == 1 \| eskd_defination_1 == 1` | 1 (0.3 %) |
 | `ckd_composite` | `eskd_composite == 1 \| ckd_incidence == 1 \| ckd_progression == 1` | 35 (10.8 %) |
 
-`esrd_kt` (ESRD / KT **at or before** baseline, n = 1) is a Table 1 row.
+All of the above are **Table 1 rows** on all three analysis pages, together with
+`esrd_kt` (ESRD / KT at or before baseline, n = 1), `eGFR_CRE_baseline`,
+`ckd_stage_baseline` and `last_cre_days`. They also keep a dedicated section —
+2.2 on the whole-cohort page, 3.2 on the carboplatin pages — carrying the median
+time to each event, the length of creatinine follow-up, and the `aki` vs
+`AKI_kdigo_90days` cross-tabulation that Table 1 cannot show.
 
-These are reported descriptively and are **not** in any Fine-Gray,
-cause-specific or Cox model — mixing a full-follow-up outcome into the 90-day
-competing-risks framework would need its own censoring and competing-event
-decisions.
+They are descriptive only: **not** in any Fine-Gray, cause-specific or Cox model,
+because mixing a full-follow-up outcome into the 90-day competing-risks framework
+would need its own censoring and competing-event decisions.
 
 `aki` is a different variable from the existing `AKI_g2_90days` /
 `AKI_kdigo_90days`: it compares each creatinine against the patient's own
@@ -197,8 +201,10 @@ outcomes are built from.
 | `ckd_epi_gfr_cre_cys` | CKD-EPI 2012 combined creatinine + cystatin C eGFR (mL/min/1.73m²) |
 | `ckd_epi_gfr_cre_cys_unindex` | Combined CKD-EPI eGFR adjusted for BSA (mL/min) |
 | `cockcroft` | Cockcroft-Gault creatinine clearance |
-| `ckd_stage_cre` | KDIGO G-stage from `baseline_cre_egfr` |
-| `ckd_stage_cre_cys` | KDIGO G-stage from `ckd_epi_gfr_cre_cys` |
+| `ckd_stage_cre` | KDIGO G-stage from `baseline_cre_egfr` (G3a / G3b kept apart) |
+| `ckd_stage_cre_cys` | KDIGO G-stage from `ckd_epi_gfr_cre_cys` (G3a / G3b kept apart) |
+| `eGFR_CRE_baseline` | CKD-EPI creatinine eGFR at `pre_CRE_45days` — the baseline the CKD outcomes are referenced to |
+| `ckd_stage_baseline` | KDIGO stage from `eGFR_CRE_baseline`, ICI-CKD convention (G3a + G3b collapsed into one stage 3) |
 
 Only `ckd_epi_gfr_cre_cys_unindex` is capped at 125 mL/min; the indexed value
 and `cockcroft` are uncapped. Uncapped values feed the eGFR difference; capped
