@@ -1,17 +1,18 @@
-# Ritu Project — Local/Early Stage Cohort
+# Ritu Project
 
 Creatinine-to-cystatin C discordance and adverse events in patients receiving
-platinum-based chemotherapy, restricted to **locally staged / early-stage disease**.
+platinum-based chemotherapy.
 
-This project is a direct derivative of the Jiaxuan project. Every analysis,
-table, figure, model specification and output format is carried over unchanged.
-The defining difference is the cohort: all advanced/metastatic patients are
-excluded, leaving 323.
+A direct derivative of the Jiaxuan project. Every analysis, table, figure, model
+specification and output format is carried over unchanged. The project runs at
+**two cohort levels off one pipeline**: the **entire cohort** (N = 943, all
+tumour stages) and the **Local/Early** cohort (N = 323, advanced/metastatic
+excluded), which was the original point of the project.
 
-Since then the project has also gained, on request and documented in §2:
-KDIGO CKD stage in Table 1 (§2.5); creatinine sourced from the newer
-2022P001091 RPDR pull (§2.6); and the long-horizon CKD / ESKD / AKI outcome
-family ported from the ICI-CKD project (§2.7). None of these alters the
+It has also gained, on request and documented in §2: KDIGO CKD stage in Table 1
+(§2.5); creatinine sourced from the newer 2022P001091 RPDR pull (§2.6); the
+long-horizon CKD / ESKD / AKI outcome family ported from the ICI-CKD project
+(§2.7); and the entire-cohort page (§2.8). None of these alters the
 Jiaxuan-derived models — the ported kidney outcomes are descriptive additions
 that sit outside the 90-day competing-risks framework.
 
@@ -19,7 +20,12 @@ that sit outside the 90-day competing-risks framework.
 
 ## 1 Cohort
 
-### 1.1 Restriction
+The pipeline produces two analytic datasets in a single run. `ritu_full_master.rds`
+(N = 943) is saved immediately before the stage restriction below;
+`ritu_final_master.rds` (N = 323) immediately after it. Every variable definition
+is identical between them.
+
+### 1.1 The Local/Early restriction
 
 ```r
 final_master <- final_master %>%
@@ -45,29 +51,35 @@ derivation is numerically identical to restricting before it.
 
 ### 1.2 Cohort sizes
 
-| Cohort | Jiaxuan (all stages) | Ritu (Local/Early) |
+| Page | Cohort | N |
 |---|---|---|
-| Whole cohort | 943 | **323** |
-| Carboplatin | 596 | **190** |
-| Carboplatin AUC ≥ 3 | 463 | **143** |
-| Cisplatin (not analysed separately) | 347 | 133 |
+| `ritu_entire.qmd` | all platinum, **all stages** | **943** |
+| `ritu_whole.qmd` | all platinum, Local/Early | **323** |
+| `ritu_carbo.qmd` | carboplatin, Local/Early | **190** |
+| `ritu_carbo_auc3.qmd` | carboplatin AUC ≥ 3, Local/Early | **143** |
+
+Entire cohort composition: 323 Local/Early + 620 Advanced/Metastatic;
+596 carboplatin + 347 cisplatin. Within the Local/Early 323: 190 carboplatin,
+133 cisplatin. See §2.8 for how the two levels differ analytically.
 
 ### 1.3 Exclusion flow
 
 Inherited from the Jiaxuan pipeline, then one additional step:
 
-1. REDCap records restricted to EMPIs present in `N=596 for tianqi.xlsx`
-2. Patients with no matching RPDR lab records excluded
+1. REDCap records restricted to EMPIs present in `N=596 for tianqi.xlsx` → 946
+2. Patients with no matching RPDR lab records excluded (2) → 944
 3. Missing baseline cystatin C (`cys_c_baseline` = NA) excluded
 4. Missing platinum group (`platin_group` = NA) excluded
 5. Record 911 dropped (all RPDR pre-baseline labs outside the 45-day window)
-6. **New — `tumor_stage != "Local/Early"` excluded (620 patients)**
+   → **943, saved as `ritu_full_master.rds` (entire cohort)**
+6. **`tumor_stage != "Local/Early"` excluded (620 patients)
+   → 323, saved as `ritu_final_master.rds` (Local/Early cohort)**
 
 ---
 
 ## 2 What changed relative to the Jiaxuan project
 
-Six kinds of change were made. Nothing else in the analysis was touched.
+Seven kinds of change were made. Nothing else in the analysis was touched.
 
 ### 2.1 Cohort filter
 
@@ -277,7 +289,49 @@ code vector, so matching is by substring and `.` acts as a regex wildcard —
 kept unchanged. Diagnoses come from the original 2026-03-19 `Dia` extract, the
 only one available.
 
-### 2.8 Explicitly unchanged
+### 2.8 Entire-cohort page added alongside the Local/Early pages
+
+The project now runs at **two cohort levels off one pipeline run**:
+
+| Page | Cohort | Reads | N |
+|---|---|---|---|
+| `ritu_entire.qmd` | all platinum, **all stages** | `ritu_full_master.rds` | **943** |
+| `ritu_whole.qmd` | all platinum, Local/Early | `ritu_final_master.rds` | 323 |
+| `ritu_carbo.qmd` | carboplatin, Local/Early | `ritu_final_master.rds` | 190 |
+| `ritu_carbo_auc3.qmd` | carboplatin AUC ≥ 3, Local/Early | `ritu_final_master.rds` | 143 |
+
+`ritu_data.qmd` §5.20 saves `ritu_full_master.rds` immediately **before** the
+stage restriction and `ritu_final_master.rds` immediately **after** it, so the
+two levels are identical in every variable definition — same creatinine pull,
+same CKD / ESKD / AKI family, same Table 1 rows.
+
+`ritu_entire.qmd` is `ritu_whole.qmd` with three changes:
+
+1. reads `ritu_full_master.rds`
+2. **`tumor_stage` restored** to Table 1 and to all 10 adjuster sets — it is
+   constant in the Local/Early cohort and dropped there (§2.2), but it varies in
+   the entire cohort, so the entire-cohort model specification is the same as the
+   Jiaxuan project's
+3. separate `docs/tables/entire` and `docs/pptx/entire` output directories
+
+Event counts are roughly 3× the Local/Early ones, which materially changes what
+is interpretable:
+
+| Outcome | Entire (943) | Local/Early (323) |
+|---|---|---|
+| `aki` | 240 (25.5 %) | 63 (19.5 %) |
+| `ckd_composite` | 108 (11.5 %) | 35 (10.8 %) |
+| `ckd_progression` | 61 (6.5 %) | 20 (6.2 %) |
+| `ckd_incidence` | 46 (4.9 %) | 15 (4.6 %) |
+| `esrd_kt` (baseline) | 5 (0.5 %) | 1 (0.3 %) |
+| `eskd_composite` | 2 (0.2 %) | 1 (0.3 %) |
+| **90-day death** | **41** | **2** |
+
+The 90-day death models are the clearest difference: degenerate at 323 (§3),
+actually estimable at 943 — though 41 events against ~21 covariates is still
+about 2 events per covariate, so read them as exploratory.
+
+### 2.9 Explicitly unchanged
 
 - Primary exposure: `egfr_diff_pct_per10` — eGFR difference (%) per 10-percentage-point decline
 - Sensitivity exposure: `egfr_diff_pct_sens_per10` (CKD-EPI 2012 CysC vs CKD-EPI 2021 Cr)
@@ -372,16 +426,18 @@ Ritu project/
 ├── custom.scss              theme overrides (copied from Jiaxuan project)
 ├── index.qmd                project summary page
 ├── qmd/
-│   ├── ritu_data.qmd        data management → ritu_final_master.rds
+│   ├── ritu_data.qmd        data management → both .rds files below
+│   ├── ritu_entire.qmd      entire cohort, all stages (N = 943)
 │   ├── ritu_whole.qmd       whole Local/Early cohort (N = 323)
-│   ├── ritu_carbo.qmd       carboplatin (N = 190)
-│   └── ritu_carbo_auc3.qmd  carboplatin AUC ≥ 3 (N = 143)
-├── ritu_final_master.rds    analytic dataset (gitignored — contains PHI)
+│   ├── ritu_carbo.qmd       carboplatin, Local/Early (N = 190)
+│   └── ritu_carbo_auc3.qmd  carboplatin AUC ≥ 3, Local/Early (N = 143)
+├── ritu_full_master.rds     entire cohort, N = 943 (gitignored — contains PHI)
+├── ritu_final_master.rds    Local/Early cohort, N = 323 (gitignored — contains PHI)
 └── docs/                    rendered site, committed and served by GitHub Pages
     ├── index.html
     ├── qmd/*.html
-    ├── tables/{whole,carbo,auc3}/*.docx
-    └── pptx/{whole,carbo,auc3}/*.pptx
+    ├── tables/{entire,whole,carbo,auc3}/*.docx
+    └── pptx/{entire,whole,carbo,auc3}/*.pptx
 ```
 
 ### Path conventions

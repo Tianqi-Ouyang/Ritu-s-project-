@@ -9,7 +9,7 @@
 <meta name="author" content="Tianqi Ouyang">
 <meta name="dcterms.date" content="2026-07-29">
 
-<title>Ritu Project — Local/Early Stage Cohort Summary – Ritu Project – Local/Early Stage Platinum AE</title>
+<title>Ritu Project — Summary – Ritu Project – Local/Early Stage Platinum AE</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -132,15 +132,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <a class="nav-link active" href="./index.html" aria-current="page"> 
 <span class="menu-text">Summary</span></a>
   </li>  
-  <li class="nav-item dropdown ">
-    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-ritu-project" role="link" data-bs-toggle="dropdown" aria-expanded="false">
- <span class="menu-text">Ritu Project</span>
-    </a>
-    <ul class="dropdown-menu" aria-labelledby="nav-menu-ritu-project">    
-        <li>
-    <a class="dropdown-item" href="./qmd/ritu_data.html">
- <span class="dropdown-text">Data Management</span></a>
+  <li class="nav-item">
+    <a class="nav-link" href="./qmd/ritu_data.html"> 
+<span class="menu-text">Data Management</span></a>
   </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="./qmd/ritu_entire.html"> 
+<span class="menu-text">Entire Cohort (N = 943)</span></a>
+  </li>  
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-localearly-(n--323" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Local/Early (N = 323)</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-localearly-(n--323">    
         <li>
     <a class="dropdown-item" href="./qmd/ritu_whole.html">
  <span class="dropdown-text">Whole Cohort</span></a>
@@ -172,10 +176,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
    
   <ul>
   <li><a href="#project-overview" id="toc-project-overview" class="nav-link active" data-scroll-target="#project-overview">Project Overview</a></li>
-  <li><a href="#cohort-sizes" id="toc-cohort-sizes" class="nav-link" data-scroll-target="#cohort-sizes">Cohort Sizes</a></li>
+  <li><a href="#pages-and-cohort-sizes" id="toc-pages-and-cohort-sizes" class="nav-link" data-scroll-target="#pages-and-cohort-sizes">Pages and Cohort Sizes</a></li>
   <li><a href="#exclusion-flow" id="toc-exclusion-flow" class="nav-link" data-scroll-target="#exclusion-flow">Exclusion Flow</a></li>
   <li><a href="#what-changed-relative-to-the-jiaxuan-project" id="toc-what-changed-relative-to-the-jiaxuan-project" class="nav-link" data-scroll-target="#what-changed-relative-to-the-jiaxuan-project">What Changed Relative to the Jiaxuan Project</a></li>
-  <li><a href="#power-caveats" id="toc-power-caveats" class="nav-link" data-scroll-target="#power-caveats">Power Caveats</a></li>
+  <li><a href="#power-caveats-localearly-pages-only" id="toc-power-caveats-localearly-pages-only" class="nav-link" data-scroll-target="#power-caveats-localearly-pages-only">Power Caveats — Local/Early pages only</a></li>
   <li><a href="#outcomes" id="toc-outcomes" class="nav-link" data-scroll-target="#outcomes">Outcomes</a>
   <ul>
   <li><a href="#grade-23-adverse-events-within-90-days" id="toc-grade-23-adverse-events-within-90-days" class="nav-link" data-scroll-target="#grade-23-adverse-events-within-90-days">Grade 2/3 Adverse Events (within 90 days)</a></li>
@@ -198,7 +202,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">Ritu Project — Local/Early Stage Cohort Summary</h1>
+<h1 class="title">Ritu Project — Summary</h1>
 </div>
 
 
@@ -229,8 +233,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <section id="project-overview" class="level1">
 <h1>Project Overview</h1>
-<p>Creatinine-to-cystatin C discordance and adverse events in patients receiving platinum-based chemotherapy, <strong>restricted to locally staged / early-stage disease</strong>.</p>
-<p>This project repeats the Jiaxuan analysis on a single restricted cohort. Every exposure, model, table, figure and download is carried over unchanged; the only substantive difference is that all advanced/metastatic patients are excluded.</p>
+<p>Creatinine-to-cystatin C discordance and adverse events in patients receiving platinum-based chemotherapy.</p>
+<p>The project repeats the Jiaxuan analysis at <strong>two cohort levels off one pipeline</strong>: the <strong>entire cohort</strong> (N = 943, all tumour stages) and the <strong>Local/Early</strong> cohort (N = 323, advanced/metastatic patients excluded). Every exposure, model, table, figure and download is carried over unchanged at both levels; both use the newer 2022P001091 creatinine pull and carry the CKD / ESKD / AKI variable family ported from the ICI-CKD project.</p>
 <table class="caption-top table">
 <thead>
 <tr class="header">
@@ -240,77 +244,85 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </thead>
 <tbody>
 <tr class="odd">
-<td><strong>Cohort restriction</strong></td>
-<td><code>tumor_stage == "Local/Early"</code> (stage I–II / local / neoadjuvant)</td>
+<td><strong>Entire cohort</strong></td>
+<td>no stage filter — N = 943</td>
 </tr>
 <tr class="even">
-<td><strong>Excluded</strong></td>
-<td><code>tumor_stage == "Advanced/Metastatic"</code> (stage III–IV) — 620 patients</td>
+<td><strong>Local/Early cohort</strong></td>
+<td><code>tumor_stage == "Local/Early"</code> (stage I–II / local / neoadjuvant) — N = 323</td>
 </tr>
 <tr class="odd">
+<td><strong>Excluded from the Local/Early pages</strong></td>
+<td><code>tumor_stage == "Advanced/Metastatic"</code> (stage III–IV) — 620 patients</td>
+</tr>
+<tr class="even">
 <td><strong>Primary exposure</strong></td>
 <td><code>egfr_diff_pct_per10</code> — eGFR difference (%) per 10-percentage-point decline</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><strong>Follow-up</strong></td>
 <td>90 days from baseline sample date</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><strong>Framework</strong></td>
 <td>Competing risks (death as competing event for non-fatal outcomes)</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><strong>Parent project</strong></td>
 <td><a href="https://tianqi-ouyang.github.io/Cys-C-project-/">Jiaxuan project</a></td>
 </tr>
 </tbody>
 </table>
 </section>
-<section id="cohort-sizes" class="level1">
-<h1>Cohort Sizes</h1>
+<section id="pages-and-cohort-sizes" class="level1">
+<h1>Pages and Cohort Sizes</h1>
+<p>The project runs at two cohort levels off the same pipeline. Both use the 2022P001091 creatinine pull and carry the full CKD / ESKD / AKI variable family.</p>
 <table class="caption-top table">
 <thead>
 <tr class="header">
 <th>Page</th>
 <th>Cohort</th>
-<th>Jiaxuan (all stages)</th>
-<th>Ritu (Local/Early)</th>
+<th>N</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<td><a href="./qmd/ritu_whole.html">Whole Cohort</a></td>
-<td>all platinum</td>
-<td>943</td>
-<td><strong>323</strong></td>
+<td><a href="./qmd/ritu_entire.html"><strong>Entire Cohort</strong></a></td>
+<td>all platinum, <strong>all stages</strong></td>
+<td><strong>943</strong></td>
 </tr>
 <tr class="even">
-<td><a href="./qmd/ritu_carbo.html">Carboplatin Cohort</a></td>
-<td>carboplatin</td>
-<td>596</td>
-<td><strong>190</strong></td>
+<td><a href="./qmd/ritu_whole.html">Whole Cohort</a></td>
+<td>all platinum, Local/Early only</td>
+<td><strong>323</strong></td>
 </tr>
 <tr class="odd">
+<td><a href="./qmd/ritu_carbo.html">Carboplatin Cohort</a></td>
+<td>carboplatin, Local/Early</td>
+<td><strong>190</strong></td>
+</tr>
+<tr class="even">
 <td><a href="./qmd/ritu_carbo_auc3.html">Carboplatin AUC ≥ 3</a></td>
-<td>carboplatin, AUC ≥ 3</td>
-<td>463</td>
+<td>carboplatin AUC ≥ 3, Local/Early</td>
 <td><strong>143</strong></td>
 </tr>
 </tbody>
 </table>
-<p>Within the 323 Local/Early patients: 190 carboplatin, 133 cisplatin.</p>
+<p>Entire cohort: 323 Local/Early + 620 Advanced/Metastatic; 596 carboplatin, 347 cisplatin. Within the 323 Local/Early: 190 carboplatin, 133 cisplatin.</p>
+<p><strong><code>tumor_stage</code> differs between the two levels.</strong> It is constant in the Local/Early cohort, so it is dropped from Table 1 and from every adjuster set there. In the entire cohort it varies, so it is restored — which makes the entire-cohort page’s model specification the same as the Jiaxuan project’s, but run on the newer creatinine pull and with the kidney variables added. Comparing the two pages shows what the stage restriction does.</p>
 </section>
 <section id="exclusion-flow" class="level1">
 <h1>Exclusion Flow</h1>
-<p>Inherited from the Jiaxuan pipeline, plus one new step:</p>
+<p>Inherited from the Jiaxuan pipeline:</p>
 <ol type="1">
-<li>REDCap records restricted to EMPIs present in <code>N=596 for tianqi.xlsx</code></li>
-<li>Patients with no matching RPDR lab records excluded</li>
+<li>REDCap records restricted to EMPIs present in <code>N=596 for tianqi.xlsx</code> → 946</li>
+<li>Patients with no matching RPDR lab records excluded (2) → 944</li>
 <li>Missing baseline cystatin C (<code>cys_c_baseline</code> = NA) excluded</li>
 <li>Missing platinum group (<code>platin_group</code> = NA) excluded</li>
-<li>Record 911 dropped (all RPDR pre-baseline labs fall outside the 45-day window)</li>
-<li><strong>New — <code>tumor_stage != "Local/Early"</code> excluded (620 patients) → N = 323</strong></li>
+<li>Record 911 dropped (all RPDR pre-baseline labs fall outside the 45-day window) → <strong>943 = entire cohort</strong></li>
+<li><code>tumor_stage != "Local/Early"</code> excluded (620) → <strong>323 = Local/Early cohort</strong></li>
 </ol>
+<p><code>ritu_data.qmd</code> saves after both step 5 (<code>ritu_full_master.rds</code>) and step 6 (<code>ritu_final_master.rds</code>), so the two cohort levels come from one pipeline run and are identical in every variable definition.</p>
 <p>Details in <a href="./qmd/ritu_data.html">Data Management</a>.</p>
 </section>
 <section id="what-changed-relative-to-the-jiaxuan-project" class="level1">
@@ -322,9 +334,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><strong>4. Sparse-outcome guards.</strong> Several outcomes have very few events in 323 patients (90-day death = 2). Each model helper is wrapped so that a model which cannot be estimated emits a short note instead of aborting the render. No model specification is altered.</p>
 <p>Unchanged: primary and sensitivity exposures, the <code>dose_discrep_per25increase</code> predictor in the carboplatin pages, reference categories (<code>sex</code> = Female, <code>ecog_score_cat2</code> = “0”), the competing-risks framework, Cox PH for 90-day death, eGFR capping rules, 2.5/97.5-percentile plot trimming, Word and PowerPoint downloads, and all section numbering.</p>
 </section>
-<section id="power-caveats" class="level1">
-<h1>Power Caveats</h1>
-<p>These follow arithmetically from the smaller cohort. The analyses are reported as specified; read the sparse ones with the event counts in view.</p>
+<section id="power-caveats-localearly-pages-only" class="level1">
+<h1>Power Caveats — Local/Early pages only</h1>
+<p>These follow arithmetically from the <strong>323-patient</strong> cohort and apply to the Local/Early pages. The <a href="./qmd/ritu_entire.html">entire-cohort page</a> has roughly 3× the events and is not affected in the same way — most notably 90-day death has <strong>41 events there versus 2</strong> here, so its models are worth reading on that page and not on this one.</p>
+<p>The analyses are reported as specified; read the sparse ones with the event counts in view.</p>
 <table class="caption-top table">
 <thead>
 <tr class="header">

@@ -4,6 +4,7 @@ project:
   render:
     - index.qmd
     - qmd/ritu_data.qmd
+    - qmd/ritu_entire.qmd
     - qmd/ritu_whole.qmd
     - qmd/ritu_carbo.qmd
     - qmd/ritu_carbo_auc3.qmd
@@ -14,10 +15,12 @@ website:
     left:
       - href: index.qmd
         text: Summary
-      - text: Ritu Project
+      - href: qmd/ritu_data.qmd
+        text: Data Management
+      - href: qmd/ritu_entire.qmd
+        text: Entire Cohort (N = 943)
+      - text: Local/Early (N = 323)
         menu:
-          - href: qmd/ritu_data.qmd
-            text: Data Management
           - href: qmd/ritu_whole.qmd
             text: Whole Cohort
           - href: qmd/ritu_carbo.qmd

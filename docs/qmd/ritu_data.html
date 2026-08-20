@@ -132,15 +132,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <a class="nav-link" href="../index.html"> 
 <span class="menu-text">Summary</span></a>
   </li>  
-  <li class="nav-item dropdown ">
-    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-ritu-project" role="link" data-bs-toggle="dropdown" aria-expanded="false">
- <span class="menu-text">Ritu Project</span>
-    </a>
-    <ul class="dropdown-menu" aria-labelledby="nav-menu-ritu-project">    
-        <li>
-    <a class="dropdown-item" href="../qmd/ritu_data.html">
- <span class="dropdown-text">Data Management</span></a>
+  <li class="nav-item">
+    <a class="nav-link active" href="../qmd/ritu_data.html" aria-current="page"> 
+<span class="menu-text">Data Management</span></a>
   </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../qmd/ritu_entire.html"> 
+<span class="menu-text">Entire Cohort (N = 943)</span></a>
+  </li>  
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-localearly-(n--323" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Local/Early (N = 323)</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-localearly-(n--323">    
         <li>
     <a class="dropdown-item" href="../qmd/ritu_whole.html">
  <span class="dropdown-text">Whole Cohort</span></a>
@@ -3015,22 +3019,35 @@ Thoracic   Breast       GI       GU      GYN    HEENT    Other
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb81"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb81-1"><a href="#cb81-1" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Ritu cohort restriction: drop advanced/metastatic disease ---------------</span></span>
-<span id="cb81-2"><a href="#cb81-2" aria-hidden="true" tabindex="-1"></a><span class="co"># tumor_stage: 1 = Local/Early (stage I-II / local / neoadjuvant),</span></span>
-<span id="cb81-3"><a href="#cb81-3" aria-hidden="true" tabindex="-1"></a><span class="co">#              2 = Advanced/Metastatic (stage III-IV).</span></span>
-<span id="cb81-4"><a href="#cb81-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Applied here, at the end of the pipeline, rather than at import. No derived</span></span>
-<span id="cb81-5"><a href="#cb81-5" aria-hidden="true" tabindex="-1"></a><span class="co"># variable above is defined relative to the cohort (there are no median splits,</span></span>
-<span id="cb81-6"><a href="#cb81-6" aria-hidden="true" tabindex="-1"></a><span class="co"># quantile categories, z-scores or imputation models), so restricting after</span></span>
-<span id="cb81-7"><a href="#cb81-7" aria-hidden="true" tabindex="-1"></a><span class="co"># derivation is numerically identical to restricting before it -- and it keeps</span></span>
-<span id="cb81-8"><a href="#cb81-8" aria-hidden="true" tabindex="-1"></a><span class="co"># this file line-for-line comparable with jiaxuan_data.qmd.</span></span>
-<span id="cb81-9"><a href="#cb81-9" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Patients before stage restriction:"</span>, <span class="fu">nrow</span>(final_master), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb81"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb81-1"><a href="#cb81-1" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Entire cohort (all stages) ----------------------------------------------</span></span>
+<span id="cb81-2"><a href="#cb81-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Saved BEFORE the stage restriction so the entire-cohort page can use it. Same</span></span>
+<span id="cb81-3"><a href="#cb81-3" aria-hidden="true" tabindex="-1"></a><span class="co"># pipeline, same variables (including the CKD / ESKD / AKI family from 5.16-5.19</span></span>
+<span id="cb81-4"><a href="#cb81-4" aria-hidden="true" tabindex="-1"></a><span class="co"># and the new creatinine pull) -- the only difference is that no stage filter has</span></span>
+<span id="cb81-5"><a href="#cb81-5" aria-hidden="true" tabindex="-1"></a><span class="co"># been applied, so tumor_stage still varies and stays a valid covariate there.</span></span>
+<span id="cb81-6"><a href="#cb81-6" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(final_master, <span class="st">"ritu_full_master.rds"</span>)</span>
+<span id="cb81-7"><a href="#cb81-7" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Entire cohort saved to ritu_full_master.rds:"</span>, <span class="fu">nrow</span>(final_master), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>Entire cohort saved to ritu_full_master.rds: 943 </code></pre>
+</div>
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb83"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb83-1"><a href="#cb83-1" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Ritu cohort restriction: drop advanced/metastatic disease ---------------</span></span>
+<span id="cb83-2"><a href="#cb83-2" aria-hidden="true" tabindex="-1"></a><span class="co"># tumor_stage: 1 = Local/Early (stage I-II / local / neoadjuvant),</span></span>
+<span id="cb83-3"><a href="#cb83-3" aria-hidden="true" tabindex="-1"></a><span class="co">#              2 = Advanced/Metastatic (stage III-IV).</span></span>
+<span id="cb83-4"><a href="#cb83-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Applied here, at the end of the pipeline, rather than at import. No derived</span></span>
+<span id="cb83-5"><a href="#cb83-5" aria-hidden="true" tabindex="-1"></a><span class="co"># variable above is defined relative to the cohort (there are no median splits,</span></span>
+<span id="cb83-6"><a href="#cb83-6" aria-hidden="true" tabindex="-1"></a><span class="co"># quantile categories, z-scores or imputation models), so restricting after</span></span>
+<span id="cb83-7"><a href="#cb83-7" aria-hidden="true" tabindex="-1"></a><span class="co"># derivation is numerically identical to restricting before it -- and it keeps</span></span>
+<span id="cb83-8"><a href="#cb83-8" aria-hidden="true" tabindex="-1"></a><span class="co"># this file line-for-line comparable with jiaxuan_data.qmd.</span></span>
+<span id="cb83-9"><a href="#cb83-9" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Patients before stage restriction:"</span>, <span class="fu">nrow</span>(final_master), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>Patients before stage restriction: 943 </code></pre>
 </div>
 <details class="code-fold">
 <summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb83"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb83-1"><a href="#cb83-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">table</span>(final_master<span class="sc">$</span>tumor_stage, <span class="at">useNA =</span> <span class="st">"ifany"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb85"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb85-1"><a href="#cb85-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">table</span>(final_master<span class="sc">$</span>tumor_stage, <span class="at">useNA =</span> <span class="st">"ifany"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>
@@ -3039,21 +3056,21 @@ Thoracic   Breast       GI       GU      GYN    HEENT    Other
 </div>
 <details class="code-fold">
 <summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb85"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb85-1"><a href="#cb85-1" aria-hidden="true" tabindex="-1"></a>final_master <span class="ot">&lt;-</span> final_master <span class="sc">%&gt;%</span></span>
-<span id="cb85-2"><a href="#cb85-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(tumor_stage <span class="sc">==</span> <span class="st">"Local/Early"</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb85-3"><a href="#cb85-3" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Clear the now-empty Advanced/Metastatic level (and any covariate level left</span></span>
-<span id="cb85-4"><a href="#cb85-4" aria-hidden="true" tabindex="-1"></a>  <span class="co"># with zero patients) so model matrices are not rank-deficient. cmp_status_*</span></span>
-<span id="cb85-5"><a href="#cb85-5" aria-hidden="true" tabindex="-1"></a>  <span class="co"># factors are excluded: their 0/1/2 coding is relied on downstream.</span></span>
-<span id="cb85-6"><a href="#cb85-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">where</span>(is.factor) <span class="sc">&amp;</span> <span class="sc">!</span><span class="fu">starts_with</span>(<span class="st">"cmp_status_"</span>), droplevels))</span>
-<span id="cb85-7"><a href="#cb85-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb85-8"><a href="#cb85-8" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Patients after stage restriction (Local/Early only):"</span>, <span class="fu">nrow</span>(final_master), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb87"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb87-1"><a href="#cb87-1" aria-hidden="true" tabindex="-1"></a>final_master <span class="ot">&lt;-</span> final_master <span class="sc">%&gt;%</span></span>
+<span id="cb87-2"><a href="#cb87-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(tumor_stage <span class="sc">==</span> <span class="st">"Local/Early"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb87-3"><a href="#cb87-3" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Clear the now-empty Advanced/Metastatic level (and any covariate level left</span></span>
+<span id="cb87-4"><a href="#cb87-4" aria-hidden="true" tabindex="-1"></a>  <span class="co"># with zero patients) so model matrices are not rank-deficient. cmp_status_*</span></span>
+<span id="cb87-5"><a href="#cb87-5" aria-hidden="true" tabindex="-1"></a>  <span class="co"># factors are excluded: their 0/1/2 coding is relied on downstream.</span></span>
+<span id="cb87-6"><a href="#cb87-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">where</span>(is.factor) <span class="sc">&amp;</span> <span class="sc">!</span><span class="fu">starts_with</span>(<span class="st">"cmp_status_"</span>), droplevels))</span>
+<span id="cb87-7"><a href="#cb87-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb87-8"><a href="#cb87-8" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Patients after stage restriction (Local/Early only):"</span>, <span class="fu">nrow</span>(final_master), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>Patients after stage restriction (Local/Early only): 323 </code></pre>
 </div>
 <details class="code-fold">
 <summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb87"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb87-1"><a href="#cb87-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">table</span>(final_master<span class="sc">$</span>platin_group, <span class="at">useNA =</span> <span class="st">"ifany"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb89"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb89-1"><a href="#cb89-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">table</span>(final_master<span class="sc">$</span>platin_group, <span class="at">useNA =</span> <span class="st">"ifany"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>
@@ -3062,8 +3079,8 @@ Carboplatin   Cisplatin
 </div>
 <details class="code-fold">
 <summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb89"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb89-1"><a href="#cb89-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Save final_master for use by ritu_whole.qmd / ritu_carbo.qmd / ritu_carbo_auc3.qmd</span></span>
-<span id="cb89-2"><a href="#cb89-2" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(final_master, <span class="st">"ritu_final_master.rds"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb91"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb91-1"><a href="#cb91-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Save final_master for use by ritu_whole.qmd / ritu_carbo.qmd / ritu_carbo_auc3.qmd</span></span>
+<span id="cb91-2"><a href="#cb91-2" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(final_master, <span class="st">"ritu_final_master.rds"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 </div>
 </section>
@@ -3074,52 +3091,52 @@ Carboplatin   Cisplatin
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb90"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb90-1"><a href="#cb90-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Variables shared by all patients (not platinum-type-specific)</span></span>
-<span id="cb90-2"><a href="#cb90-2" aria-hidden="true" tabindex="-1"></a>shared_vars <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
-<span id="cb90-3"><a href="#cb90-3" aria-hidden="true" tabindex="-1"></a>  <span class="st">"age"</span>, <span class="st">"age_cat"</span>, <span class="st">"sex"</span>, <span class="st">"race"</span>, <span class="st">"ethnicity"</span>, <span class="st">"cancer_type_cat_7"</span>,</span>
-<span id="cb90-4"><a href="#cb90-4" aria-hidden="true" tabindex="-1"></a>  <span class="st">"platin_group"</span>,</span>
-<span id="cb90-5"><a href="#cb90-5" aria-hidden="true" tabindex="-1"></a>  <span class="st">"ici"</span>, <span class="st">"Bevacizumab"</span>, <span class="st">"Paclitaxel"</span>, <span class="st">"Pemetrexed"</span>, <span class="st">"Doxorubicin"</span>, <span class="st">"Etoposide"</span>,</span>
-<span id="cb90-6"><a href="#cb90-6" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Gemcitabine"</span>, <span class="st">"Pertuzumab"</span>, <span class="st">"Trastuzumab"</span>, <span class="st">"Docetaxel"</span>, <span class="st">"Administered_alone"</span>,</span>
-<span id="cb90-7"><a href="#cb90-7" aria-hidden="true" tabindex="-1"></a>  <span class="st">"hiv_rpdr"</span>, <span class="st">"thyroid"</span>, <span class="st">"smoking"</span>, <span class="st">"steroids"</span>,</span>
-<span id="cb90-8"><a href="#cb90-8" aria-hidden="true" tabindex="-1"></a>  <span class="st">"cci"</span>, <span class="st">"ecog_score"</span>, <span class="st">"bmi"</span>, <span class="st">"bmi_cat"</span>,</span>
-<span id="cb90-9"><a href="#cb90-9" aria-hidden="true" tabindex="-1"></a>  <span class="st">"pre_HGB_45days"</span>, <span class="st">"pre_PLT_45days"</span>, <span class="st">"pre_ALB_45days"</span>, <span class="st">"pre_CRE_45days"</span>,</span>
-<span id="cb90-10"><a href="#cb90-10" aria-hidden="true" tabindex="-1"></a>  <span class="st">"baseline_cys_c"</span>, <span class="st">"baseline_cre"</span>, <span class="st">"cr_cys"</span>,</span>
-<span id="cb90-11"><a href="#cb90-11" aria-hidden="true" tabindex="-1"></a>  <span class="st">"baseline_cre_egfr"</span>, <span class="st">"baseline_cys_c_egfr"</span>,</span>
-<span id="cb90-12"><a href="#cb90-12" aria-hidden="true" tabindex="-1"></a>  <span class="st">"ckd_epi_gfr_cre_cys"</span>, <span class="st">"ckd_epi_gfr_cre_cys_unindex"</span>,</span>
-<span id="cb90-13"><a href="#cb90-13" aria-hidden="true" tabindex="-1"></a>  <span class="st">"ckd_stage_cre"</span>, <span class="st">"ckd_stage_cre_cys"</span>,</span>
-<span id="cb90-14"><a href="#cb90-14" aria-hidden="true" tabindex="-1"></a>  <span class="st">"cockcroft"</span></span>
-<span id="cb90-15"><a href="#cb90-15" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb90-16"><a href="#cb90-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb90-17"><a href="#cb90-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Shared variables: missing across all patients</span></span>
-<span id="cb90-18"><a href="#cb90-18" aria-hidden="true" tabindex="-1"></a>shared_missing <span class="ot">&lt;-</span> final_master <span class="sc">%&gt;%</span></span>
-<span id="cb90-19"><a href="#cb90-19" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(<span class="fu">any_of</span>(shared_vars)) <span class="sc">%&gt;%</span></span>
-<span id="cb90-20"><a href="#cb90-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="fu">across</span>(<span class="fu">everything</span>(), <span class="sc">~</span> <span class="fu">sum</span>(<span class="fu">is.na</span>(.)))) <span class="sc">%&gt;%</span></span>
-<span id="cb90-21"><a href="#cb90-21" aria-hidden="true" tabindex="-1"></a>  tidyr<span class="sc">::</span><span class="fu">pivot_longer</span>(<span class="fu">everything</span>(), <span class="at">names_to =</span> <span class="st">"variable"</span>, <span class="at">values_to =</span> <span class="st">"n_missing"</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb90-22"><a href="#cb90-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">pct_missing =</span> <span class="fu">round</span>(<span class="dv">100</span> <span class="sc">*</span> n_missing <span class="sc">/</span> <span class="fu">nrow</span>(final_master), <span class="dv">1</span>),</span>
-<span id="cb90-23"><a href="#cb90-23" aria-hidden="true" tabindex="-1"></a>         <span class="at">note =</span> <span class="st">""</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb90-24"><a href="#cb90-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(n_missing <span class="sc">&gt;</span> <span class="dv">0</span>)</span>
-<span id="cb90-25"><a href="#cb90-25" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb90-26"><a href="#cb90-26" aria-hidden="true" tabindex="-1"></a><span class="co"># Platinum-type-specific: check within their own subgroup</span></span>
-<span id="cb90-27"><a href="#cb90-27" aria-hidden="true" tabindex="-1"></a>carbo_pts <span class="ot">&lt;-</span> final_master <span class="sc">%&gt;%</span> <span class="fu">filter</span>(platin_group <span class="sc">==</span> <span class="st">"Carboplatin"</span>)</span>
-<span id="cb90-28"><a href="#cb90-28" aria-hidden="true" tabindex="-1"></a>cis_pts   <span class="ot">&lt;-</span> final_master <span class="sc">%&gt;%</span> <span class="fu">filter</span>(platin_group <span class="sc">==</span> <span class="st">"Cisplatin"</span>)</span>
-<span id="cb90-29"><a href="#cb90-29" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb90-30"><a href="#cb90-30" aria-hidden="true" tabindex="-1"></a>platin_missing <span class="ot">&lt;-</span> <span class="fu">tibble</span>(</span>
-<span id="cb90-31"><a href="#cb90-31" aria-hidden="true" tabindex="-1"></a>  <span class="at">variable   =</span> <span class="fu">c</span>(<span class="st">"carbo_AUC"</span>, <span class="st">"carbo_AUC_cat"</span>, <span class="st">"cis_dose"</span>, <span class="st">"cis_dose_cat"</span>),</span>
-<span id="cb90-32"><a href="#cb90-32" aria-hidden="true" tabindex="-1"></a>  <span class="at">n_missing  =</span> <span class="fu">c</span>(<span class="fu">sum</span>(<span class="fu">is.na</span>(carbo_pts<span class="sc">$</span>carbo_AUC)),</span>
-<span id="cb90-33"><a href="#cb90-33" aria-hidden="true" tabindex="-1"></a>                 <span class="fu">sum</span>(<span class="fu">is.na</span>(carbo_pts<span class="sc">$</span>carbo_AUC_cat)),</span>
-<span id="cb90-34"><a href="#cb90-34" aria-hidden="true" tabindex="-1"></a>                 <span class="fu">sum</span>(<span class="fu">is.na</span>(cis_pts<span class="sc">$</span>cis_dose)),</span>
-<span id="cb90-35"><a href="#cb90-35" aria-hidden="true" tabindex="-1"></a>                 <span class="fu">sum</span>(<span class="fu">is.na</span>(cis_pts<span class="sc">$</span>cis_dose_cat))),</span>
-<span id="cb90-36"><a href="#cb90-36" aria-hidden="true" tabindex="-1"></a>  <span class="at">pct_missing =</span> <span class="fu">round</span>(<span class="dv">100</span> <span class="sc">*</span> n_missing <span class="sc">/</span></span>
-<span id="cb90-37"><a href="#cb90-37" aria-hidden="true" tabindex="-1"></a>                 <span class="fu">c</span>(<span class="fu">nrow</span>(carbo_pts), <span class="fu">nrow</span>(carbo_pts), <span class="fu">nrow</span>(cis_pts), <span class="fu">nrow</span>(cis_pts)), <span class="dv">1</span>),</span>
-<span id="cb90-38"><a href="#cb90-38" aria-hidden="true" tabindex="-1"></a>  <span class="at">note =</span> <span class="fu">c</span>(<span class="fu">paste0</span>(<span class="st">"of "</span>, <span class="fu">nrow</span>(carbo_pts), <span class="st">" carbo pts"</span>),</span>
-<span id="cb90-39"><a href="#cb90-39" aria-hidden="true" tabindex="-1"></a>           <span class="fu">paste0</span>(<span class="st">"of "</span>, <span class="fu">nrow</span>(carbo_pts), <span class="st">" carbo pts"</span>),</span>
-<span id="cb90-40"><a href="#cb90-40" aria-hidden="true" tabindex="-1"></a>           <span class="fu">paste0</span>(<span class="st">"of "</span>, <span class="fu">nrow</span>(cis_pts), <span class="st">" cis pts"</span>),</span>
-<span id="cb90-41"><a href="#cb90-41" aria-hidden="true" tabindex="-1"></a>           <span class="fu">paste0</span>(<span class="st">"of "</span>, <span class="fu">nrow</span>(cis_pts), <span class="st">" cis pts"</span>))</span>
-<span id="cb90-42"><a href="#cb90-42" aria-hidden="true" tabindex="-1"></a>) <span class="sc">%&gt;%</span> <span class="fu">filter</span>(n_missing <span class="sc">&gt;</span> <span class="dv">0</span>)</span>
-<span id="cb90-43"><a href="#cb90-43" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb90-44"><a href="#cb90-44" aria-hidden="true" tabindex="-1"></a><span class="fu">bind_rows</span>(shared_missing, platin_missing) <span class="sc">%&gt;%</span></span>
-<span id="cb90-45"><a href="#cb90-45" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(n_missing)) <span class="sc">%&gt;%</span></span>
-<span id="cb90-46"><a href="#cb90-46" aria-hidden="true" tabindex="-1"></a>  knitr<span class="sc">::</span><span class="fu">kable</span>(<span class="at">caption =</span> <span class="st">"Missing data — Table 1 variables (non-zero only)"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb92"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb92-1"><a href="#cb92-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Variables shared by all patients (not platinum-type-specific)</span></span>
+<span id="cb92-2"><a href="#cb92-2" aria-hidden="true" tabindex="-1"></a>shared_vars <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
+<span id="cb92-3"><a href="#cb92-3" aria-hidden="true" tabindex="-1"></a>  <span class="st">"age"</span>, <span class="st">"age_cat"</span>, <span class="st">"sex"</span>, <span class="st">"race"</span>, <span class="st">"ethnicity"</span>, <span class="st">"cancer_type_cat_7"</span>,</span>
+<span id="cb92-4"><a href="#cb92-4" aria-hidden="true" tabindex="-1"></a>  <span class="st">"platin_group"</span>,</span>
+<span id="cb92-5"><a href="#cb92-5" aria-hidden="true" tabindex="-1"></a>  <span class="st">"ici"</span>, <span class="st">"Bevacizumab"</span>, <span class="st">"Paclitaxel"</span>, <span class="st">"Pemetrexed"</span>, <span class="st">"Doxorubicin"</span>, <span class="st">"Etoposide"</span>,</span>
+<span id="cb92-6"><a href="#cb92-6" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Gemcitabine"</span>, <span class="st">"Pertuzumab"</span>, <span class="st">"Trastuzumab"</span>, <span class="st">"Docetaxel"</span>, <span class="st">"Administered_alone"</span>,</span>
+<span id="cb92-7"><a href="#cb92-7" aria-hidden="true" tabindex="-1"></a>  <span class="st">"hiv_rpdr"</span>, <span class="st">"thyroid"</span>, <span class="st">"smoking"</span>, <span class="st">"steroids"</span>,</span>
+<span id="cb92-8"><a href="#cb92-8" aria-hidden="true" tabindex="-1"></a>  <span class="st">"cci"</span>, <span class="st">"ecog_score"</span>, <span class="st">"bmi"</span>, <span class="st">"bmi_cat"</span>,</span>
+<span id="cb92-9"><a href="#cb92-9" aria-hidden="true" tabindex="-1"></a>  <span class="st">"pre_HGB_45days"</span>, <span class="st">"pre_PLT_45days"</span>, <span class="st">"pre_ALB_45days"</span>, <span class="st">"pre_CRE_45days"</span>,</span>
+<span id="cb92-10"><a href="#cb92-10" aria-hidden="true" tabindex="-1"></a>  <span class="st">"baseline_cys_c"</span>, <span class="st">"baseline_cre"</span>, <span class="st">"cr_cys"</span>,</span>
+<span id="cb92-11"><a href="#cb92-11" aria-hidden="true" tabindex="-1"></a>  <span class="st">"baseline_cre_egfr"</span>, <span class="st">"baseline_cys_c_egfr"</span>,</span>
+<span id="cb92-12"><a href="#cb92-12" aria-hidden="true" tabindex="-1"></a>  <span class="st">"ckd_epi_gfr_cre_cys"</span>, <span class="st">"ckd_epi_gfr_cre_cys_unindex"</span>,</span>
+<span id="cb92-13"><a href="#cb92-13" aria-hidden="true" tabindex="-1"></a>  <span class="st">"ckd_stage_cre"</span>, <span class="st">"ckd_stage_cre_cys"</span>,</span>
+<span id="cb92-14"><a href="#cb92-14" aria-hidden="true" tabindex="-1"></a>  <span class="st">"cockcroft"</span></span>
+<span id="cb92-15"><a href="#cb92-15" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb92-16"><a href="#cb92-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb92-17"><a href="#cb92-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Shared variables: missing across all patients</span></span>
+<span id="cb92-18"><a href="#cb92-18" aria-hidden="true" tabindex="-1"></a>shared_missing <span class="ot">&lt;-</span> final_master <span class="sc">%&gt;%</span></span>
+<span id="cb92-19"><a href="#cb92-19" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(<span class="fu">any_of</span>(shared_vars)) <span class="sc">%&gt;%</span></span>
+<span id="cb92-20"><a href="#cb92-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="fu">across</span>(<span class="fu">everything</span>(), <span class="sc">~</span> <span class="fu">sum</span>(<span class="fu">is.na</span>(.)))) <span class="sc">%&gt;%</span></span>
+<span id="cb92-21"><a href="#cb92-21" aria-hidden="true" tabindex="-1"></a>  tidyr<span class="sc">::</span><span class="fu">pivot_longer</span>(<span class="fu">everything</span>(), <span class="at">names_to =</span> <span class="st">"variable"</span>, <span class="at">values_to =</span> <span class="st">"n_missing"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb92-22"><a href="#cb92-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">pct_missing =</span> <span class="fu">round</span>(<span class="dv">100</span> <span class="sc">*</span> n_missing <span class="sc">/</span> <span class="fu">nrow</span>(final_master), <span class="dv">1</span>),</span>
+<span id="cb92-23"><a href="#cb92-23" aria-hidden="true" tabindex="-1"></a>         <span class="at">note =</span> <span class="st">""</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb92-24"><a href="#cb92-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(n_missing <span class="sc">&gt;</span> <span class="dv">0</span>)</span>
+<span id="cb92-25"><a href="#cb92-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb92-26"><a href="#cb92-26" aria-hidden="true" tabindex="-1"></a><span class="co"># Platinum-type-specific: check within their own subgroup</span></span>
+<span id="cb92-27"><a href="#cb92-27" aria-hidden="true" tabindex="-1"></a>carbo_pts <span class="ot">&lt;-</span> final_master <span class="sc">%&gt;%</span> <span class="fu">filter</span>(platin_group <span class="sc">==</span> <span class="st">"Carboplatin"</span>)</span>
+<span id="cb92-28"><a href="#cb92-28" aria-hidden="true" tabindex="-1"></a>cis_pts   <span class="ot">&lt;-</span> final_master <span class="sc">%&gt;%</span> <span class="fu">filter</span>(platin_group <span class="sc">==</span> <span class="st">"Cisplatin"</span>)</span>
+<span id="cb92-29"><a href="#cb92-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb92-30"><a href="#cb92-30" aria-hidden="true" tabindex="-1"></a>platin_missing <span class="ot">&lt;-</span> <span class="fu">tibble</span>(</span>
+<span id="cb92-31"><a href="#cb92-31" aria-hidden="true" tabindex="-1"></a>  <span class="at">variable   =</span> <span class="fu">c</span>(<span class="st">"carbo_AUC"</span>, <span class="st">"carbo_AUC_cat"</span>, <span class="st">"cis_dose"</span>, <span class="st">"cis_dose_cat"</span>),</span>
+<span id="cb92-32"><a href="#cb92-32" aria-hidden="true" tabindex="-1"></a>  <span class="at">n_missing  =</span> <span class="fu">c</span>(<span class="fu">sum</span>(<span class="fu">is.na</span>(carbo_pts<span class="sc">$</span>carbo_AUC)),</span>
+<span id="cb92-33"><a href="#cb92-33" aria-hidden="true" tabindex="-1"></a>                 <span class="fu">sum</span>(<span class="fu">is.na</span>(carbo_pts<span class="sc">$</span>carbo_AUC_cat)),</span>
+<span id="cb92-34"><a href="#cb92-34" aria-hidden="true" tabindex="-1"></a>                 <span class="fu">sum</span>(<span class="fu">is.na</span>(cis_pts<span class="sc">$</span>cis_dose)),</span>
+<span id="cb92-35"><a href="#cb92-35" aria-hidden="true" tabindex="-1"></a>                 <span class="fu">sum</span>(<span class="fu">is.na</span>(cis_pts<span class="sc">$</span>cis_dose_cat))),</span>
+<span id="cb92-36"><a href="#cb92-36" aria-hidden="true" tabindex="-1"></a>  <span class="at">pct_missing =</span> <span class="fu">round</span>(<span class="dv">100</span> <span class="sc">*</span> n_missing <span class="sc">/</span></span>
+<span id="cb92-37"><a href="#cb92-37" aria-hidden="true" tabindex="-1"></a>                 <span class="fu">c</span>(<span class="fu">nrow</span>(carbo_pts), <span class="fu">nrow</span>(carbo_pts), <span class="fu">nrow</span>(cis_pts), <span class="fu">nrow</span>(cis_pts)), <span class="dv">1</span>),</span>
+<span id="cb92-38"><a href="#cb92-38" aria-hidden="true" tabindex="-1"></a>  <span class="at">note =</span> <span class="fu">c</span>(<span class="fu">paste0</span>(<span class="st">"of "</span>, <span class="fu">nrow</span>(carbo_pts), <span class="st">" carbo pts"</span>),</span>
+<span id="cb92-39"><a href="#cb92-39" aria-hidden="true" tabindex="-1"></a>           <span class="fu">paste0</span>(<span class="st">"of "</span>, <span class="fu">nrow</span>(carbo_pts), <span class="st">" carbo pts"</span>),</span>
+<span id="cb92-40"><a href="#cb92-40" aria-hidden="true" tabindex="-1"></a>           <span class="fu">paste0</span>(<span class="st">"of "</span>, <span class="fu">nrow</span>(cis_pts), <span class="st">" cis pts"</span>),</span>
+<span id="cb92-41"><a href="#cb92-41" aria-hidden="true" tabindex="-1"></a>           <span class="fu">paste0</span>(<span class="st">"of "</span>, <span class="fu">nrow</span>(cis_pts), <span class="st">" cis pts"</span>))</span>
+<span id="cb92-42"><a href="#cb92-42" aria-hidden="true" tabindex="-1"></a>) <span class="sc">%&gt;%</span> <span class="fu">filter</span>(n_missing <span class="sc">&gt;</span> <span class="dv">0</span>)</span>
+<span id="cb92-43"><a href="#cb92-43" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb92-44"><a href="#cb92-44" aria-hidden="true" tabindex="-1"></a><span class="fu">bind_rows</span>(shared_missing, platin_missing) <span class="sc">%&gt;%</span></span>
+<span id="cb92-45"><a href="#cb92-45" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(n_missing)) <span class="sc">%&gt;%</span></span>
+<span id="cb92-46"><a href="#cb92-46" aria-hidden="true" tabindex="-1"></a>  knitr<span class="sc">::</span><span class="fu">kable</span>(<span class="at">caption =</span> <span class="st">"Missing data — Table 1 variables (non-zero only)"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output-display">
 <table class="caption-top">

@@ -2107,6 +2107,14 @@ knitr::kable(ckd_summary,
 
 ```{r}
 #| label: clean-ritu-restriction
+# --- Entire cohort (all stages) ----------------------------------------------
+# Saved BEFORE the stage restriction so the entire-cohort page can use it. Same
+# pipeline, same variables (including the CKD / ESKD / AKI family from 5.16-5.19
+# and the new creatinine pull) -- the only difference is that no stage filter has
+# been applied, so tumor_stage still varies and stays a valid covariate there.
+saveRDS(final_master, "ritu_full_master.rds")
+cat("Entire cohort saved to ritu_full_master.rds:", nrow(final_master), "\n")
+
 # --- Ritu cohort restriction: drop advanced/metastatic disease ---------------
 # tumor_stage: 1 = Local/Early (stage I-II / local / neoadjuvant),
 #              2 = Advanced/Metastatic (stage III-IV).
