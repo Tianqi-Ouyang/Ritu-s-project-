@@ -10,7 +10,7 @@ project:
     - qmd/ritu_carbo_auc3.qmd
 
 website:
-  title: "Ritu Project – Local/Early Stage Platinum AE"
+  title: "Ritu Project – Cys-C / Creatinine Discordance in Platinum AE"
   navbar:
     left:
       - href: index.qmd
