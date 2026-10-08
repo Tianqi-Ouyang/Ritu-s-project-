@@ -185,6 +185,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#grade-23-adverse-events-within-90-days" id="toc-grade-23-adverse-events-within-90-days" class="nav-link" data-scroll-target="#grade-23-adverse-events-within-90-days">Grade 2/3 Adverse Events (within 90 days)</a></li>
   <li><a href="#hospitalizations-mortality" id="toc-hospitalizations-mortality" class="nav-link" data-scroll-target="#hospitalizations-mortality">Hospitalizations &amp; Mortality</a></li>
   <li><a href="#long-horizon-kidney-outcomes-ckd-eskd-aki" id="toc-long-horizon-kidney-outcomes-ckd-eskd-aki" class="nav-link" data-scroll-target="#long-horizon-kidney-outcomes-ckd-eskd-aki">Long-Horizon Kidney Outcomes (CKD / ESKD / AKI)</a></li>
+  <li><a href="#competing-risk-models-death-competing" id="toc-competing-risk-models-death-competing" class="nav-link" data-scroll-target="#competing-risk-models-death-competing">Competing-Risk Models (death competing)</a></li>
   </ul></li>
   <li><a href="#data-sources" id="toc-data-sources" class="nav-link" data-scroll-target="#data-sources">Data Sources</a></li>
   <li><a href="#key-variables" id="toc-key-variables" class="nav-link" data-scroll-target="#key-variables">Key Variables</a>
@@ -476,57 +477,110 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Ported from the <a href="https://tianqi-ouyang.github.io/ICI-CKD-/data_management.html">ICI-CKD project</a>, re-anchored to <code>baseline_sample_date</code>. <strong>These are the only outcomes in the project that are not censored at 90 days</strong> — a qualifying CKD episode must be <em>sustained for ≥ 90 days</em>, so they use the full length of RPDR creatinine follow-up (median 446 days, max 1167).</p>
 <table class="caption-top table">
 <colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Outcome</th>
+<th>Definition</th>
+<th>Entire 943</th>
+<th>Local/Early 323</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>aki</code></td>
+<td><strong>Within 1 year</strong>: CRE &gt; 1.5 × median of prior 90 d, <strong>or</strong> ≥ 0.3 mg/dL above the prior-2-day low</td>
+<td>197 (20.9 %)</td>
+<td>51 (15.8 %)</td>
+</tr>
+<tr class="even">
+<td><code>aki_any</code></td>
+<td>Same rule, no time limit (reference only, not modelled)</td>
+<td>240 (25.5 %)</td>
+<td>63 (19.5 %)</td>
+</tr>
+<tr class="odd">
+<td><code>ckd_incidence</code></td>
+<td>Sustained ≥ 90 d: <code>pct_drop &gt; 0.25</code> &amp; eGFR &lt; 60 &amp; baseline ≥ 60</td>
+<td>61 (6.5 %)</td>
+<td>21 (6.5 %)</td>
+</tr>
+<tr class="even">
+<td><code>ckd_incidence_any</code></td>
+<td>Sustained ≥ 90 d: baseline ≥ 60 → eGFR &lt; 60, <strong>no % requirement</strong></td>
+<td>89 (9.4 %)</td>
+<td>37 (11.5 %)</td>
+</tr>
+<tr class="odd">
+<td><code>ckd_progression</code></td>
+<td>Sustained ≥ 90 d: baseline <strong>&lt; 60</strong> <em>and</em> a further <code>pct_drop &gt; 0.30</code></td>
+<td>8 (0.8 %)</td>
+<td>5 (1.5 %)</td>
+</tr>
+<tr class="even">
+<td><code>eskd_defination_1</code></td>
+<td>Sustained ≥ 90 d: eGFR &lt; 10</td>
+<td>1 (0.1 %)</td>
+<td>1 (0.3 %)</td>
+</tr>
+<tr class="odd">
+<td><code>esrd_kt_after_ici</code></td>
+<td>ESRD / KT / dialysis ICD code after baseline</td>
+<td>2 (0.2 %)</td>
+<td>1 (0.3 %)</td>
+</tr>
+<tr class="even">
+<td><code>eskd_composite</code></td>
+<td><code>esrd_kt_after_ici == 1 \| eskd_defination_1 == 1</code></td>
+<td>2 (0.2 %)</td>
+<td>1 (0.3 %)</td>
+</tr>
+<tr class="odd">
+<td><code>ckd_composite</code></td>
+<td><code>eskd_composite \| ckd_incidence \| ckd_progression</code></td>
+<td>70 (7.4 %)</td>
+<td>26 (8.0 %)</td>
+</tr>
+</tbody>
+</table>
+<p><code>ckd_composite</code> uses <code>ckd_incidence</code> (&gt; 25 %), not <code>ckd_incidence_any</code>. The progression definition now requires a further &gt; 30 % drop; previously it counted anyone below 60 before and after, i.e.&nbsp;stable CKD, which is why that count fell from 61 to 8.</p>
+</section>
+<section id="competing-risk-models-death-competing" class="level2">
+<h2 class="anchored" data-anchor-id="competing-risk-models-death-competing">Competing-Risk Models (death competing)</h2>
+<p>Fine-Gray models for <code>egfr_diff_pct_per10</code> are in §4.12–4.13 of the whole and entire pages and §5.12–5.13 of the carboplatin pages. Death comes from the RPDR <code>Date_Of_Death</code> — <code>death_90</code> is capped at 90 days and cannot serve as a competing event over a multi-year horizon. Censoring is at the last creatinine.</p>
+<table class="caption-top table">
+<colgroup>
 <col style="width: 33%">
 <col style="width: 33%">
 <col style="width: 33%">
 </colgroup>
 <thead>
 <tr class="header">
-<th>Outcome</th>
-<th>Definition</th>
-<th>n (%) of 323</th>
+<th>Model</th>
+<th>Entire 943</th>
+<th>Local/Early 323</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<td><code>aki</code></td>
-<td>CRE &gt; 1.5 × median of prior 90 d, <strong>or</strong> ≥ 0.3 mg/dL above the prior-2-day low</td>
-<td>63 (19.5 %)</td>
+<td>AKI ≤ 1 yr</td>
+<td>subHR 1.31 (1.18, 1.47), p &lt; 0.001</td>
+<td>1.13 (0.87, 1.46), p = 0.38</td>
 </tr>
 <tr class="even">
-<td><code>ckd_incidence</code></td>
-<td>Sustained ≥ 90 d: <code>pct_drop &gt; 0.30</code> &amp; eGFR &lt; 60 &amp; baseline eGFR ≥ 60</td>
-<td>15 (4.6 %)</td>
-</tr>
-<tr class="odd">
-<td><code>ckd_progression</code></td>
-<td>Sustained ≥ 90 d: eGFR &lt; 60 &amp; baseline eGFR &lt; 60</td>
-<td>20 (6.2 %)</td>
-</tr>
-<tr class="even">
-<td><code>eskd_defination_1</code></td>
-<td>Sustained ≥ 90 d: eGFR &lt; 10</td>
-<td>1 (0.3 %)</td>
-</tr>
-<tr class="odd">
-<td><code>esrd_kt_after_ici</code></td>
-<td>ESRD / KT / dialysis ICD code after baseline</td>
-<td>1 (0.3 %)</td>
-</tr>
-<tr class="even">
-<td><code>eskd_composite</code></td>
-<td><code>esrd_kt_after_ici == 1 \| eskd_defination_1 == 1</code></td>
-<td>1 (0.3 %)</td>
-</tr>
-<tr class="odd">
-<td><code>ckd_composite</code></td>
-<td><code>eskd_composite == 1 \| ckd_incidence == 1 \| ckd_progression == 1</code></td>
-<td>35 (10.8 %)</td>
+<td>CKD composite, any time</td>
+<td>1.14 (1.00, 1.30), p = 0.045</td>
+<td>1.56 (1.13, 2.14), p = 0.006</td>
 </tr>
 </tbody>
 </table>
+<p>Events / deaths: AKI 197 events + 104 deaths (entire), 51 + 7 (Local/Early); CKD composite 70 + 241 (entire), 26 + 25 (Local/Early). Only the entire-cohort AKI model is comfortably powered against ~21 covariates.</p>
 <p>All of the above are <strong>Table 1 rows</strong> on all three analysis pages, together with <code>esrd_kt</code> (ESRD / KT at or before baseline, n = 1), <code>eGFR_CRE_baseline</code>, <code>ckd_stage_baseline</code> and <code>last_cre_days</code>. They also keep a dedicated section — 2.2 on the whole-cohort page, 3.2 on the carboplatin pages — carrying the median time to each event, the length of creatinine follow-up, and the <code>aki</code> vs <code>AKI_kdigo_90days</code> cross-tabulation that Table 1 cannot show.</p>
-<p>They are descriptive only: <strong>not</strong> in any Fine-Gray, cause-specific or Cox model, because mixing a full-follow-up outcome into the 90-day competing-risks framework would need its own censoring and competing-event decisions.</p>
+<p>AKI and the CKD composite are now <strong>modelled</strong> with Fine-Gray competing risks (see below). The remaining kidney variables stay descriptive.</p>
 <p><code>aki</code> is a different variable from the existing <code>AKI_g2_90days</code> / <code>AKI_kdigo_90days</code>: it compares each creatinine against the patient’s own preceding 90-day median across the whole record, not against a fixed pre-baseline value inside 90 days. In the whole cohort they agree on 19 patients, <code>aki</code> alone flags 44, and <code>AKI_kdigo_90days</code> alone flags 14.</p>
 </section>
 </section>

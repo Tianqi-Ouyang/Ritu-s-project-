@@ -166,15 +166,38 @@ project that are not censored at 90 days** — a qualifying CKD episode must be
 *sustained for ≥ 90 days*, so they use the full length of RPDR creatinine
 follow-up (median 446 days, max 1167).
 
-| Outcome | Definition | n (%) of 323 |
+| Outcome | Definition | Entire 943 | Local/Early 323 |
+|---|---|---|---|
+| `aki` | **Within 1 year**: CRE > 1.5 × median of prior 90 d, **or** ≥ 0.3 mg/dL above the prior-2-day low | 197 (20.9 %) | 51 (15.8 %) |
+| `aki_any` | Same rule, no time limit (reference only, not modelled) | 240 (25.5 %) | 63 (19.5 %) |
+| `ckd_incidence` | Sustained ≥ 90 d: `pct_drop > 0.25` & eGFR < 60 & baseline ≥ 60 | 61 (6.5 %) | 21 (6.5 %) |
+| `ckd_incidence_any` | Sustained ≥ 90 d: baseline ≥ 60 → eGFR < 60, **no % requirement** | 89 (9.4 %) | 37 (11.5 %) |
+| `ckd_progression` | Sustained ≥ 90 d: baseline **< 60** *and* a further `pct_drop > 0.30` | 8 (0.8 %) | 5 (1.5 %) |
+| `eskd_defination_1` | Sustained ≥ 90 d: eGFR < 10 | 1 (0.1 %) | 1 (0.3 %) |
+| `esrd_kt_after_ici` | ESRD / KT / dialysis ICD code after baseline | 2 (0.2 %) | 1 (0.3 %) |
+| `eskd_composite` | `esrd_kt_after_ici == 1 \| eskd_defination_1 == 1` | 2 (0.2 %) | 1 (0.3 %) |
+| `ckd_composite` | `eskd_composite \| ckd_incidence \| ckd_progression` | 70 (7.4 %) | 26 (8.0 %) |
+
+`ckd_composite` uses `ckd_incidence` (> 25 %), not `ckd_incidence_any`. The
+progression definition now requires a further > 30 % drop; previously it counted
+anyone below 60 before and after, i.e. stable CKD, which is why that count fell
+from 61 to 8.
+
+## Competing-Risk Models (death competing)
+
+Fine-Gray models for `egfr_diff_pct_per10` are in §4.12–4.13 of the whole and
+entire pages and §5.12–5.13 of the carboplatin pages. Death comes from the RPDR
+`Date_Of_Death` — `death_90` is capped at 90 days and cannot serve as a
+competing event over a multi-year horizon. Censoring is at the last creatinine.
+
+| Model | Entire 943 | Local/Early 323 |
 |---|---|---|
-| `aki` | CRE > 1.5 × median of prior 90 d, **or** ≥ 0.3 mg/dL above the prior-2-day low | 63 (19.5 %) |
-| `ckd_incidence` | Sustained ≥ 90 d: `pct_drop > 0.30` & eGFR < 60 & baseline eGFR ≥ 60 | 15 (4.6 %) |
-| `ckd_progression` | Sustained ≥ 90 d: eGFR < 60 & baseline eGFR < 60 | 20 (6.2 %) |
-| `eskd_defination_1` | Sustained ≥ 90 d: eGFR < 10 | 1 (0.3 %) |
-| `esrd_kt_after_ici` | ESRD / KT / dialysis ICD code after baseline | 1 (0.3 %) |
-| `eskd_composite` | `esrd_kt_after_ici == 1 \| eskd_defination_1 == 1` | 1 (0.3 %) |
-| `ckd_composite` | `eskd_composite == 1 \| ckd_incidence == 1 \| ckd_progression == 1` | 35 (10.8 %) |
+| AKI ≤ 1 yr | subHR 1.31 (1.18, 1.47), p < 0.001 | 1.13 (0.87, 1.46), p = 0.38 |
+| CKD composite, any time | 1.14 (1.00, 1.30), p = 0.045 | 1.56 (1.13, 2.14), p = 0.006 |
+
+Events / deaths: AKI 197 events + 104 deaths (entire), 51 + 7 (Local/Early);
+CKD composite 70 + 241 (entire), 26 + 25 (Local/Early). Only the entire-cohort
+AKI model is comfortably powered against ~21 covariates.
 
 All of the above are **Table 1 rows** on all three analysis pages, together with
 `esrd_kt` (ESRD / KT at or before baseline, n = 1), `eGFR_CRE_baseline`,
@@ -183,9 +206,8 @@ All of the above are **Table 1 rows** on all three analysis pages, together with
 time to each event, the length of creatinine follow-up, and the `aki` vs
 `AKI_kdigo_90days` cross-tabulation that Table 1 cannot show.
 
-They are descriptive only: **not** in any Fine-Gray, cause-specific or Cox model,
-because mixing a full-follow-up outcome into the 90-day competing-risks framework
-would need its own censoring and competing-event decisions.
+AKI and the CKD composite are now **modelled** with Fine-Gray competing risks
+(see below). The remaining kidney variables stay descriptive.
 
 `aki` is a different variable from the existing `AKI_g2_90days` /
 `AKI_kdigo_90days`: it compares each creatinine against the patient's own

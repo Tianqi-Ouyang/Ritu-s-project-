@@ -79,7 +79,7 @@ Inherited from the Jiaxuan pipeline, then one additional step:
 
 ## 2 What changed relative to the Jiaxuan project
 
-Seven kinds of change were made. Nothing else in the analysis was touched.
+Eight kinds of change were made. Nothing else in the analysis was touched.
 
 ### 2.1 Cohort filter
 
@@ -331,7 +331,76 @@ The 90-day death models are the clearest difference: degenerate at 323 (§3),
 actually estimable at 943 — though 41 events against ~21 covariates is still
 about 2 events per covariate, so read them as exploratory.
 
-### 2.9 Explicitly unchanged
+### 2.9 Outcome definitions revised; competing-risk models added
+
+**AKI is now restricted to within 1 year** of baseline. `aki_any` keeps the
+unrestricted count for reference and is not modelled.
+
+**CKD definitions**, all requiring the state to be sustained ≥ 90 days:
+
+| Variable | Definition | Change |
+|---|---|---|
+| `ckd_incidence` | eGFR ≥ 60 at baseline → < 60 with a **> 25 %** drop | threshold was > 30 % |
+| `ckd_incidence_any` | eGFR ≥ 60 at baseline → < 60, **no percent requirement** | new variable |
+| `ckd_progression` | eGFR **< 60 at baseline** *and* a further **> 30 %** drop | percent requirement is new |
+| `eskd_defination_1` | eGFR < 10 | unchanged |
+| `ckd_composite` | `ckd_incidence` + `ckd_progression` + `eskd_composite` | components changed |
+
+`ckd_composite` uses `ckd_incidence` (the > 25 % definition), not
+`ckd_incidence_any`, as specified. The three incidence definitions nest strictly:
+every `ckd_incidence` patient is in `ckd_incidence_any`.
+
+**The progression change is the consequential one.** It previously read
+"eGFR < 60 at baseline *and* after", which counted anyone with stable CKD as
+progressing. Requiring a further > 30 % drop takes it from 61 to 8 in the entire
+cohort (20 → 5 Local/Early).
+
+| Outcome | Entire (943) | Local/Early (323) |
+|---|---|---|
+| `aki` (≤ 1 yr) | 197 (20.9 %) | 51 (15.8 %) |
+| `aki_any` | 240 (25.5 %) | 63 (19.5 %) |
+| `ckd_incidence` (> 25 %) | 61 (6.5 %) | 21 (6.5 %) |
+| `ckd_incidence_any` | 89 (9.4 %) | 37 (11.5 %) |
+| `ckd_progression` (> 30 %) | 8 (0.8 %) | 5 (1.5 %) |
+| `ckd_composite` | 70 (7.4 %) | 26 (8.0 %) |
+
+**Competing-risk models.** Fine-Gray models for `egfr_diff_pct_per10` predicting
+AKI (≤ 365 d) and the CKD composite (any time post-baseline), with **death as the
+competing event**, are in §4.12–4.13 of the whole and entire pages and §5.12–5.13
+of the two carboplatin pages. Adjusters, predictor scaling and the
+Cockcroft-Gault adjustment are identical to the 90-day Fine-Gray models.
+
+Death for these models comes from the **RPDR `Date_Of_Death`**, not `death_90`:
+the latter is capped at 90 days and cannot place a death in time over a
+multi-year horizon. The two sources disagree slightly — RPDR flags 269 deaths in
+the entire cohort against REDCap's 41 within 90 days, and RPDR dates 37 of those
+within 90 days versus REDCap's 41 — because REDCap follow-up ended earlier. Of
+269 RPDR-deceased, 17 have no date and are censored rather than counted as the
+competing event, which slightly understates the competing risk.
+
+Censoring is at the last creatinine (day 0 → last follow-up), built by
+`cmp_variable_lt()` (§3.4b of `ritu_data.qmd`); the existing `cmp_variable()` is
+hard-wired to `time_to_death_90` and cannot be reused.
+
+Competing-risk breakdown (censored / event / death):
+
+| Outcome | Entire (943) | Local/Early (323) |
+|---|---|---|
+| AKI ≤ 1 yr | 642 / 197 / 104 | 265 / 51 / 7 |
+| CKD composite | 632 / 70 / 241 | 272 / 26 / 25 |
+
+Results for `egfr_diff_pct_per10` (subHR per 10 percentage-point decline):
+
+| Model | Entire (943) | Local/Early (323) |
+|---|---|---|
+| AKI ≤ 1 yr | 1.31 (1.18, 1.47), p < 0.001 | 1.13 (0.87, 1.46), p = 0.38 |
+| CKD composite | 1.14 (1.00, 1.30), p = 0.045 | 1.56 (1.13, 2.14), p = 0.006 |
+
+With 70 and 26 events against ~21 covariates, the CKD composite models are
+over-parameterised; the AKI model in the entire cohort (197 events) is the only
+one of the four that is comfortably powered.
+
+### 2.10 Explicitly unchanged
 
 - Primary exposure: `egfr_diff_pct_per10` — eGFR difference (%) per 10-percentage-point decline
 - Sensitivity exposure: `egfr_diff_pct_sens_per10` (CKD-EPI 2012 CysC vs CKD-EPI 2021 Cr)

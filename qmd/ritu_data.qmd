@@ -210,9 +210,11 @@ the full length of RPDR creatinine follow-up.
 | `eGFR_CRE_baseline` | CKD-EPI creatinine eGFR at `pre_CRE_45days` (per-patient baseline) |
 | `ckd_stage_baseline` | Numeric KDIGO stage 1–5 from `eGFR_CRE_baseline` |
 | `last_cre_date` / `last_cre_days` | Date of, and days from baseline to, the last creatinine |
-| `aki` / `aki_date` / `aki_days` | KDIGO-style AKI from serial CRE: CRE > 1.5 × median of prior 90 d, **or** ≥ 0.3 mg/dL above the lowest value in the prior 2 d |
-| `ckd_incidence` / `_date` | First sustained (≥ 90 d) episode with `pct_drop > 0.30` & `eGFR_CRE < 60` & `eGFR_CRE_baseline >= 60` |
-| `ckd_progression` / `_date` | First sustained (≥ 90 d) episode with `eGFR_CRE < 60` & `eGFR_CRE_baseline < 60` |
+| `aki` / `aki_date` / `aki_days` | KDIGO-style AKI from serial CRE **within 1 year of baseline**: CRE > 1.5 × median of prior 90 d, **or** ≥ 0.3 mg/dL above the lowest value in the prior 2 d |
+| `aki_any` / `aki_date_any` / `aki_days_any` | Same rule with no time limit — reference only, not modelled |
+| `ckd_incidence` / `_date` | First sustained (≥ 90 d) episode with `pct_drop > 0.25` & `eGFR_CRE < 60` & `eGFR_CRE_baseline >= 60` |
+| `ckd_incidence_any` / `_date` | First sustained (≥ 90 d) episode with `eGFR_CRE < 60` & `eGFR_CRE_baseline >= 60` — **no percent-drop requirement** |
+| `ckd_progression` / `_date` | First sustained (≥ 90 d) episode with `pct_drop > 0.30` & `eGFR_CRE_baseline < 60` |
 | `eskd_defination_1` / `_date` | First sustained (≥ 90 d) episode with `eGFR_CRE < 10` |
 | `esrd_kt` | ESRD / kidney transplant / dialysis ICD code **at or before** baseline |
 | `esrd_kt_after_ici` / `_date` | Same codes, first date **after** baseline |
@@ -220,6 +222,15 @@ the full length of RPDR creatinine follow-up.
 | `ckd_composite` | `eskd_composite == 1 \| ckd_incidence == 1 \| ckd_progression == 1` |
 | `time_to_ckd_incidence` / `_progression` / `_eskd_composite` / `_ckd_composite` | Days from `baseline_sample_date` to each event |
 | `aki_before_ckd` | 1 if `aki_days <= time_to_ckd_composite` |
+| `death_lt` / `death_days_lt` | Death at any time, from the RPDR `Date_Of_Death`. The competing event for the long-horizon models; `death_90` is capped at 90 days and cannot serve that role |
+| `rpdr_deceased` | RPDR `Vital_status` is not "Not reported as deceased". Exceeds `death_lt` because some deaths are recorded without a date |
+| `cmp_time_aki_365` / `cmp_status_aki_365` | Competing-risk pair for AKI, administratively censored at 365 days |
+| `cmp_time_ckd_composite` / `cmp_status_ckd_composite` | Competing-risk pair for the CKD composite, any time post-baseline |
+
+Both competing-risk pairs use the project's usual coding — 0 = censored,
+1 = event, 2 = death — with censoring at the last creatinine (day 0 → last
+follow-up). They are built by `cmp_variable_lt()` (Section 3.4b) rather than
+`cmp_variable()`, which is hard-wired to the 90-day death time.
 
 `aki` is **not** the same variable as the existing 90-day `AKI_g2_90days` /
 `AKI_g3_90days` / `AKI_kdigo_90days`; see the note in Section 5.17.
@@ -442,6 +453,52 @@ cmp_variable <- function(data, event_time, event_status, name) {
       !!cmp_time_name := ifelse(time_to_death_90 <= !!event_time ,time_to_death_90,!!event_time),
       !!cmp_status_name := ifelse(time_to_death_90 <= !!event_time,time_to_death_90_status,!!event_status)
     )
+}
+```
+
+## 3.4b cmp_variable_lt — competing risk over the full follow-up
+
+`cmp_variable()` above is hard-wired to `time_to_death_90`, so it only works for
+the 90-day outcomes. The long-horizon CKD / AKI outcomes need a version that
+takes an explicit death time and censoring time, and optionally applies
+administrative censoring at a fixed horizon (365 days for AKI).
+
+Status coding matches the rest of the project: 0 = censored, 1 = event,
+2 = death without the event first.
+
+```{r}
+#| label: fn-cmp-variable-lt
+cmp_variable_lt <- function(data, event_days, death_days, censor_days,
+                            name, horizon = Inf) {
+  event_days  <- enquo(event_days)
+  death_days  <- enquo(death_days)
+  censor_days <- enquo(censor_days)
+
+  cmp_time_name   <- paste0("cmp_time_",   name)
+  cmp_status_name <- paste0("cmp_status_", name)
+
+  data %>%
+    mutate(
+      .ev = as.numeric(!!event_days),
+      .de = as.numeric(!!death_days),
+      .ce = as.numeric(!!censor_days),
+      # Administrative censoring: anything after the horizon is unobserved.
+      .ev = ifelse(!is.na(.ev) & .ev > horizon, NA_real_, .ev),
+      .de = ifelse(!is.na(.de) & .de > horizon, NA_real_, .de),
+      # Censoring time is the last creatinine, capped at the horizon. Negative or
+      # missing follow-up is floored at 0 so no one contributes negative risk time.
+      .ce = pmin(ifelse(is.na(.ce), 0, .ce), horizon),
+      .ce = pmax(.ce, 0),
+      # Event wins only if it happens on or before the competing death.
+      .is_event = !is.na(.ev) & (is.na(.de) | .ev <= .de),
+      .is_death = !.is_event & !is.na(.de),
+      !!cmp_status_name := factor(
+        ifelse(.is_event, 1L, ifelse(.is_death, 2L, 0L)), levels = c(0, 1, 2)),
+      !!cmp_time_name := ifelse(.is_event, .ev, ifelse(.is_death, .de, .ce)),
+      # A zero-length risk time breaks crr(); give same-day events half a day.
+      !!cmp_time_name := pmax(.data[[cmp_time_name]], 0.5)
+    ) %>%
+    select(-.ev, -.de, -.ce, -.is_event, -.is_death)
 }
 ```
 
@@ -958,6 +1015,19 @@ med <- read.table('/Users/to909/Partners HealthCare Dropbox/Tianqi Ouyang/Thorac
   sep = "|", fill = TRUE, quote = "", header = TRUE) %>%
   select(EMPI, Medication_Date, Medication)
 med$Medication_Date <- as.Date(med$Medication_Date, "%m/%d/%Y")
+
+# Demographics -- read ONLY for vital status and date of death. The Dem file also
+# carries Date_of_Birth, MRN and Zip_code; those columns are dropped at read time
+# and never enter final_master, any table or any figure.
+dem <- read.table(paste0('/Users/to909/Partners HealthCare Dropbox/Tianqi Ouyang/',
+                         'Jiaxuan/RPDR/2022P001091_mes98_072826125900866852/',
+                         'mes98_072826125900866852_Dem.txt'),
+  sep = "|", fill = TRUE, quote = "", header = TRUE) %>%
+  select(EMPI, Vital_status, Date_Of_Death)
+dem$death_date <- as.Date(dem$Date_Of_Death, "%m/%d/%Y")
+dem <- dem %>%
+  mutate(rpdr_deceased = as.integer(Vital_status != "Not reported as deceased")) %>%
+  select(EMPI, rpdr_deceased, death_date)
 
 # Patient index: EMPI + baseline date (needed by pre/post lab functions)
 master_list <- final_master %>% select(EMPI, baseline_sample_date)
@@ -1948,14 +2018,27 @@ egfr_traj <- cre_long %>%
 cat("Patients with >=1 post-baseline creatinine:", dplyr::n_distinct(egfr_traj$EMPI), "\n")
 cat("Post-baseline creatinine measurements:", nrow(egfr_traj), "\n")
 
+# CKD incidence: started >= 60, fell below 60 with a >25 % drop, sustained >=90d.
+# Threshold was >30 % in the original ICI-CKD port; lowered to >25 % on request.
 ckd_incidence <- make_ckd_outcome_date(
   data = egfr_traj, id_var = EMPI, date_var = eGFR_CRE_date,
-  condition_expr = pct_drop > 0.30 & eGFR_CRE < 60 & eGFR_CRE_baseline >= 60,
+  condition_expr = pct_drop > 0.25 & eGFR_CRE < 60 & eGFR_CRE_baseline >= 60,
   days_threshold = 90, outcome_name = "ckd_incidence")
 
+# CKD incidence (any): started >= 60 and fell below 60 for >=90d, with NO
+# percent-drop requirement. The more inclusive definition; reported alongside
+# ckd_incidence, and a strict superset of it.
+ckd_incidence_any <- make_ckd_outcome_date(
+  data = egfr_traj, id_var = EMPI, date_var = eGFR_CRE_date,
+  condition_expr = eGFR_CRE < 60 & eGFR_CRE_baseline >= 60,
+  days_threshold = 90, outcome_name = "ckd_incidence_any")
+
+# CKD progression: already < 60 at baseline AND a further >30 % drop, sustained
+# >=90d. The percent-drop requirement is new -- the previous definition was just
+# "eGFR < 60 at baseline and after", which counted stable CKD as progression.
 ckd_progression <- make_ckd_outcome_date(
   data = egfr_traj, id_var = EMPI, date_var = eGFR_CRE_date,
-  condition_expr = eGFR_CRE < 60 & eGFR_CRE_baseline < 60,
+  condition_expr = pct_drop > 0.30 & eGFR_CRE_baseline < 60,
   days_threshold = 90, outcome_name = "ckd_progression")
 
 eskd_defination_1 <- make_ckd_outcome_date(
@@ -1980,11 +2063,13 @@ last_cre <- master_lab %>%
 
 final_master <- final_master %>%
   left_join(ckd_incidence,     by = "EMPI") %>%
+  left_join(ckd_incidence_any, by = "EMPI") %>%
   left_join(ckd_progression,   by = "EMPI") %>%
   left_join(eskd_defination_1, by = "EMPI") %>%
   left_join(baseline_stage,    by = "EMPI") %>%
   left_join(last_cre,          by = "EMPI") %>%
-  mutate(across(c(ckd_incidence, ckd_progression, eskd_defination_1),
+  mutate(across(c(ckd_incidence, ckd_incidence_any, ckd_progression,
+                  eskd_defination_1),
                 ~ ifelse(is.na(.x), 0L, as.integer(.x))))
 ```
 
@@ -2007,15 +2092,25 @@ aki_df <- create_aki(master_lab,
                      median_window_days = 90,
                      lowest_window_days = 2)
 
+# create_aki() returns the FIRST qualifying creatinine at any time post-baseline.
+# AKI is then restricted to within 1 year of baseline, as specified. aki_date /
+# aki_days describe the qualifying (<=365 d) event and are NA when the patient's
+# first AKI falls outside the window, so the flag, the date and the time variable
+# always agree. aki_any / aki_days_any keep the unrestricted version for
+# reference and are not used by any model.
 final_master <- final_master %>%
   left_join(aki_df, by = "EMPI") %>%
   mutate(
-    aki      = ifelse(is.na(aki), 0L, as.integer(aki)),
-    aki_days = as.numeric(aki_date - baseline_sample_date)
+    aki_any      = ifelse(is.na(aki), 0L, as.integer(aki)),
+    aki_date_any = aki_date,
+    aki_days_any = as.numeric(aki_date - baseline_sample_date),
+    aki          = ifelse(!is.na(aki_days_any) & aki_days_any <= 365, 1L, 0L),
+    aki_date     = as.Date(ifelse(aki == 1, aki_date_any, NA), origin = "1970-01-01"),
+    aki_days     = ifelse(aki == 1, aki_days_any, NA_real_)
   )
 
-cat("AKI (serial-creatinine definition):", sum(final_master$aki == 1), "of",
-    nrow(final_master), "\n")
+cat("AKI within 1 year:", sum(final_master$aki == 1), "of", nrow(final_master),
+    " | AKI at any time (reference):", sum(final_master$aki_any == 1), "\n")
 ```
 
 ## 5.18 ESRD / kidney transplant from RPDR diagnoses
@@ -2072,6 +2167,10 @@ final_master <- final_master %>%
     time_to_ckd_incidence   = as.numeric(ckd_incidence_date   - baseline_sample_date),
     time_to_ckd_progression = as.numeric(ckd_progression_date - baseline_sample_date),
 
+    time_to_ckd_incidence_any = as.numeric(ckd_incidence_any_date - baseline_sample_date),
+
+    # CKD composite = CKD incidence + CKD progression + ESKD composite.
+    # Uses ckd_incidence (the >25 % definition), not ckd_incidence_any.
     ckd_composite = ifelse(eskd_composite == 1 | ckd_incidence == 1 |
                            ckd_progression == 1, 1L, 0L),
     ckd_composite = ifelse(is.na(ckd_composite), 0L, ckd_composite),
@@ -2083,6 +2182,51 @@ final_master <- final_master %>%
     aki_before_ckd = ifelse(!is.na(aki_days) & !is.na(time_to_ckd_composite) &
                             aki_days <= time_to_ckd_composite, 1L, 0L)
   )
+
+# --- Long-horizon death, from the RPDR Dem file -------------------------------
+# The existing death_90 / time_to_death_90 come from REDCap pt_status and are
+# capped at 90 days, so they cannot serve as the competing event for outcomes
+# that run to the end of creatinine follow-up. RPDR Date_Of_Death is the only
+# source of an actual date of death. The two disagree slightly -- see the QC
+# print below -- because REDCap follow-up ended earlier than the RPDR pull.
+final_master <- final_master %>%
+  left_join(dem, by = "EMPI") %>%
+  mutate(
+    rpdr_deceased  = ifelse(is.na(rpdr_deceased), 0L, rpdr_deceased),
+    death_days_lt  = as.numeric(death_date - baseline_sample_date),
+    # A death recorded before baseline is a data error; treat as unknown.
+    death_days_lt  = ifelse(!is.na(death_days_lt) & death_days_lt < 0,
+                            NA_real_, death_days_lt),
+    death_lt       = ifelse(!is.na(death_days_lt), 1L, 0L)
+  )
+
+cat("RPDR deceased:", sum(final_master$rpdr_deceased == 1),
+    " with a usable death date:", sum(final_master$death_lt == 1),
+    " (deceased but undated, censored instead:",
+    sum(final_master$rpdr_deceased == 1 & final_master$death_lt == 0), ")\n")
+cat("REDCap death_90 == 1:", sum(final_master$death_90 == 1, na.rm = TRUE),
+    " | RPDR deaths within 90 days:",
+    sum(final_master$death_days_lt <= 90, na.rm = TRUE), "\n")
+cat("RPDR deaths within 365 days:",
+    sum(final_master$death_days_lt <= 365, na.rm = TRUE), "\n")
+
+# --- Competing-risk variables for the two requested models --------------------
+# Death is the competing event in both. Censoring is at the last creatinine,
+# i.e. day 0 -> last follow-up.
+final_master <- final_master %>%
+  # AKI, administratively censored at 1 year
+  cmp_variable_lt(event_days  = aki_days,
+                  death_days  = death_days_lt,
+                  censor_days = last_cre_days,
+                  name = "aki_365", horizon = 365) %>%
+  # CKD composite, any time post-baseline
+  cmp_variable_lt(event_days  = time_to_ckd_composite,
+                  death_days  = death_days_lt,
+                  censor_days = last_cre_days,
+                  name = "ckd_composite")
+
+cat("\ncmp_status_aki_365:\n");       print(table(final_master$cmp_status_aki_365))
+cat("cmp_status_ckd_composite:\n"); print(table(final_master$cmp_status_ckd_composite))
 
 ckd_summary <- tibble::tibble(
   Outcome = c("AKI (serial creatinine)", "CKD incidence", "CKD progression",

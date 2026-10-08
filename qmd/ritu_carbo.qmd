@@ -332,8 +332,8 @@ dat %>%
     # creatinine follow-up length; the rest are outcomes over that full window,
     # NOT censored at 90 days like every other outcome in this project.
     eGFR_CRE_baseline, ckd_stage_baseline, last_cre_days,
-    aki, ckd_incidence, ckd_progression, eskd_defination_1,
-    esrd_kt_after_ici, eskd_composite, ckd_composite
+    aki, aki_any, ckd_incidence, ckd_incidence_any, ckd_progression,
+    eskd_defination_1, esrd_kt_after_ici, eskd_composite, ckd_composite
   ) %>%
   tbl_summary(
     statistic = list(age ~ "{mean} ({sd})")
@@ -393,10 +393,18 @@ for these comes from the newer 2022P001091 RPDR pull.
 > by every model above and below. They are reported descriptively here and are
 > **not** in any Fine-Gray, cause-specific or Cox model.
 
+**Definitions as of the latest revision.** `aki` is now restricted to events
+**within 1 year** of baseline (`aki_any` keeps the unrestricted count for
+reference and is not modelled). `ckd_incidence` uses a **> 25 %** eGFR drop;
+`ckd_incidence_any` drops the percent requirement entirely; `ckd_progression`
+now additionally requires a **> 30 %** further drop, where it previously counted
+any patient who was simply below 60 before and after — which flagged stable CKD
+as progression and is why that count fell sharply.
+
 `aki` is also not the same variable as `AKI_g2_90days` / `AKI_kdigo_90days`: it
 compares each creatinine against the patient's own preceding 90-day median (or
-2-day low), across the whole record, rather than against a fixed pre-baseline
-value inside 90 days. The cross-tabulation below shows how far the two diverge.
+2-day low) rather than against a fixed pre-baseline value. The cross-tabulation
+below shows how far the two diverge.
 
 [📄 Download Word table](../tables/carbo/sec3_kidney_longhorizon.docx)
 
@@ -417,13 +425,15 @@ value inside 90 days. The cross-tabulation below shows how far the two diverge.
 }
 
 kidney_lt <- dplyr::bind_rows(
-  .kid_row("aki",               "aki_days",                "AKI (serial creatinine, KDIGO-style)"),
-  .kid_row("ckd_incidence",     "time_to_ckd_incidence",   "CKD incidence (>30% eGFR drop to <60, sustained)"),
-  .kid_row("ckd_progression",   "time_to_ckd_progression", "CKD progression (eGFR <60 at baseline and after)"),
-  .kid_row("eskd_defination_1", NULL,                      "ESKD (eGFR <10, sustained)"),
-  .kid_row("esrd_kt_after_ici", NULL,                      "ESRD / kidney transplant after baseline"),
-  .kid_row("eskd_composite",    "time_to_eskd_composite",  "ESKD composite"),
-  .kid_row("ckd_composite",     "time_to_ckd_composite",   "CKD composite")
+  .kid_row("aki",               "aki_days",                    "AKI within 1 year (serial creatinine)"),
+  .kid_row("aki_any",           "aki_days_any",                "AKI at any time (reference only, not modelled)"),
+  .kid_row("ckd_incidence",     "time_to_ckd_incidence",       "CKD incidence (>25% eGFR drop to <60, sustained >=90d)"),
+  .kid_row("ckd_incidence_any", "time_to_ckd_incidence_any",   "CKD incidence any (>=60 to <60, sustained >=90d, no % drop)"),
+  .kid_row("ckd_progression",   "time_to_ckd_progression",     "CKD progression (<60 at baseline, further >30% drop, sustained >=90d)"),
+  .kid_row("eskd_defination_1", NULL,                          "ESKD (eGFR <10, sustained >=90d)"),
+  .kid_row("esrd_kt_after_ici", NULL,                          "ESRD / kidney transplant after baseline"),
+  .kid_row("eskd_composite",    "time_to_eskd_composite",      "ESKD composite"),
+  .kid_row("ckd_composite",     "time_to_ckd_composite",       "CKD composite (incidence + progression + ESKD composite)")
 )
 
 ft_kid <- flextable::flextable(kidney_lt) |>
@@ -658,6 +668,57 @@ fg_model("cmp_time_side_effect", "cmp_status_side_effect", "egfr_diff_pct_per10"
 ```{r}
 #| label: ritu-carbo-cox-cg-death
 cox_model("time_to_death_90", "death_90", "egfr_diff_pct_per10", egfr_adj = "cockcroft", docx_name = "sec5_death_90")
+```
+
+## 5.12 AKI within 1 Year (Fine-Gray, death competing)
+
+> **These two subsections use a different time axis from everything above.**
+> Sections 5.1–5.11 are 90-day outcomes. The two below run on the long-horizon
+> outcomes built in Sections 5.16–5.19 of [Data Management](ritu_data.qmd):
+> AKI is administratively censored at **365 days**, the CKD composite runs to the
+> **last creatinine** (day 0 → last follow-up). Death is the competing event in
+> both, taken from the RPDR `Date_Of_Death` rather than the 90-day `death_90`
+> flag, which cannot place a death in time beyond day 90. Patients recorded as
+> deceased in RPDR without a date are censored rather than counted as the
+> competing event.
+>
+> The adjuster set, the predictor (`egfr_diff_pct_per10`, per 10 percentage-point
+> decline) and the Cockcroft-Gault adjustment are identical to the 90-day models.
+
+[📄 Download Word table](../tables/carbo/sec5_aki_365.docx) · [CKD Composite](../tables/carbo/sec5_ckd_composite.docx)
+
+```{r}
+#| label: ritu-carbo-fg-aki365
+fg_model("cmp_time_aki_365", "cmp_status_aki_365", "egfr_diff_pct_per10",
+         egfr_adj = "cockcroft", docx_name = "sec5_aki_365")
+```
+
+## 5.13 CKD Composite, Any Time Post-Baseline (Fine-Gray, death competing)
+
+CKD composite = CKD incidence (> 25 % eGFR drop to < 60, sustained ≥ 90 d)
+**+** CKD progression (eGFR < 60 at baseline with a further > 30 % drop, sustained
+≥ 90 d) **+** ESKD composite.
+
+```{r}
+#| label: ritu-carbo-fg-ckdcomposite
+fg_model("cmp_time_ckd_composite", "cmp_status_ckd_composite", "egfr_diff_pct_per10",
+         egfr_adj = "cockcroft", docx_name = "sec5_ckd_composite")
+```
+
+```{r}
+#| label: ritu-carbo-fg-lt-counts
+lt_counts <- tibble::tibble(
+  Outcome = c("AKI within 1 year", "CKD composite (any time)"),
+  Censored = c(sum(dat$cmp_status_aki_365 == 0), sum(dat$cmp_status_ckd_composite == 0)),
+  Event    = c(sum(dat$cmp_status_aki_365 == 1), sum(dat$cmp_status_ckd_composite == 1)),
+  Death    = c(sum(dat$cmp_status_aki_365 == 2), sum(dat$cmp_status_ckd_composite == 2)),
+  `Median follow-up (d)` = c(
+    round(median(dat$cmp_time_aki_365, na.rm = TRUE)),
+    round(median(dat$cmp_time_ckd_composite, na.rm = TRUE)))
+)
+knitr::kable(lt_counts, caption = sprintf(
+  "Competing-risk event counts, N = %d. Status 0 = censored, 1 = event, 2 = death.",
+  nrow(dat)))
 ```
 
 # 6 Cause-Specific Hazard Models — eGFR Difference (%) (per 10 % decline, adjusted for Cockcroft-Gault) (Carboplatin)
