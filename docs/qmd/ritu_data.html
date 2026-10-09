@@ -141,10 +141,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span class="menu-text">Entire Cohort (N = 943)</span></a>
   </li>  
   <li class="nav-item dropdown ">
-    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-localearly-(n--323" role="link" data-bs-toggle="dropdown" aria-expanded="false">
- <span class="menu-text">Local/Early (N = 323)</span>
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-localearly-(n--322" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Local/Early (N = 322)</span>
     </a>
-    <ul class="dropdown-menu" aria-labelledby="nav-menu-localearly-(n--323">    
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-localearly-(n--322">    
         <li>
     <a class="dropdown-item" href="../qmd/ritu_whole.html">
  <span class="dropdown-text">Whole Cohort</span></a>
@@ -288,8 +288,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 
 <blockquote class="blockquote">
-<p><strong>Ritu cohort — Local/Early stage only.</strong> This pipeline is the Jiaxuan data management pipeline with one added exclusion: all <strong>advanced/metastatic</strong> patients (<code>tumor_stage == "Advanced/Metastatic"</code>, stage III–IV) are removed at the end of Section 5.16, leaving <strong>N = 323</strong> (190 carboplatin, 133 cisplatin). Every variable definition, formula, window and exclusion above that step is unchanged. The analytic dataset is written to <code>ritu_final_master.rds</code>.</p>
-<p>REDCap inputs are read from <code>../Data/</code> because this project lives in a <code>Ritu project/</code> subfolder alongside the Jiaxuan project; the RPDR <code>.txt</code> pull is read from its original absolute path.</p>
+<p><strong>Ritu cohort — Local/Early stage only.</strong> This pipeline is the Jiaxuan data management pipeline with one added exclusion: all <strong>advanced/metastatic</strong> patients (<code>tumor_stage == "Advanced/Metastatic"</code>, stage III–IV) are removed at the end of Section 5.20, leaving <strong>N = 322</strong> (189 carboplatin, 133 cisplatin). Every variable definition, formula, window and exclusion above that step is unchanged. The analytic dataset is written to <code>ritu_final_master.rds</code>.</p>
+<p><strong>Inputs.</strong> The REDCap export is <code>CystatinCInPatientsO_DATA_2026-10-09_1107.csv</code> (refreshed 2026-10-09 with updated follow-up), read from its Dropbox path; <code>Included Patients WHOLE cohort.csv</code> still comes from <code>../Data/</code>, and the RPDR <code>.txt</code> pulls from their original absolute paths. The refreshed export carries <code>name</code>, <code>mgh_mrn</code> and <code>dob</code> columns, which are dropped at read time in Section 4.1 and never enter the dataset, any table, or this site.</p>
 </blockquote>
 <section id="variable-name-dictionary" class="level1">
 <h1>1 Variable Name Dictionary</h1>

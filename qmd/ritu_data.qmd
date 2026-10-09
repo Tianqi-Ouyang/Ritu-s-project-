@@ -11,13 +11,16 @@ execute:
 > **Ritu cohort — Local/Early stage only.** This pipeline is the Jiaxuan data
 > management pipeline with one added exclusion: all **advanced/metastatic**
 > patients (`tumor_stage == "Advanced/Metastatic"`, stage III–IV) are removed at
-> the end of Section 5.16, leaving **N = 323** (190 carboplatin, 133 cisplatin).
+> the end of Section 5.20, leaving **N = 322** (189 carboplatin, 133 cisplatin).
 > Every variable definition, formula, window and exclusion above that step is
 > unchanged. The analytic dataset is written to `ritu_final_master.rds`.
 >
-> REDCap inputs are read from `../Data/` because this project lives in a
-> `Ritu project/` subfolder alongside the Jiaxuan project; the RPDR `.txt`
-> pull is read from its original absolute path.
+> **Inputs.** The REDCap export is `CystatinCInPatientsO_DATA_2026-10-09_1107.csv`
+> (refreshed 2026-10-09 with updated follow-up), read from its Dropbox path;
+> `Included Patients WHOLE cohort.csv` still comes from `../Data/`, and the RPDR
+> `.txt` pulls from their original absolute paths. The refreshed export carries
+> `name`, `mgh_mrn` and `dob` columns, which are dropped at read time in Section
+> 4.1 and never enter the dataset, any table, or this site.
 
 # 1 Variable Name Dictionary
 
