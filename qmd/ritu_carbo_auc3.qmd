@@ -8,11 +8,11 @@ execute:
   message: false
 ---
 
-> **Ritu cohort — Local/Early stage only.** This page repeats the Jiaxuan carboplatin AUC ≥ 3 analysis on the subset of patients with `tumor_stage == "Local/Early"`, leaving **N = 143** patients. `tumor_stage` is dropped from Table 1 and from every adjuster set because it is constant within this cohort.
+> **Ritu cohort — Local/Early stage only.** This page repeats the Jiaxuan carboplatin AUC ≥ 3 analysis on the subset of patients with `tumor_stage == "Local/Early"`, leaving **N = 142** patients. `tumor_stage` is dropped from Table 1 and from every adjuster set because it is constant within this cohort.
 >
-> **`steroids` is also dropped from the adjuster sets on this page only.** All 143 patients in this subgroup received steroids, so the variable is constant and collinear with the intercept. Together with an emptied `cancer_type_cat_7` "GI" level (cleared by `droplevels()` after the cohort filter) it made the design matrix rank-deficient, which caused `cmprsk::crr` to fail for *every* outcome regardless of event count. `steroids` is retained as a descriptive row in Table 1. The whole and carboplatin cohorts are full rank and keep the original adjuster set.
+> **`steroids` is also dropped from the adjuster sets on this page only.** All 142 patients in this subgroup received steroids, so the variable is constant and collinear with the intercept. Together with an emptied `cancer_type_cat_7` "GI" level (cleared by `droplevels()` after the cohort filter) it made the design matrix rank-deficient, which caused `cmprsk::crr` to fail for *every* outcome regardless of event count. `steroids` is retained as a descriptive row in Table 1. The whole and carboplatin cohorts are full rank and keep the original adjuster set.
 >
-> **This is the sparsest of the three cohorts.** Against ~20 covariate degrees of freedom, only composite grade 2 AEs (64 events) and anemia grade 2 (62) are adequately powered. Two outcomes have **zero events** here: thrombocytopenia grade 3 — where Fine-Gray errors out and the sections below show a "model not estimable" note in place of the table or figure — and 90-day death, where Cox PH returns empty `NA` estimates rather than erroring. Neither carries any information. See `RITU_PROJECT.md`.
+> **This is the sparsest of the three cohorts.** Against ~20 covariate degrees of freedom, only composite grade 2 AEs (63 events) and anemia grade 2 (61) are adequately powered. Two outcomes have **zero events** here: thrombocytopenia grade 3 — where Fine-Gray errors out and the sections below show a "model not estimable" note in place of the table or figure — and 90-day death, where Cox PH returns empty `NA` estimates rather than erroring. Neither carries any information. See `RITU_PROJECT.md`.
 
 # 1 Setup
 

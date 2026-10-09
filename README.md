@@ -9,16 +9,16 @@ disease** (`tumor_stage == "Local/Early"`, stage I–II).
 This is a derivative of the [Jiaxuan
 project](https://tianqi-ouyang.github.io/Cys-C-project-/). Every exposure,
 model, table, figure and download is carried over unchanged. The only
-substantive difference is the cohort: all 620 advanced/metastatic patients are
-excluded, leaving **N = 323**.
+substantive difference is the cohort: all 621 advanced/metastatic patients are
+excluded, leaving **N = 322**.
 
 ## Cohorts
 
 | Page | Cohort | Jiaxuan (all stages) | Ritu (Local/Early) |
 |---|---|---|---|
-| Whole Cohort | all platinum | 943 | **323** |
-| Carboplatin Cohort | carboplatin | 596 | **190** |
-| Carboplatin AUC ≥ 3 | carboplatin, AUC ≥ 3 | 463 | **143** |
+| Whole Cohort | all platinum | 943 | **322** |
+| Carboplatin Cohort | carboplatin | 596 | **189** |
+| Carboplatin AUC ≥ 3 | carboplatin, AUC ≥ 3 | 463 | **142** |
 
 ## Contents
 

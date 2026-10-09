@@ -818,7 +818,25 @@ get_ckd_stage <- function(egfr) {
 
 ```{r}
 #| label: load-redcap
-master <- read_csv('../Data/CystatinCInPatientsO_DATA_2026-04-27_0819.csv')
+# REDCap export, refreshed 2026-10-09 with updated follow-up. Replaces
+# ../Data/CystatinCInPatientsO_DATA_2026-04-27_0819.csv (same 974 records).
+#
+# The refreshed export adds three DIRECT IDENTIFIER columns the earlier one did
+# not carry -- name, mgh_mrn, dob. They are dropped here, at read time, so they
+# never reach final_master, the saved .rds, any table or the rendered site.
+# Do not remove this select(); the site is published publicly.
+redcap_path <- paste0('/Users/to909/Partners HealthCare Dropbox/Tianqi Ouyang/',
+                      'Thoracic Oncology Spreadsheets/Ritu_project/',
+                      'CystatinCInPatientsO_DATA_2026-10-09_1107.csv')
+restricted_cols <- c("name", "mgh_mrn", "dob")
+
+master <- read_csv(redcap_path) %>%
+  select(-any_of(restricted_cols))
+
+stopifnot(!any(restricted_cols %in% names(master)))
+cat("REDCap export:", basename(redcap_path), "|", nrow(master), "records |",
+    ncol(master), "columns after dropping", length(restricted_cols),
+    "identifier columns\n")
 
 whole_cohort <- read_csv('../Data/Included Patients WHOLE cohort.csv')
 

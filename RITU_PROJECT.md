@@ -6,7 +6,7 @@ platinum-based chemotherapy.
 A direct derivative of the Jiaxuan project. Every analysis, table, figure, model
 specification and output format is carried over unchanged. The project runs at
 **two cohort levels off one pipeline**: the **entire cohort** (N = 943, all
-tumour stages) and the **Local/Early** cohort (N = 323, advanced/metastatic
+tumour stages) and the **Local/Early** cohort (N = 322, advanced/metastatic
 excluded), which was the original point of the project.
 
 It has also gained, on request and documented in §2: KDIGO CKD stage in Table 1
@@ -22,7 +22,7 @@ that sit outside the 90-day competing-risks framework.
 
 The pipeline produces two analytic datasets in a single run. `ritu_full_master.rds`
 (N = 943) is saved immediately before the stage restriction below;
-`ritu_final_master.rds` (N = 323) immediately after it. Every variable definition
+`ritu_final_master.rds` (N = 322) immediately after it. Every variable definition
 is identical between them.
 
 ### 1.1 The Local/Early restriction
@@ -54,12 +54,12 @@ derivation is numerically identical to restricting before it.
 | Page | Cohort | N |
 |---|---|---|
 | `ritu_entire.qmd` | all platinum, **all stages** | **943** |
-| `ritu_whole.qmd` | all platinum, Local/Early | **323** |
-| `ritu_carbo.qmd` | carboplatin, Local/Early | **190** |
-| `ritu_carbo_auc3.qmd` | carboplatin AUC ≥ 3, Local/Early | **143** |
+| `ritu_whole.qmd` | all platinum, Local/Early | **322** |
+| `ritu_carbo.qmd` | carboplatin, Local/Early | **189** |
+| `ritu_carbo_auc3.qmd` | carboplatin AUC ≥ 3, Local/Early | **142** |
 
-Entire cohort composition: 323 Local/Early + 620 Advanced/Metastatic;
-596 carboplatin + 347 cisplatin. Within the Local/Early 323: 190 carboplatin,
+Entire cohort composition: 322 Local/Early + 621 Advanced/Metastatic;
+596 carboplatin + 347 cisplatin. Within the Local/Early 322: 189 carboplatin,
 133 cisplatin. See §2.8 for how the two levels differ analytically.
 
 ### 1.3 Exclusion flow
@@ -72,14 +72,14 @@ Inherited from the Jiaxuan pipeline, then one additional step:
 4. Missing platinum group (`platin_group` = NA) excluded
 5. Record 911 dropped (all RPDR pre-baseline labs outside the 45-day window)
    → **943, saved as `ritu_full_master.rds` (entire cohort)**
-6. **`tumor_stage != "Local/Early"` excluded (620 patients)
-   → 323, saved as `ritu_final_master.rds` (Local/Early cohort)**
+6. **`tumor_stage != "Local/Early"` excluded (621 patients)
+   → 322, saved as `ritu_final_master.rds` (Local/Early cohort)**
 
 ---
 
 ## 2 What changed relative to the Jiaxuan project
 
-Eight kinds of change were made. Nothing else in the analysis was touched.
+Nine kinds of change were made. Nothing else in the analysis was touched.
 
 ### 2.1 Cohort filter
 
@@ -106,12 +106,12 @@ Two further covariate changes follow from the same principle, and are confined t
 the **AUC ≥ 3 page**:
 
 - **`cancer_type_cat_7` levels are re-dropped after the cohort filter.**
-  `ritu_data.qmd` calls `droplevels()` against the 323 Local/Early patients, but
-  the AUC ≥ 3 filter empties the `GI` level again (0 of 143 patients), leaving an
+  `ritu_data.qmd` calls `droplevels()` against the 322 Local/Early patients, but
+  the AUC ≥ 3 filter empties the `GI` level again (0 of 142 patients), leaving an
   all-zero dummy column. `ritu_carbo_auc3.qmd` therefore re-applies
   `droplevels()` immediately after its own filter; `ritu_carbo.qmd` does the same
   for symmetry, though the carboplatin cohort happens to be full rank already.
-- **`steroids` is dropped from the AUC ≥ 3 adjuster sets.** All 143 patients in
+- **`steroids` is dropped from the AUC ≥ 3 adjuster sets.** All 142 patients in
   that subgroup received steroids, so the variable is constant and collinear with
   the intercept. It is kept as a descriptive row in Table 1.
 
@@ -119,7 +119,7 @@ This was not cosmetic. Before the fix the AUC ≥ 3 design matrix had rank 19 of
 columns, so `cmprsk::crr`'s `solve()` failed for **every** outcome — including
 composite grade 2 AEs with 64 events — and the `tidycmprsk` formula interface
 silently returned blank coefficient rows for `GI` and `steroids` instead of
-erroring. The whole (323) and carboplatin (190) cohorts are full rank across
+erroring. The whole (322) and carboplatin (189) cohorts are full rank across
 every model subset and keep the original adjuster set unchanged.
 
 ### 2.3 Sparse-outcome guards
@@ -176,13 +176,13 @@ These are descriptive Table 1 rows on all three analysis pages. **No model
 adjusts for them** — the continuous eGFRs are already in the adjuster sets, and
 adding a categorical recoding of the same measurement would be collinear.
 
-Cell sizes in the whole cohort (323) are thin at the bottom of the range:
+Cell sizes in the whole cohort (322) are thin at the bottom of the range:
 
 | Stage | `ckd_stage_cre` | `ckd_stage_cre_cys` |
 |---|---|---|
 | G1 (≥ 90) | 142 | 130 |
 | G2 (60–89) | 156 | 153 |
-| G3a (45–59) | 19 | 28 |
+| G3a (45–59) | 18 | 27 |
 | G3b (30–44) | 4 | 9 |
 | G4 (15–29) | 2 | 3 |
 
@@ -211,7 +211,7 @@ one has ~2,800 more creatinine values, which is what the longitudinal eGFR / CKD
 / AKI outcomes in §2.7 are built from.
 
 The cohort flow is unchanged: 946 → 944 after the no-RPDR-labs exclusion (same
-two records, 161 and 352) → 943 after dropping record 911 → **323** Local/Early.
+two records, 161 and 352) → 943 after dropping record 911 → **322** Local/Early.
 Record 911 still has no creatinine within 45 days of baseline in *either* pull,
 so its exclusion and the Section 6.1 note remain correct.
 
@@ -234,11 +234,11 @@ Variable names are kept identical to the source project — including the
 `eskd_defination_1` spelling and the `_after_ici` suffix — so the two projects
 stay directly comparable. Here `_after_ici` means "after first platinum".
 
-Results in the 323 Local/Early patients:
+Results in the 322 Local/Early patients:
 
 | Variable | n (%) |
 |---|---|
-| `aki` | 63 (19.5 %) |
+| `aki` | 63 (19.6 %) |
 | `ckd_incidence` | 15 (4.6 %) |
 | `ckd_progression` | 20 (6.2 %) |
 | `eskd_defination_1` | 1 (0.3 %) |
@@ -270,7 +270,7 @@ the length of creatinine follow-up, and the cross-tabulation of `aki` against
 **Time horizon.** Every other outcome in this project is censored at 90 days.
 These are not: a qualifying CKD episode must be *sustained for ≥ 90 days*, so
 they run over the whole RPDR creatinine record (days from baseline to last
-creatinine: median 446, max 1167). Being Table 1 rows they are **descriptive
+creatinine: median 445, max 1167). Being Table 1 rows they are **descriptive
 only** — they are in no Fine-Gray, cause-specific or Cox model, because mixing a
 full-follow-up outcome into the 90-day competing-risks framework needs its own
 censoring and competing-event decisions.
@@ -296,7 +296,7 @@ The project now runs at **two cohort levels off one pipeline run**:
 | Page | Cohort | Reads | N |
 |---|---|---|---|
 | `ritu_entire.qmd` | all platinum, **all stages** | `ritu_full_master.rds` | **943** |
-| `ritu_whole.qmd` | all platinum, Local/Early | `ritu_final_master.rds` | 323 |
+| `ritu_whole.qmd` | all platinum, Local/Early | `ritu_final_master.rds` | 322 |
 | `ritu_carbo.qmd` | carboplatin, Local/Early | `ritu_final_master.rds` | 190 |
 | `ritu_carbo_auc3.qmd` | carboplatin AUC ≥ 3, Local/Early | `ritu_final_master.rds` | 143 |
 
@@ -317,17 +317,17 @@ same CKD / ESKD / AKI family, same Table 1 rows.
 Event counts are roughly 3× the Local/Early ones, which materially changes what
 is interpretable:
 
-| Outcome | Entire (943) | Local/Early (323) |
+| Outcome | Entire (943) | Local/Early (322) |
 |---|---|---|
-| `aki` | 240 (25.5 %) | 63 (19.5 %) |
-| `ckd_composite` | 108 (11.5 %) | 35 (10.8 %) |
+| `aki` | 240 (25.5 %) | 63 (19.6 %) |
+| `ckd_composite` | 70 (7.4 %) | 26 (8.1 %) |
 | `ckd_progression` | 61 (6.5 %) | 20 (6.2 %) |
 | `ckd_incidence` | 46 (4.9 %) | 15 (4.6 %) |
 | `esrd_kt` (baseline) | 5 (0.5 %) | 1 (0.3 %) |
 | `eskd_composite` | 2 (0.2 %) | 1 (0.3 %) |
 | **90-day death** | **41** | **2** |
 
-The 90-day death models are the clearest difference: degenerate at 323 (§3),
+The 90-day death models are the clearest difference: degenerate at 322 (§3),
 actually estimable at 943 — though 41 events against ~21 covariates is still
 about 2 events per covariate, so read them as exploratory.
 
@@ -355,14 +355,14 @@ every `ckd_incidence` patient is in `ckd_incidence_any`.
 progressing. Requiring a further > 30 % drop takes it from 61 to 8 in the entire
 cohort (20 → 5 Local/Early).
 
-| Outcome | Entire (943) | Local/Early (323) |
+| Outcome | Entire (943) | Local/Early (322) |
 |---|---|---|
 | `aki` (≤ 1 yr) | 197 (20.9 %) | 51 (15.8 %) |
-| `aki_any` | 240 (25.5 %) | 63 (19.5 %) |
+| `aki_any` | 240 (25.5 %) | 63 (19.6 %) |
 | `ckd_incidence` (> 25 %) | 61 (6.5 %) | 21 (6.5 %) |
 | `ckd_incidence_any` | 89 (9.4 %) | 37 (11.5 %) |
-| `ckd_progression` (> 30 %) | 8 (0.8 %) | 5 (1.5 %) |
-| `ckd_composite` | 70 (7.4 %) | 26 (8.0 %) |
+| `ckd_progression` (> 30 %) | 8 (0.8 %) | 5 (1.6 %) |
+| `ckd_composite` | 70 (7.4 %) | 26 (8.1 %) |
 
 **Competing-risk models.** Fine-Gray models for `egfr_diff_pct_per10` predicting
 AKI (≤ 365 d) and the CKD composite (any time post-baseline), with **death as the
@@ -384,14 +384,14 @@ hard-wired to `time_to_death_90` and cannot be reused.
 
 Competing-risk breakdown (censored / event / death):
 
-| Outcome | Entire (943) | Local/Early (323) |
+| Outcome | Entire (943) | Local/Early (322) |
 |---|---|---|
-| AKI ≤ 1 yr | 642 / 197 / 104 | 265 / 51 / 7 |
-| CKD composite | 632 / 70 / 241 | 272 / 26 / 25 |
+| AKI ≤ 1 yr | 642 / 197 / 104 | 264 / 51 / 7 |
+| CKD composite | 632 / 70 / 241 | 271 / 26 / 25 |
 
 Results for `egfr_diff_pct_per10` (subHR per 10 percentage-point decline):
 
-| Model | Entire (943) | Local/Early (323) |
+| Model | Entire (943) | Local/Early (322) |
 |---|---|---|
 | AKI ≤ 1 yr | 1.31 (1.18, 1.47), p < 0.001 | 1.13 (0.87, 1.46), p = 0.38 |
 | CKD composite | 1.14 (1.00, 1.30), p = 0.045 | 1.56 (1.13, 2.14), p = 0.006 |
@@ -400,7 +400,67 @@ With 70 and 26 events against ~21 covariates, the CKD composite models are
 over-parameterised; the AKI model in the entire cohort (197 events) is the only
 one of the four that is comfortably powered.
 
-### 2.10 Explicitly unchanged
+### 2.10 REDCap export refreshed (2026-10-09)
+
+`ritu_data.qmd` §4.1 now reads
+`CystatinCInPatientsO_DATA_2026-10-09_1107.csv` from
+`.../Thoracic Oncology Spreadsheets/Ritu_project/`, replacing
+`../Data/CystatinCInPatientsO_DATA_2026-04-27_0819.csv`. Same 974 records and
+the same `record_id` set; 11 columns changed.
+
+**Three direct identifier columns are new in this export — `name`, `mgh_mrn`,
+`dob` — and are dropped at read time** with
+`select(-any_of(c("name","mgh_mrn","dob")))`, followed by a `stopifnot()` that
+fails the render if any survive. They never reach `final_master`, the saved
+`.rds`, any table, or the published site. **Do not remove that select**; the site
+is public.
+
+What actually changed, and what it touched:
+
+| Column | Records changed | Used by the pipeline? |
+|---|---|---|
+| `datediff` | 776 | no |
+| `fu_date` | 708 | **yes** → `last_follow_up_date` |
+| `pt_status` | 84 | **yes** → `death_90` |
+| `followup_data_complete` | 64 | no |
+| `age` | 3 | yes |
+| `platin_dose` | 2 | yes |
+| `late_patient_exclusion` | 2 | no |
+| `tumor_stage` | 1 | **yes** → the cohort split |
+| `form_1_complete`, `hosp_reason_summary`, `yr_fu` | 1 each | no |
+
+**Follow-up is substantially longer.** 695 records gained follow-up (median
++205 days, max +3785), 13 lost some, 266 unchanged. Median
+`days_last_follow_up` went 378 → 539 days in the entire cohort and 427 → 603 in
+the Local/Early cohort. Recorded deaths rose from 207 to 272.
+
+**One patient moved from Local/Early to Advanced/Metastatic**, so:
+
+| | Before | After |
+|---|---|---|
+| Entire cohort | 943 | 943 |
+| Local/Early | 323 | **322** |
+| Local/Early carboplatin | 190 | **189** |
+| Local/Early carbo AUC ≥ 3 | 143 | **142** |
+
+The exclusion flow is otherwise identical (946 → 944 → 943; same two records
+without RPDR labs, same record 911 drop).
+
+**`death_90` is unchanged at 41.** It requires `days_last_follow_up <= 90`, and
+the extended follow-up landed almost entirely on living patients — a patient who
+died early already had `fu_date` equal to their death date.
+
+**The kidney outcomes are unaffected.** They are built from RPDR creatinine and
+the RPDR `Date_Of_Death`, neither of which changed: `aki` 197, `ckd_composite`
+70, `ckd_incidence` 61, `ckd_progression` 8 in the entire cohort, all identical
+to the previous run. The Local/Early counts are also unchanged (51 / 26 / 21 / 5),
+so the reclassified patient had none of these events.
+
+The AUC ≥ 3 rank fix (§2.2) was re-verified at N = 142: `steroids` is still
+constant (142/142) and the `cancer_type_cat_7` `GI` level is still empty, so both
+corrections remain necessary and all three cohorts are full rank.
+
+### 2.11 Explicitly unchanged
 
 - Primary exposure: `egfr_diff_pct_per10` — eGFR difference (%) per 10-percentage-point decline
 - Sensitivity exposure: `egfr_diff_pct_sens_per10` (CKD-EPI 2012 CysC vs CKD-EPI 2021 Cr)
@@ -426,12 +486,12 @@ death is recoded as the competing event — these are the numbers the Fine-Gray
 models actually see, and they match the `Events` column of the rendered summary
 tables.
 
-| Outcome | Whole (323) | Carbo (190) | AUC ≥ 3 (143) |
+| Outcome | Whole (322) | Carbo (189) | AUC ≥ 3 (142) |
 |---|---|---|---|
-| Composite grade 2 AEs | 149 | 81 | 64 |
-| Anemia grade 2 | 138 | 79 | 62 |
-| Overall hospitalisation | 68 | 36 | 25 |
-| Platinum-related hospitalisation | 44 | 20 | 15 |
+| Composite grade 2 AEs | 148 | 81 | 64 |
+| Anemia grade 2 | 137 | 79 | 62 |
+| Overall hospitalisation | 69 | 36 | 25 |
+| Platinum-related hospitalisation | 45 | 20 | 15 |
 | Composite grade 3 AEs | 43 | 20 | 14 |
 | Anemia grade 3 | 40 | 18 | 14 |
 | Thrombocytopenia grade 2 | 37 | 14 | 9 |
@@ -465,11 +525,11 @@ conventional target is 10 events per covariate, so:
 
   | Cohort | Deaths | Reported subHR/HR (95 % CI) |
   |---|---|---|
-  | Whole (323) | 2 | 18.04 (0.00, an upper limit hundreds of digits long) |
+  | Whole (322) | 2 | 18.04 (0.00, an upper limit hundreds of digits long) |
   | Carboplatin (190) | 1 | 25.19 (0.00, Inf) |
   | AUC ≥ 3 (143) | 0 | NA (NA, NA) |
 
-  None of these rows carries information. The underlying fact — **2/323 (0.6 %)
+  None of these rows carries information. The underlying fact — **2/322 (0.6 %)
   90-day mortality** — is expected for early-stage disease and is itself worth
   stating in the write-up.
 
@@ -497,11 +557,11 @@ Ritu project/
 ├── qmd/
 │   ├── ritu_data.qmd        data management → both .rds files below
 │   ├── ritu_entire.qmd      entire cohort, all stages (N = 943)
-│   ├── ritu_whole.qmd       whole Local/Early cohort (N = 323)
-│   ├── ritu_carbo.qmd       carboplatin, Local/Early (N = 190)
-│   └── ritu_carbo_auc3.qmd  carboplatin AUC ≥ 3, Local/Early (N = 143)
+│   ├── ritu_whole.qmd       whole Local/Early cohort (N = 322)
+│   ├── ritu_carbo.qmd       carboplatin, Local/Early (N = 189)
+│   └── ritu_carbo_auc3.qmd  carboplatin AUC ≥ 3, Local/Early (N = 142)
 ├── ritu_full_master.rds     entire cohort, N = 943 (gitignored — contains PHI)
-├── ritu_final_master.rds    Local/Early cohort, N = 323 (gitignored — contains PHI)
+├── ritu_final_master.rds    Local/Early cohort, N = 322 (gitignored — contains PHI)
 └── docs/                    rendered site, committed and served by GitHub Pages
     ├── index.html
     ├── qmd/*.html

@@ -19,7 +19,7 @@ website:
         text: Data Management
       - href: qmd/ritu_entire.qmd
         text: Entire Cohort (N = 943)
-      - text: Local/Early (N = 323)
+      - text: Local/Early (N = 322)
         menu:
           - href: qmd/ritu_whole.qmd
             text: Whole Cohort

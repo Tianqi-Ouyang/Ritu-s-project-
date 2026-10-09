@@ -8,9 +8,9 @@ execute:
   message: false
 ---
 
-> **Ritu cohort — Local/Early stage only.** This page repeats the Jiaxuan carboplatin analysis on the subset of patients with `tumor_stage == "Local/Early"`, leaving **N = 190** carboplatin patients. `tumor_stage` is dropped from Table 1 and from every adjuster set because it is constant within this cohort. Everything else is unchanged.
+> **Ritu cohort — Local/Early stage only.** This page repeats the Jiaxuan carboplatin analysis on the subset of patients with `tumor_stage == "Local/Early"`, leaving **N = 189** carboplatin patients. `tumor_stage` is dropped from Table 1 and from every adjuster set because it is constant within this cohort. Everything else is unchanged.
 >
-> **Read the sparse outcomes with their event counts in view.** Against ~20 covariate degrees of freedom, only composite grade 2 AEs (81 events) and anemia grade 2 (79) are adequately powered. **90-day death has 1 event**, so every 90-day-death model here is numerically degenerate and not interpretable. See `RITU_PROJECT.md`.
+> **Read the sparse outcomes with their event counts in view.** Against ~20 covariate degrees of freedom, only composite grade 2 AEs (80 events) and anemia grade 2 (78) are adequately powered. **90-day death has 1 event**, so every 90-day-death model here is numerically degenerate and not interpretable. See `RITU_PROJECT.md`.
 
 # 1 Setup
 
