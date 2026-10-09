@@ -186,7 +186,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#hospitalizations-mortality" id="toc-hospitalizations-mortality" class="nav-link" data-scroll-target="#hospitalizations-mortality">Hospitalizations &amp; Mortality</a></li>
   <li><a href="#long-horizon-kidney-outcomes-ckd-eskd-aki" id="toc-long-horizon-kidney-outcomes-ckd-eskd-aki" class="nav-link" data-scroll-target="#long-horizon-kidney-outcomes-ckd-eskd-aki">Long-Horizon Kidney Outcomes (CKD / ESKD / AKI)</a></li>
   <li><a href="#competing-risk-models-death-competing" id="toc-competing-risk-models-death-competing" class="nav-link" data-scroll-target="#competing-risk-models-death-competing">Competing-Risk Models (death competing)</a></li>
-  <li><a href="#competing-risk-models-with-death-not-limited-to-90-days" id="toc-competing-risk-models-with-death-not-limited-to-90-days" class="nav-link" data-scroll-target="#competing-risk-models-with-death-not-limited-to-90-days">Competing-Risk Models with Death Not Limited to 90 Days</a></li>
   </ul></li>
   <li><a href="#data-sources" id="toc-data-sources" class="nav-link" data-scroll-target="#data-sources">Data Sources</a></li>
   <li><a href="#key-variables" id="toc-key-variables" class="nav-link" data-scroll-target="#key-variables">Key Variables</a>
@@ -552,43 +551,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="competing-risk-models-death-competing" class="level2">
 <h2 class="anchored" data-anchor-id="competing-risk-models-death-competing">Competing-Risk Models (death competing)</h2>
-<p>Fine-Gray models for <code>egfr_diff_pct_per10</code> are in §4.12–4.13 of the whole and entire pages and §5.12–5.13 of the carboplatin pages. Death comes from the RPDR <code>Date_Of_Death</code> — <code>death_90</code> is capped at 90 days and cannot serve as a competing event over a multi-year horizon. Censoring is at the last creatinine.</p>
+<p>Fine-Gray models for <code>egfr_diff_pct_per10</code> are in §4.12–4.13 of the whole and entire pages and §5.12–5.13 of the carboplatin pages. These are the only two long-horizon outcomes modelled; the 90-day adverse-event and hospitalization outcomes are modelled with the 90-day competing event in §4 / §5.</p>
+<p>The competing event is <strong>death at any time</strong>, <code>death_days_any</code> — <code>death_90</code> is capped at 90 days and cannot place a death in time beyond day 90, so it cannot serve over a multi-year horizon. <code>death_days_any</code> is the <strong>union of the two sources</strong> that carry a death date: the RPDR <code>Date_Of_Death</code> when there is one, otherwise the REDCap last-follow-up date for a patient whose <code>pt_status</code> is “Dead”. The two do not nest — 27 REDCap deaths have no RPDR date and 7 RPDR-dated deaths are not flagged dead in REDCap — so the union gives 279 dated deaths in the entire cohort against 252 from RPDR alone, and 31 against 28 in Local/Early. Someone flagged deceased in RPDR with no date who is still alive in REDCap stays censored. Censoring is at the last creatinine.</p>
 <table class="caption-top table">
 <colgroup>
-<col style="width: 33%">
-<col style="width: 33%">
-<col style="width: 33%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
 </colgroup>
 <thead>
 <tr class="header">
 <th>Model</th>
-<th>Entire 943</th>
-<th>Local/Early 322</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>AKI ≤ 1 yr</td>
-<td>subHR 1.31 (1.18, 1.47), p &lt; 0.001</td>
-<td>1.13 (0.87, 1.46), p = 0.38</td>
-</tr>
-<tr class="even">
-<td>CKD composite, any time</td>
-<td>1.14 (1.00, 1.30), p = 0.045</td>
-<td>1.56 (1.13, 2.14), p = 0.006</td>
-</tr>
-</tbody>
-</table>
-<p>Events / deaths: AKI 197 events + 104 deaths (entire), 51 + 7 (Local/Early); CKD composite 70 + 241 (entire), 26 + 25 (Local/Early). Only the entire-cohort AKI model is comfortably powered against ~21 covariates.</p>
-</section>
-<section id="competing-risk-models-with-death-not-limited-to-90-days" class="level2">
-<h2 class="anchored" data-anchor-id="competing-risk-models-with-death-not-limited-to-90-days">Competing-Risk Models with Death Not Limited to 90 Days</h2>
-<p>The 90-day models in §4 (whole, entire) and §5 (carboplatin pages) take death from <code>time_to_death_90</code>, which is <strong>capped at day 90</strong> — a patient who dies on day 150 is censored at day 90 rather than counted as a competing death. Only 41 of 279 deaths in the entire cohort, and 2 of 31 in Local/Early, ever enter those models.</p>
-<p><strong>§12</strong> (whole, entire) and <strong>§17</strong> (carboplatin pages) refit all ten Fine-Gray models with death placed at the day it happened, censoring at the last follow-up, plus an all-cause-death Cox model over the full follow-up. Predictor and adjusters are unchanged.</p>
-<table class="caption-top table">
-<thead>
-<tr class="header">
-<th></th>
 <th>Entire 943</th>
 <th>Local/Early 322</th>
 <th>Carbo 189</th>
@@ -597,31 +572,23 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </thead>
 <tbody>
 <tr class="odd">
-<td>Deaths available (any time)</td>
-<td>279</td>
-<td>31</td>
-<td>16</td>
-<td>10</td>
+<td>AKI ≤ 1 yr</td>
+<td>subHR 1.29 (1.16, 1.44), p &lt; 0.001</td>
+<td>1.10 (0.85, 1.43), p = 0.46</td>
+<td>1.13 (0.83, 1.53), p = 0.45</td>
+<td>1.24 (0.66, 2.32), p = 0.51</td>
 </tr>
 <tr class="even">
-<td>Deaths used by §4 / §5 (≤ 90 d)</td>
-<td>41</td>
-<td>2</td>
-<td>1</td>
-<td>0</td>
-</tr>
-<tr class="odd">
-<td>Median follow-up (d)</td>
-<td>539</td>
-<td>603</td>
-<td>606</td>
-<td>672</td>
+<td>CKD composite, any time</td>
+<td>1.14 (1.00, 1.30), p = 0.045</td>
+<td>1.55 (1.13, 2.11), p = 0.006</td>
+<td>2.21 (0.94, 5.16), p = 0.068</td>
+<td>1.20 (0.50, 2.84), p = 0.69</td>
 </tr>
 </tbody>
 </table>
-<p>The competing event is <code>death_days_any</code>: the RPDR <code>Date_Of_Death</code> when there is one, otherwise the REDCap last-follow-up date when REDCap <code>pt_status</code> is “Dead”. The two sources do not nest — 27 REDCap deaths have no RPDR date and 7 RPDR-dated deaths are not flagged dead in REDCap — so the union (279) gives about 11 % more competing events than the RPDR-only <code>death_lt</code> used by §4.12–4.13, which were deliberately left unchanged.</p>
-<p><strong>Read these as a sensitivity analysis on the competing event, not as incidence estimates.</strong> Events are still ascertained over the first 90 days only, because that is the window in which the adverse-event and hospitalization outcomes were abstracted; risk time now runs past it, so cumulative incidence is diluted. The subdistribution hazard ratio for the exposure is the quantity to compare across the two sections. Event counts barely move (e.g.&nbsp;overall hospitalization 265 → 270 entire, 69 → 73 Local/Early) because <code>cmp_variable_lt()</code> breaks same-day ties in favour of the event where <code>cmp_variable()</code> breaks them in favour of death.</p>
-<p>The all-cause-death model is much better powered than the 90-day one — 279 vs 41 events in the entire cohort, 31 vs 2 in Local/Early — so §12.11 is the usable mortality model on the Local/Early pages. Each new section opens with an event-count table and flags any outcome with fewer than 11 events as not interpretable.</p>
+<p>Events / competing deaths: AKI <strong>197 + 114</strong> (entire), 51 + 8 (Local/Early); CKD composite <strong>70 + 265</strong> (entire), 26 + 28 (Local/Early). Only the entire-cohort AKI model is comfortably powered against ~21 covariates.</p>
+<p>Broadening the competing event from the RPDR-only <code>death_lt</code> to <code>death_days_any</code> left the estimates almost untouched — they were 1.31 (1.18, 1.47) and 1.14 (1.00, 1.30) in the entire cohort, 1.13 (0.87, 1.46) and 1.56 (1.13, 2.14) in Local/Early — so the extra competing events confirm the earlier result rather than revising it.</p>
 <p>All of the above are <strong>Table 1 rows</strong> on all three analysis pages, together with <code>esrd_kt</code> (ESRD / KT at or before baseline, n = 1), <code>eGFR_CRE_baseline</code>, <code>ckd_stage_baseline</code> and <code>last_cre_days</code>. They also keep a dedicated section — 2.2 on the whole-cohort page, 3.2 on the carboplatin pages — carrying the median time to each event, the length of creatinine follow-up, and the <code>aki</code> vs <code>AKI_kdigo_90days</code> cross-tabulation that Table 1 cannot show.</p>
 <p>AKI and the CKD composite are now <strong>modelled</strong> with Fine-Gray competing risks (see below). The remaining kidney variables stay descriptive.</p>
 <p><code>aki</code> is a different variable from the existing <code>AKI_g2_90days</code> / <code>AKI_kdigo_90days</code>: it compares each creatinine against the patient’s own preceding 90-day median across the whole record, not against a fixed pre-baseline value inside 90 days. In the whole cohort they agree on 19 patients, <code>aki</code> alone flags 44, and <code>AKI_kdigo_90days</code> alone flags 14.</p>
@@ -767,16 +734,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>0 = censored, 1 = event, 2 = death</td>
 </tr>
 <tr class="odd">
-<td><code>cmp_time_&lt;outcome&gt;_dall</code> / <code>cmp_status_&lt;outcome&gt;_dall</code></td>
-<td>Same pair with death at its actual day and censoring at last follow-up (§12 / §17)</td>
-</tr>
-<tr class="even">
 <td><code>death_days_any</code> / <code>death_any</code></td>
-<td>Days to death at any time; RPDR date, else REDCap last follow-up when status is “Dead”</td>
-</tr>
-<tr class="odd">
-<td><code>time_to_death_all</code> / <code>death_all</code></td>
-<td>All-cause death over the full follow-up</td>
+<td>Days to death at any time — union of RPDR <code>Date_Of_Death</code> and the REDCap last-follow-up date when <code>pt_status</code> is “Dead”. The competing event for §4.12–4.13 / §5.12–5.13</td>
 </tr>
 </tbody>
 </table>

@@ -225,13 +225,11 @@ the full length of RPDR creatinine follow-up.
 | `ckd_composite` | `eskd_composite == 1 \| ckd_incidence == 1 \| ckd_progression == 1` |
 | `time_to_ckd_incidence` / `_progression` / `_eskd_composite` / `_ckd_composite` | Days from `baseline_sample_date` to each event |
 | `aki_before_ckd` | 1 if `aki_days <= time_to_ckd_composite` |
-| `death_lt` / `death_days_lt` | Death at any time, from the RPDR `Date_Of_Death`. The competing event for the long-horizon models; `death_90` is capped at 90 days and cannot serve that role |
+| `death_lt` / `death_days_lt` | Death at any time with a date from the RPDR `Date_Of_Death`. An input to `death_days_any`, not used directly as a competing event |
 | `rpdr_deceased` | RPDR `Vital_status` is not "Not reported as deceased". Exceeds `death_lt` because some deaths are recorded without a date |
 | `cmp_time_aki_365` / `cmp_status_aki_365` | Competing-risk pair for AKI, administratively censored at 365 days |
 | `cmp_time_ckd_composite` / `cmp_status_ckd_composite` | Competing-risk pair for the CKD composite, any time post-baseline |
-| `death_days_any` / `death_any` | Death at any time, RPDR `Date_Of_Death` when present, otherwise the REDCap last-follow-up date when REDCap status is "Dead". The competing event for Section 5.19b |
-| `time_to_death_all` / `death_all` | All-cause death over the full follow-up; the uncapped counterpart of `time_to_death_90` / `death_90` |
-| `cmp_time_<outcome>_dall` / `cmp_status_<outcome>_dall` | The ten 90-day outcomes' competing-risk pairs rebuilt with death at its actual day and censoring at last follow-up (Section 5.19b) |
+| `death_days_any` / `death_any` | Death at any time: the union of the two sources — RPDR `Date_Of_Death` when present, otherwise the REDCap last-follow-up date when `pt_status` is "Dead". The competing event for both long-horizon models; `death_90` is capped at 90 days and cannot serve that role |
 
 Both competing-risk pairs use the project's usual coding — 0 = censored,
 1 = event, 2 = death — with censoring at the last creatinine (day 0 → last
@@ -2210,9 +2208,10 @@ final_master <- final_master %>%
 # --- Long-horizon death, from the RPDR Dem file -------------------------------
 # The existing death_90 / time_to_death_90 come from REDCap pt_status and are
 # capped at 90 days, so they cannot serve as the competing event for outcomes
-# that run to the end of creatinine follow-up. RPDR Date_Of_Death is the only
-# source of an actual date of death. The two disagree slightly -- see the QC
-# print below -- because REDCap follow-up ended earlier than the RPDR pull.
+# that run to the end of creatinine follow-up. Two sources carry death at its
+# actual time and they do not nest: RPDR Date_Of_Death gives a date, and REDCap
+# pt_status == "Dead" means the last-follow-up date IS the death date. Some
+# deaths appear in only one of the two, so death_days_any below takes the union.
 final_master <- final_master %>%
   left_join(dem, by = "EMPI") %>%
   mutate(
@@ -2234,18 +2233,37 @@ cat("REDCap death_90 == 1:", sum(final_master$death_90 == 1, na.rm = TRUE),
 cat("RPDR deaths within 365 days:",
     sum(final_master$death_days_lt <= 365, na.rm = TRUE), "\n")
 
-# --- Competing-risk variables for the two requested models --------------------
-# Death is the competing event in both. Censoring is at the last creatinine,
-# i.e. day 0 -> last follow-up.
+# death_days_any: the union of the two sources. RPDR Date_Of_Death when there is
+# one, otherwise the REDCap last-follow-up date for a patient REDCap records as
+# dead. Someone flagged deceased in RPDR with no date who is alive in REDCap
+# stays censored. This is the competing event for both models below.
+final_master <- final_master %>%
+  mutate(
+    death_days_any = case_when(
+      !is.na(death_days_lt)                                   ~ death_days_lt,
+      !is.na(pt_status) & pt_status == "Dead" &
+        !is.na(days_last_follow_up)                           ~ pmax(days_last_follow_up, 0),
+      TRUE                                                    ~ NA_real_
+    ),
+    death_any = ifelse(!is.na(death_days_any), 1L, 0L)
+  )
+
+cat("death_days_any (union):", sum(final_master$death_any == 1),
+    " = RPDR-dated", sum(final_master$death_lt == 1),
+    "+ REDCap-only", sum(final_master$death_any == 1 & final_master$death_lt == 0), "\n")
+
+# --- Competing-risk variables for the two long-horizon models ----------------
+# Death at any time (death_days_any, both sources) is the competing event in
+# both. Censoring is at the last creatinine, i.e. day 0 -> last follow-up.
 final_master <- final_master %>%
   # AKI, administratively censored at 1 year
   cmp_variable_lt(event_days  = aki_days,
-                  death_days  = death_days_lt,
+                  death_days  = death_days_any,
                   censor_days = last_cre_days,
                   name = "aki_365", horizon = 365) %>%
   # CKD composite, any time post-baseline
   cmp_variable_lt(event_days  = time_to_ckd_composite,
-                  death_days  = death_days_lt,
+                  death_days  = death_days_any,
                   censor_days = last_cre_days,
                   name = "ckd_composite")
 
@@ -2269,90 +2287,6 @@ ckd_summary <- tibble::tibble(
 knitr::kable(ckd_summary,
   caption = paste0("Long-horizon kidney outcomes, full pipeline cohort (N = ",
                    nrow(final_master), ") before the Local/Early restriction"))
-```
-
-## 5.19b Competing risk with death not limited to 90 days
-
-```{r}
-#| label: clean-cr-death-all
-# --- Death at the day it happened, from both sources -------------------------
-# death_90 / time_to_death_90 cap the competing event at day 90: a patient who
-# dies on day 150 is censored at day 90 rather than counted as a death. This
-# block rebuilds every 90-day outcome's competing-risk pair with death placed at
-# its actual day and follow-up running to the last known follow-up.
-#
-# death_days_any takes the RPDR Date_Of_Death when there is one and otherwise
-# falls back on the REDCap last-follow-up date for a patient whose REDCap status
-# is "Dead" -- for a dead patient that date IS the death date. Someone flagged
-# deceased in RPDR with no date who is still alive in REDCap stays censored.
-final_master <- final_master %>%
-  mutate(
-    death_days_any = case_when(
-      !is.na(death_days_lt)                                   ~ death_days_lt,
-      !is.na(pt_status) & pt_status == "Dead" &
-        !is.na(days_last_follow_up)                           ~ pmax(days_last_follow_up, 0),
-      TRUE                                                    ~ NA_real_
-    ),
-    death_any = ifelse(!is.na(death_days_any), 1L, 0L),
-    # All-cause death over the full follow-up, for the Cox model that parallels
-    # the 90-day death analysis.
-    time_to_death_all = pmax(ifelse(death_any == 1, death_days_any,
-                                    pmax(days_last_follow_up, 0)), 0.5),
-    death_all = death_any
-  )
-
-cat("death_any (any time):", sum(final_master$death_any == 1),
-    " | of which REDCap-only (no RPDR date):",
-    sum(final_master$death_any == 1 & final_master$death_lt == 0),
-    " | death_90 (within 90 d):", sum(final_master$death_90 == 1, na.rm = TRUE), "\n")
-
-# --- Rebuild each 90-day outcome's competing-risk pair -----------------------
-# The 90-day time variables are coded "time = 90 when there is no event", so the
-# event day has to be recovered from the 0/1 status before cmp_variable_lt() can
-# use it. Censoring is at the last follow-up.
-# Naming: cmp_time_<outcome>_dall / cmp_status_<outcome>_dall.
-dall_spec <- tibble::tribble(
-  ~name,          ~time_var,              ~status_var,
-  "anemia_2",     "time_to_anemia_2",     "Anemia_g2_90days",
-  "anemia_3",     "time_to_anemia_3",     "Anemia_g3_90days",
-  "throm_2",      "time_to_throm_2",      "Throm_g2_90days",
-  "throm_3",      "time_to_throm_3",      "Throm_g3_90days",
-  "aki_2",        "time_to_aki_2",        "AKI_g2_90days",
-  "aki_kdigo",    "time_to_aki_kdigo",    "AKI_kdigo_90days",
-  "grade_2_aes",  "time_to_grade_2_aes",  "grade_2_aes",
-  "grade_3_aes",  "time_to_grade_3_aes",  "grade_3_aes",
-  "any_hosp",     "time_to_any_hosp",     "any_hosp",
-  "side_effect",  "time_to_side_effect",  "side_effect"
-)
-
-for (i in seq_len(nrow(dall_spec))) {
-  s <- dall_spec[i, ]
-  final_master$.ev_dall <- ifelse(final_master[[s$status_var]] == 1,
-                                  as.numeric(final_master[[s$time_var]]),
-                                  NA_real_)
-  final_master <- cmp_variable_lt(final_master,
-                                  event_days  = .ev_dall,
-                                  death_days  = death_days_any,
-                                  censor_days = days_last_follow_up,
-                                  name        = paste0(s$name, "_dall"))
-}
-final_master$.ev_dall <- NULL
-
-dall_counts <- purrr::map_dfr(dall_spec$name, function(n) {
-  st  <- final_master[[paste0("cmp_status_", n, "_dall")]]
-  st9 <- final_master[[paste0("cmp_status_", n)]]
-  tibble::tibble(
-    Outcome = n,
-    Censored = sum(st == 0), Event = sum(st == 1), Death = sum(st == 2),
-    `Event (death capped at 90 d)` = sum(st9 == 1),
-    `Death (death capped at 90 d)` = sum(st9 == 2)
-  )
-})
-
-knitr::kable(dall_counts, caption = paste0(
-  "Competing-risk event counts with death at its actual day, full pipeline cohort (N = ",
-  nrow(final_master), "). Status 0 = censored, 1 = event, 2 = death. ",
-  "The last two columns repeat Section 5.15 for comparison."))
 ```
 
 ## 5.20 Ritu cohort restriction & save
