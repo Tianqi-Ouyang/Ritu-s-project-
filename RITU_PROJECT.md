@@ -79,7 +79,7 @@ Inherited from the Jiaxuan pipeline, then one additional step:
 
 ## 2 What changed relative to the Jiaxuan project
 
-Nine kinds of change were made. Nothing else in the analysis was touched.
+Ten kinds of change were made. Nothing else in the analysis was touched.
 
 ### 2.1 Cohort filter
 
@@ -460,7 +460,125 @@ The AUC ≥ 3 rank fix (§2.2) was re-verified at N = 142: `steroids` is still
 constant (142/142) and the `cancer_type_cat_7` `GI` level is still empty, so both
 corrections remain necessary and all three cohorts are full rank.
 
-### 2.11 Explicitly unchanged
+### 2.11 Competing-risk models with death not limited to 90 days
+
+`cmp_variable()` builds every 90-day outcome's competing-risk pair from
+`time_to_death_90`, which is capped at day 90. A patient who dies on day 150 is
+therefore **censored at day 90** rather than counted as a competing death. That
+is correct for a 90-day analysis, but it means almost all of the deaths in the
+cohort never enter the models: 41 of 279 in the entire cohort, 2 of 31 in
+Local/Early.
+
+A parallel set of models was added that places death at the day it happened.
+
+**Section 5.19b of `ritu_data.qmd`** builds:
+
+| Variable | Definition |
+|---|---|
+| `death_days_any` / `death_any` | Days to death, RPDR `Date_Of_Death` when present, otherwise the REDCap last-follow-up date when REDCap `pt_status` is "Dead" (for a dead patient that date *is* the death date) |
+| `time_to_death_all` / `death_all` | All-cause death over the full follow-up — the uncapped counterpart of `time_to_death_90` / `death_90` |
+| `cmp_time_<outcome>_dall` / `cmp_status_<outcome>_dall` | The ten primary 90-day outcomes' competing-risk pairs, rebuilt with `death_days_any` as the competing event and censoring at the last follow-up |
+
+The ten outcomes are `anemia_2`, `anemia_3`, `throm_2`, `throm_3`, `aki_2`,
+`aki_kdigo`, `grade_2_aes`, `grade_3_aes`, `any_hosp`, `side_effect`.
+
+**New page sections** — §12 on `ritu_whole.qmd` and `ritu_entire.qmd`, §17 on
+`ritu_carbo.qmd` and `ritu_carbo_auc3.qmd`. Each has the ten Fine-Gray models
+(subsections .1–.10) and an all-cause-death Cox model over the full follow-up
+(.11), with the same predictor (`egfr_diff_pct_per10`) and the same
+Cockcroft-Gault-adjusted adjuster set as the existing Fine-Gray section. Word
+downloads are `sec12_*.docx` / `sec17_*.docx`.
+
+#### Why `death_days_any` rather than `death_lt`
+
+§2.7 introduced `death_lt` / `death_days_lt` from the RPDR `Date_Of_Death` alone.
+The refreshed REDCap export (§2.10) records 272 deaths in the entire cohort while
+RPDR dates 252, and the two sets do not nest: 27 REDCap deaths have no RPDR date
+and 7 RPDR-dated deaths are not flagged dead in REDCap. Taking the union gives
+**279** dated deaths, about 11 % more competing events than RPDR alone. In
+Local/Early the union is 31 (28 RPDR-dated, 3 REDCap-only).
+
+**Sections 4.12 and 4.13 were left on `death_days_lt`** so their published
+estimates do not change silently. Aligning them on `death_days_any` would add 27
+competing deaths to the entire-cohort AKI and CKD-composite models and 3 to
+Local/Early.
+
+#### What the new section does and does not estimate
+
+Events are still ascertained over the first 90 days only — that is the window in
+which the adverse-event and hospitalization outcomes were abstracted. Risk time
+now runs to the last follow-up, so the **cumulative incidence** of each event is
+lower in the new section than in the 90-day section and should not be read as an
+incidence estimate. The **subdistribution hazard ratio for the exposure** is the
+quantity to compare across the two sections.
+
+Event counts change very little; the competing-death column changes a lot:
+
+| Outcome | Entire cohort, event / death (90-day cap) | Entire cohort, event / death (any time) | Local/Early (90-day cap) | Local/Early (any time) |
+|---|---|---|---|---|
+| Anemia G2 | 433 / 17 | 435 / 126 | 137 / 1 | 137 / 12 |
+| Anemia G3 | 133 / 28 | 135 / 224 | 40 / 1 | 41 / 25 |
+| Thrombocytopenia G2 | 131 / 27 | 132 / 231 | 37 / 1 | 38 / 28 |
+| Thrombocytopenia G3 | 44 / 32 | 45 / 257 | 9 / 1 | 10 / 29 |
+| AKI G2 | 89 / 33 | 90 / 249 | 26 / 2 | 26 / 29 |
+| AKI (KDIGO) | 109 / 31 | 110 / 240 | 33 / 1 | 33 / 27 |
+| Composite G2 AEs | 485 / 12 | 487 / 109 | 148 / 1 | 148 / 12 |
+| Composite G3 AEs | 155 / 24 | 157 / 214 | 43 / 1 | 44 / 25 |
+| Overall hospitalization | 265 / 13 | 270 / 168 | 69 / 1 | 73 / 16 |
+| Platinum-related hospitalization | 163 / 18 | 164 / 202 | 45 / 1 | 46 / 20 |
+
+Two reasons the event column moves at all:
+
+1. **Tie-breaking.** `cmp_variable()` gives death precedence when the event and
+   the death fall on the same day; `cmp_variable_lt()` gives the event
+   precedence. Overall hospitalization gains the most (265 → 270 entire,
+   69 → 73 Local/Early) because dying during an admission is common.
+2. Nothing else. Extending follow-up cannot create events, since ascertainment
+   still stops at day 90.
+
+The all-cause-death Cox model is considerably better powered than the 90-day one:
+279 vs 41 events in the entire cohort, 31 vs 2 in Local/Early. The Local/Early
+90-day death models remain numerically degenerate (§3); §12.11 is the usable
+mortality model on that cohort, though at 31 events against ~20 covariate degrees
+of freedom it is still over-parameterised.
+
+#### A note on the carboplatin pages' heading numbers
+
+On `ritu_carbo.qmd` and `ritu_carbo_auc3.qmd` the top-level and subsection
+numbers have been out of step since the Jiaxuan original: `# 5 Fine-Gray Models`
+carries subsections `## 4.1`–`## 4.11`, and `# 6 Cause-Specific Hazard Models`
+carries `## 5.1`–`## 5.11`. The new section's prose and its "Event (Sec 5)"
+column refer to the **top-level** section 5, i.e. Fine-Gray — so the right
+comparison for §17.4 is the subsection labelled 4.4, not 5.4 (which is the
+cause-specific model). Renumbering would move roughly a hundred headings and
+break every in-page anchor and download link on those two pages, so it was left
+alone.
+
+#### Which of the new models are usable
+
+Each new section opens with the event-count table and then an automatic
+`callout-important` listing every outcome with fewer than 11 events in that
+cohort, because a model with ~20 covariate degrees of freedom and a handful of
+events can converge and still be meaningless. The AUC ≥ 3 thrombocytopenia
+grade 3 model is the clearest example: one event, and it returns subHR 19.2
+(7.60, 48.3) with `sex` = Male at 0.00 (0.00, 0.00). It is printed, flagged and
+should not be read.
+
+Two models do not fit at all — carboplatin §17.4 (thrombocytopenia grade 3,
+4 events) and §17.5 (AKI grade 2, 9 events), both with
+`system is computationally singular`. Their 90-day counterparts (§5.4, §5.5) fail
+the same way on the same page, so this is the cohort's sparsity rather than
+anything introduced here; `.wrap_tbl()` emits the standard
+"Model not estimable in this cohort" callout in place of the table.
+
+Outcomes with at least 11 events, by cohort: **ten of ten plus death** in the
+entire cohort (943); **nine of ten plus death** in Local/Early (322) —
+thrombocytopenia grade 3 has 10; **eight of ten plus death** in carboplatin (189)
+— thrombocytopenia grade 3 (4) and AKI grade 2 (9) fall short and are also the
+two that fail to fit; and **six of ten** in AUC ≥ 3 (142), where all-cause death
+has 10 events and is flagged too.
+
+### 2.12 Explicitly unchanged
 
 - Primary exposure: `egfr_diff_pct_per10` — eGFR difference (%) per 10-percentage-point decline
 - Sensitivity exposure: `egfr_diff_pct_sens_per10` (CKD-EPI 2012 CysC vs CKD-EPI 2021 Cr)

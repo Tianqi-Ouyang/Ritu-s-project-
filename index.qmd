@@ -199,6 +199,47 @@ Events / deaths: AKI 197 events + 104 deaths (entire), 51 + 7 (Local/Early);
 CKD composite 70 + 241 (entire), 26 + 25 (Local/Early). Only the entire-cohort
 AKI model is comfortably powered against ~21 covariates.
 
+## Competing-Risk Models with Death Not Limited to 90 Days
+
+The 90-day models in §4 (whole, entire) and §5 (carboplatin pages) take death
+from `time_to_death_90`, which is **capped at day 90** — a patient who dies on
+day 150 is censored at day 90 rather than counted as a competing death. Only 41
+of 279 deaths in the entire cohort, and 2 of 31 in Local/Early, ever enter those
+models.
+
+**§12** (whole, entire) and **§17** (carboplatin pages) refit all ten Fine-Gray
+models with death placed at the day it happened, censoring at the last
+follow-up, plus an all-cause-death Cox model over the full follow-up. Predictor
+and adjusters are unchanged.
+
+| | Entire 943 | Local/Early 322 | Carbo 189 | AUC ≥ 3 142 |
+|---|---|---|---|---|
+| Deaths available (any time) | 279 | 31 | 16 | 10 |
+| Deaths used by §4 / §5 (≤ 90 d) | 41 | 2 | 1 | 0 |
+| Median follow-up (d) | 539 | 603 | 606 | 672 |
+
+The competing event is `death_days_any`: the RPDR `Date_Of_Death` when there is
+one, otherwise the REDCap last-follow-up date when REDCap `pt_status` is "Dead".
+The two sources do not nest — 27 REDCap deaths have no RPDR date and 7 RPDR-dated
+deaths are not flagged dead in REDCap — so the union (279) gives about 11 % more
+competing events than the RPDR-only `death_lt` used by §4.12–4.13, which were
+deliberately left unchanged.
+
+**Read these as a sensitivity analysis on the competing event, not as incidence
+estimates.** Events are still ascertained over the first 90 days only, because
+that is the window in which the adverse-event and hospitalization outcomes were
+abstracted; risk time now runs past it, so cumulative incidence is diluted. The
+subdistribution hazard ratio for the exposure is the quantity to compare across
+the two sections. Event counts barely move (e.g. overall hospitalization 265 →
+270 entire, 69 → 73 Local/Early) because `cmp_variable_lt()` breaks same-day ties
+in favour of the event where `cmp_variable()` breaks them in favour of death.
+
+The all-cause-death model is much better powered than the 90-day one — 279 vs 41
+events in the entire cohort, 31 vs 2 in Local/Early — so §12.11 is the usable
+mortality model on the Local/Early pages. Each new section opens with an
+event-count table and flags any outcome with fewer than 11 events as not
+interpretable.
+
 All of the above are **Table 1 rows** on all three analysis pages, together with
 `esrd_kt` (ESRD / KT at or before baseline, n = 1), `eGFR_CRE_baseline`,
 `ckd_stage_baseline` and `last_cre_days`. They also keep a dedicated section —
@@ -276,6 +317,9 @@ Table 1 row. They are descriptive Table 1 rows only; no model adjusts for them
 |---|---|
 | `cmp_time_<outcome>` | Time for the competing-risk model |
 | `cmp_status_<outcome>` | 0 = censored, 1 = event, 2 = death |
+| `cmp_time_<outcome>_dall` / `cmp_status_<outcome>_dall` | Same pair with death at its actual day and censoring at last follow-up (§12 / §17) |
+| `death_days_any` / `death_any` | Days to death at any time; RPDR date, else REDCap last follow-up when status is "Dead" |
+| `time_to_death_all` / `death_all` | All-cause death over the full follow-up |
 
 # Reproducing
 

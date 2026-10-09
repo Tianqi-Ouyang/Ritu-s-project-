@@ -2246,3 +2246,197 @@ plot_subhr_linear_sens("cmp_time_side_effect", "cmp_status_side_effect",
 plot_cox_linear_sens("time_to_death_90", "death_90",
                      NULL, "90-Day Death (Cox PH) (Sensitivity)")
 ```
+
+# 12 Competing-Risk Models — Death Not Limited to 90 Days
+
+> Section 4 treats death as a competing event only when it falls inside the
+> 90-day window: `time_to_death_90` is capped at day 90, so a patient who dies on
+> day 150 is censored at day 90 instead of contributing a competing death. The
+> ten Fine-Gray models below are the same models refit with death placed at **the
+> day it actually happened**, and follow-up running to the last known follow-up
+> rather than day 90.
+>
+> - **Competing event** `death_days_any` — RPDR `Date_Of_Death` when there is
+>   one, otherwise the REDCap last-follow-up date for a patient whose REDCap
+>   status is "Dead". Built in Section 5.19b of
+>   [Data Management](ritu_data.qmd).
+> - **Censoring** at the last known follow-up.
+> - **Predictor and adjusters** are unchanged from Section 4 —
+>   `egfr_diff_pct_per10` (per 10 percentage-point decline in eGFR difference),
+>   Cockcroft-Gault adjusted.
+> - **Events are still ascertained over the first 90 days only**, because that is
+>   the window in which the adverse-event and hospitalization outcomes were
+>   collected. Risk time now runs past it, so each event's cumulative incidence
+>   is lower here than in Section 4; the subdistribution hazard ratio for the
+>   exposure is the quantity to compare across the two sections.
+> - Ties are resolved in favour of the event, whereas Section 4 resolves them
+>   in favour of death. This moves a small number of same-day cases out of the
+>   death column and into the event column.
+
+```{r}
+#| label: ritu-entire-dall-counts
+dall_keys <- c("anemia_2", "anemia_3", "throm_2", "throm_3", "aki_2", "aki_kdigo", "grade_2_aes", "grade_3_aes", "any_hosp", "side_effect")
+dall_labs <- c("Anemia Grade 2", "Anemia Grade 3", "Thrombocytopenia Grade 2", "Thrombocytopenia Grade 3", "AKI Grade 2", "AKI (KDIGO)", "Composite Grade 2 AEs", "Composite Grade 3 AEs", "Overall Hospitalization", "Platinum-Related Hospitalization")
+
+dall_counts <- purrr::map2_dfr(dall_keys, dall_labs, function(k, lab) {
+  st  <- dat[[paste0("cmp_status_", k, "_dall")]]
+  st9 <- dat[[paste0("cmp_status_", k)]]
+  tibble::tibble(
+    Outcome  = lab,
+    Censored = sum(st == 0), Event = sum(st == 1), Death = sum(st == 2),
+    `Median follow-up (d)` = round(median(dat[[paste0("cmp_time_", k, "_dall")]])),
+    `Event (Sec 4)` = sum(st9 == 1),
+    `Death (Sec 4)` = sum(st9 == 2)
+  )
+})
+
+knitr::kable(dall_counts, caption = sprintf(paste0(
+  "Competing-risk event counts with death at its actual day, N = %d. ",
+  "Status 0 = censored, 1 = event, 2 = death. The last two columns repeat ",
+  "Section 4 for comparison."), nrow(dat)))
+```
+
+```{r}
+#| label: ritu-entire-dall-death-counts
+cat("All-cause death over the full follow-up:", sum(dat$death_all == 1),
+    "of", nrow(dat),
+    "| median follow-up", round(median(dat$time_to_death_all)), "days",
+    "| 90-day death:", sum(dat$death_90 == 1, na.rm = TRUE), "\n")
+```
+
+```{r}
+#| label: ritu-entire-dall-sparse-note
+.sparse <- purrr::map_dfr(dall_keys, function(k) {
+  tibble::tibble(k = k, ev = sum(dat[[paste0("cmp_status_", k, "_dall")]] == 1))
+})
+.sparse  <- .sparse[.sparse$ev < 11, ]
+.n_death <- sum(dat$death_all == 1)
+if (nrow(.sparse) > 0 || .n_death < 11) {
+  .msg <- c(
+    if (nrow(.sparse) > 0)
+      paste0(dall_labs[match(.sparse$k, dall_keys)], " \u2014 ", .sparse$ev,
+             ifelse(.sparse$ev == 1, " event", " events")),
+    if (.n_death < 11) paste0("All-cause death \u2014 ", .n_death,
+                              ifelse(.n_death == 1, " event", " events")))
+  knitr::asis_output(paste0(
+    "\n::: {.callout-important}\n## Under-powered models in this section\n\n",
+    "The multivariable models below carry ~20 covariate degrees of freedom. ",
+    "These outcomes have fewer than 11 events in this cohort, so their point ",
+    "estimates and confidence intervals are not interpretable even where the ",
+    "fit converged:\n\n- ", paste(.msg, collapse = "\n- "), "\n:::\n"))
+}
+```
+
+## 12.1 Anemia Grade 2 (Fine-Gray, death at any time)
+
+[📄 Download Word table](../tables/entire/sec12_anemia_2.docx)
+
+```{r}
+#| label: ritu-entire-dall-anemia2
+fg_model("cmp_time_anemia_2_dall", "cmp_status_anemia_2_dall", "egfr_diff_pct_per10", "pre_HGB_45days", "cockcroft",
+         docx_name = "sec12_anemia_2")
+```
+
+## 12.2 Anemia Grade 3 (Fine-Gray, death at any time)
+
+[📄 Download Word table](../tables/entire/sec12_anemia_3.docx)
+
+```{r}
+#| label: ritu-entire-dall-anemia3
+fg_model("cmp_time_anemia_3_dall", "cmp_status_anemia_3_dall", "egfr_diff_pct_per10", "pre_HGB_45days", "cockcroft",
+         docx_name = "sec12_anemia_3")
+```
+
+## 12.3 Thrombocytopenia Grade 2 (Fine-Gray, death at any time)
+
+[📄 Download Word table](../tables/entire/sec12_throm_2.docx)
+
+```{r}
+#| label: ritu-entire-dall-throm2
+fg_model("cmp_time_throm_2_dall", "cmp_status_throm_2_dall", "egfr_diff_pct_per10", "pre_PLT_45days", "cockcroft",
+         docx_name = "sec12_throm_2")
+```
+
+## 12.4 Thrombocytopenia Grade 3 (Fine-Gray, death at any time)
+
+[📄 Download Word table](../tables/entire/sec12_throm_3.docx)
+
+```{r}
+#| label: ritu-entire-dall-throm3
+fg_model("cmp_time_throm_3_dall", "cmp_status_throm_3_dall", "egfr_diff_pct_per10", "pre_PLT_45days", "cockcroft",
+         docx_name = "sec12_throm_3")
+```
+
+## 12.5 AKI Grade 2 (Fine-Gray, death at any time)
+
+[📄 Download Word table](../tables/entire/sec12_aki_2.docx)
+
+```{r}
+#| label: ritu-entire-dall-aki2
+fg_model("cmp_time_aki_2_dall", "cmp_status_aki_2_dall", "egfr_diff_pct_per10", egfr_adj = "cockcroft",
+         docx_name = "sec12_aki_2")
+```
+
+## 12.6 AKI (KDIGO) (Fine-Gray, death at any time)
+
+[📄 Download Word table](../tables/entire/sec12_aki_kdigo.docx)
+
+```{r}
+#| label: ritu-entire-dall-akikdigo
+fg_model("cmp_time_aki_kdigo_dall", "cmp_status_aki_kdigo_dall", "egfr_diff_pct_per10", egfr_adj = "cockcroft",
+         docx_name = "sec12_aki_kdigo")
+```
+
+## 12.7 Composite Grade 2 AEs (Fine-Gray, death at any time)
+
+[📄 Download Word table](../tables/entire/sec12_grade_2_aes.docx)
+
+```{r}
+#| label: ritu-entire-dall-g2aes
+fg_model("cmp_time_grade_2_aes_dall", "cmp_status_grade_2_aes_dall", "egfr_diff_pct_per10", egfr_adj = "cockcroft",
+         docx_name = "sec12_grade_2_aes")
+```
+
+## 12.8 Composite Grade 3 AEs (Fine-Gray, death at any time)
+
+[📄 Download Word table](../tables/entire/sec12_grade_3_aes.docx)
+
+```{r}
+#| label: ritu-entire-dall-g3aes
+fg_model("cmp_time_grade_3_aes_dall", "cmp_status_grade_3_aes_dall", "egfr_diff_pct_per10", egfr_adj = "cockcroft",
+         docx_name = "sec12_grade_3_aes")
+```
+
+## 12.9 Overall Hospitalization (Fine-Gray, death at any time)
+
+[📄 Download Word table](../tables/entire/sec12_any_hosp.docx)
+
+```{r}
+#| label: ritu-entire-dall-anyhosp
+fg_model("cmp_time_any_hosp_dall", "cmp_status_any_hosp_dall", "egfr_diff_pct_per10", egfr_adj = "cockcroft",
+         docx_name = "sec12_any_hosp")
+```
+
+## 12.10 Platinum-Related Hospitalization (Fine-Gray, death at any time)
+
+[📄 Download Word table](../tables/entire/sec12_side_effect.docx)
+
+```{r}
+#| label: ritu-entire-dall-sideeffect
+fg_model("cmp_time_side_effect_dall", "cmp_status_side_effect_dall", "egfr_diff_pct_per10", egfr_adj = "cockcroft",
+         docx_name = "sec12_side_effect")
+```
+
+## 12.11 All-Cause Death, Full Follow-up (Cox PH)
+
+The uncapped counterpart of Section 4.11 (and Section 5.11): the same
+model on `time_to_death_all` / `death_all`, which count death at any point in
+follow-up rather than only within 90 days.
+
+[📄 Download Word table](../tables/entire/sec12_death_all.docx)
+
+```{r}
+#| label: ritu-entire-dall-deathall
+cox_model("time_to_death_all", "death_all", "egfr_diff_pct_per10",
+          egfr_adj = "cockcroft", docx_name = "sec12_death_all")
+```
