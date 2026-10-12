@@ -8,9 +8,9 @@ execute:
   message: false
 ---
 
-> **Ritu cohort — Local/Early stage only.** This page repeats the Jiaxuan whole-cohort analysis on the subset of patients with `tumor_stage == "Local/Early"` (stage I–II / local / neoadjuvant). All 621 advanced/metastatic patients are excluded, leaving **N = 322** (189 carboplatin, 133 cisplatin). `tumor_stage` is dropped from Table 1 and from every adjuster set because it is constant within this cohort. Everything else — exposures, models, figures, downloads, section numbering — is unchanged.
+> **Ritu cohort — Local/Early stage only.** This page repeats the Jiaxuan whole-cohort analysis on the subset of patients with `tumor_stage == "Local/Early"` (stage I–II / local / neoadjuvant). All 621 advanced/metastatic patients are excluded, leaving **N = 322** (189 carboplatin, 133 cisplatin). `tumor_stage` is dropped from Table 1 and from every adjuster set because it is constant within this cohort. The exposure and the adjuster set are otherwise unchanged from the Jiaxuan project.
 >
-> **Read the sparse outcomes with their event counts in view.** The multivariable models carry ~20 covariate degrees of freedom. Composite grade 2 AEs (148 events) and anemia grade 2 (137) are adequately powered; grade 3, AKI, thrombocytopenia and the individual hospitalization reasons (5–46 events) are over-parameterised. **90-day death has 2 events in 322 patients**, so every 90-day-death model below is numerically degenerate — its point estimates and confidence intervals are not interpretable, and the near-absence of death also means Fine-Gray and cause-specific hazards nearly coincide throughout. See `RITU_PROJECT.md` for the full table.
+> **Only the long-horizon kidney outcomes are modelled on this page.** AKI within 1 year and the CKD composite are carried through Fine-Gray competing-risk models in Section 4, with death at any time as the competing event. The 90-day adverse-event, hospitalization and 90-day-death models this page used to carry have been removed; those outcomes are still derived in [Data Management](ritu_data.qmd) and remain in the saved master, they are simply no longer modelled. **Read both models with their event counts in view** — 51 AKI and 26 CKD-composite events in 322 patients against ~20 covariate degrees of freedom, so both are over-parameterised. See `RITU_PROJECT.md`.
 
 # 1 Setup {.content-hidden}
 
@@ -254,7 +254,7 @@ dat %>%
 
 - **A — Raw days**: unrestricted calendar follow-up (median dominated by patients who kept returning for years).
 - **B — Raw days, ≤ 365 days**: restricts to patients whose last-known contact was **within 1 year** of baseline (drops the long tail of years-later return visits; more comparable across patients).
-- **C — Analytic, capped at 90 days**: `min(days_last_follow_up, 90)` — the risk time actually contributed to the 90-day Fine-Gray / Cox models.
+- **C — Analytic, capped at 90 days**: `min(days_last_follow_up, 90)` — the 90-day window the adverse-event and hospitalization outcomes were abstracted in.
 - **D — Analytic (capped at 90) & ≤ 365 days raw**: same as C but excluding the long-tail returners.
 
 ```{r}
@@ -473,16 +473,9 @@ ggplot(diffpct_hist, aes(x = egfr_diff_pct, fill = side)) +
   theme_minimal(base_size = 14)
 ```
 
-# 4 Fine-Gray Models — eGFR Difference (%) (per 10 % decline, adjusted for Cockcroft-Gault)
+# 4 Fine-Gray Models — Long-Horizon Kidney Outcomes (eGFR Difference (%) per 10 % decline, adjusted for Cockcroft-Gault)
 
-Each table below shows univariable (one variable at a time) and multivariable Fine-Gray subdistribution hazard ratios side-by-side. A Word version of every table is saved during render — click any link below to download:
-
-- [Anemia Grade 2](../tables/whole/sec4_anemia_2.docx) · [Anemia Grade 3](../tables/whole/sec4_anemia_3.docx)
-- [Thrombocytopenia Grade 2](../tables/whole/sec4_throm_2.docx) · [Thrombocytopenia Grade 3](../tables/whole/sec4_throm_3.docx)
-- [AKI Grade 2](../tables/whole/sec4_aki_2.docx) · [AKI (KDIGO)](../tables/whole/sec4_aki_kdigo.docx)
-- [Composite Grade 2 AEs](../tables/whole/sec4_grade_2_aes.docx) · [Composite Grade 3 AEs](../tables/whole/sec4_grade_3_aes.docx)
-- [Overall Hospitalization](../tables/whole/sec4_any_hosp.docx) · [Platinum-Related Hospitalization](../tables/whole/sec4_side_effect.docx)
-- [90-Day Death (Cox PH)](../tables/whole/sec4_death_90.docx)
+Each table below shows univariable (one variable at a time) and multivariable Fine-Gray subdistribution hazard ratios side-by-side. A Word version of each table is saved during render — the download link sits under its heading.
 
 ```{r}
 #| label: ritu-fg-helper
@@ -586,88 +579,11 @@ cox_model <- .wrap_tbl(cox_model)
 
 ```
 
-## 4.1 Anemia Grade 2
+## 4.1 AKI within 1 Year (Fine-Gray, death competing)
 
-```{r}
-#| label: ritu-fg-cg-anemia2
-fg_model("cmp_time_anemia_2", "cmp_status_anemia_2", "egfr_diff_pct_per10", "pre_HGB_45days", "cockcroft", docx_name = "sec4_anemia_2")
-```
-
-## 4.2 Anemia Grade 3
-
-```{r}
-#| label: ritu-fg-cg-anemia3
-fg_model("cmp_time_anemia_3", "cmp_status_anemia_3", "egfr_diff_pct_per10", "pre_HGB_45days", "cockcroft", docx_name = "sec4_anemia_3")
-```
-
-## 4.3 Thrombocytopenia Grade 2
-
-```{r}
-#| label: ritu-fg-cg-throm2
-fg_model("cmp_time_throm_2", "cmp_status_throm_2", "egfr_diff_pct_per10", "pre_PLT_45days", "cockcroft", docx_name = "sec4_throm_2")
-```
-
-## 4.4 Thrombocytopenia Grade 3
-
-```{r}
-#| label: ritu-fg-cg-throm3
-fg_model("cmp_time_throm_3", "cmp_status_throm_3", "egfr_diff_pct_per10", "pre_PLT_45days", "cockcroft", docx_name = "sec4_throm_3")
-```
-
-## 4.5 AKI Grade 2
-
-```{r}
-#| label: ritu-fg-cg-aki2
-fg_model("cmp_time_aki_2", "cmp_status_aki_2", "egfr_diff_pct_per10", egfr_adj = "cockcroft", docx_name = "sec4_aki_2")
-```
-
-## 4.6 AKI (KDIGO)
-
-```{r}
-#| label: ritu-fg-cg-akikdigo
-fg_model("cmp_time_aki_kdigo", "cmp_status_aki_kdigo", "egfr_diff_pct_per10", egfr_adj = "cockcroft", docx_name = "sec4_aki_kdigo")
-```
-
-## 4.7 Composite Grade 2 AEs
-
-```{r}
-#| label: ritu-fg-cg-grade2
-fg_model("cmp_time_grade_2_aes", "cmp_status_grade_2_aes", "egfr_diff_pct_per10", egfr_adj = "cockcroft", docx_name = "sec4_grade_2_aes")
-```
-
-## 4.8 Composite Grade 3 AEs
-
-```{r}
-#| label: ritu-fg-cg-grade3
-fg_model("cmp_time_grade_3_aes", "cmp_status_grade_3_aes", "egfr_diff_pct_per10", egfr_adj = "cockcroft", docx_name = "sec4_grade_3_aes")
-```
-
-## 4.9 Overall Hospitalization
-
-```{r}
-#| label: ritu-fg-cg-anyhosp
-fg_model("cmp_time_any_hosp", "cmp_status_any_hosp", "egfr_diff_pct_per10", egfr_adj = "cockcroft", docx_name = "sec4_any_hosp")
-```
-
-## 4.10 Platinum-Related Hospitalization
-
-```{r}
-#| label: ritu-fg-cg-sideeffect
-fg_model("cmp_time_side_effect", "cmp_status_side_effect", "egfr_diff_pct_per10", egfr_adj = "cockcroft", docx_name = "sec4_side_effect")
-```
-
-## 4.11 90-Day Death (Cox PH)
-
-```{r}
-#| label: ritu-cox-cg-death
-cox_model("time_to_death_90", "death_90", "egfr_diff_pct_per10", egfr_adj = "cockcroft", docx_name = "sec4_death_90")
-```
-
-## 4.12 AKI within 1 Year (Fine-Gray, death competing)
-
-> **These two subsections use a different time axis from everything above.**
-> Sections 4.1–4.11 are 90-day outcomes. The two below run on the long-horizon
-> outcomes built in Sections 5.16–5.19 of [Data Management](ritu_data.qmd):
+> **These are the only two outcomes modelled on this page.** Both run on the
+> long-horizon kidney outcomes built in Sections 5.16–5.19 of
+> [Data Management](ritu_data.qmd):
 > AKI is administratively censored at **365 days**, the CKD composite runs to the
 > **last creatinine** (day 0 → last follow-up). Death at any time is the
 > competing event in both, taken from `death_days_any` rather than the 90-day
@@ -677,8 +593,9 @@ cox_model("time_to_death_90", "death_90", "egfr_diff_pct_per10", egfr_adj = "coc
 > date for a patient REDCap records as dead. Someone flagged deceased in RPDR
 > with no date who is still alive in REDCap stays censored.
 >
-> The adjuster set, the predictor (`egfr_diff_pct_per10`, per 10 percentage-point
-> decline) and the Cockcroft-Gault adjustment are identical to the 90-day models.
+> The predictor is `egfr_diff_pct_per10` (per 10 percentage-point decline in the
+> eGFR difference), adjusted for Cockcroft-Gault plus the project's standard
+> adjuster set (Section 1).
 
 [📄 Download Word table](../tables/whole/sec4_aki_365.docx) · [CKD Composite](../tables/whole/sec4_ckd_composite.docx)
 
@@ -688,7 +605,7 @@ fg_model("cmp_time_aki_365", "cmp_status_aki_365", "egfr_diff_pct_per10",
          egfr_adj = "cockcroft", docx_name = "sec4_aki_365")
 ```
 
-## 4.13 CKD Composite, Any Time Post-Baseline (Fine-Gray, death competing)
+## 4.2 CKD Composite, Any Time Post-Baseline (Fine-Gray, death competing)
 
 CKD composite = CKD incidence (> 25 % eGFR drop to < 60, sustained ≥ 90 d)
 **+** CKD progression (eGFR < 60 at baseline with a further > 30 % drop, sustained
@@ -716,863 +633,9 @@ knitr::kable(lt_counts, caption = sprintf(
   nrow(dat)))
 ```
 
-# 5 Cause-Specific Hazard Models — eGFR Difference (%) (per 10 % decline, adjusted for Cockcroft-Gault)
+# 5 Scatter Plots — eGFR Discrepancy
 
-```{r}
-#| label: ritu-csh-helper
-csh_model <- function(time_var, status_var, pred_var, pre_labs = NULL) {
-  adj <- c("age","sex","score","ecog_score_cat2",
-           "cancer_type_cat_7","platin_group","high_dose",
-           "Paclitaxel","Pemetrexed","Gemcitabine","ici",
-           "bmi","smoking","steroids","thyroid","cockcroft")
-  if (grepl("dose_discrep", pred_var)) adj <- setdiff(adj, "platin_group")
-  if (!is.null(pre_labs)) adj <- c(adj, pre_labs)
-  # Cause-specific: treat death (status == 2) as censored
-  d <- dat
-  d$csh_status <- ifelse(d[[status_var]] == 1, 1L, 0L)
-  fmla <- as.formula(paste0(
-    "Surv(", time_var, ", csh_status) ~ ",
-    paste(c(pred_var, adj), collapse = " + ")
-  ))
-  survival::coxph(fmla, data = d) %>%
-    tbl_regression(exp = TRUE,
-                   pvalue_fun = function(x) style_pvalue(x, digits = 3)) %>%
-    add_n()
-}
-# Ritu: guard against unfittable sparse-outcome models.
-csh_model <- .wrap_tbl(csh_model)
-
-```
-
-## 5.1 Anemia Grade 2
-
-```{r}
-#| label: ritu-csh-anemia2
-csh_model("cmp_time_anemia_2", "cmp_status_anemia_2", "egfr_diff_pct_per10", "pre_HGB_45days")
-```
-
-## 5.2 Anemia Grade 3
-
-```{r}
-#| label: ritu-csh-anemia3
-csh_model("cmp_time_anemia_3", "cmp_status_anemia_3", "egfr_diff_pct_per10", "pre_HGB_45days")
-```
-
-## 5.3 Thrombocytopenia Grade 2
-
-```{r}
-#| label: ritu-csh-throm2
-csh_model("cmp_time_throm_2", "cmp_status_throm_2", "egfr_diff_pct_per10", "pre_PLT_45days")
-```
-
-## 5.4 Thrombocytopenia Grade 3
-
-```{r}
-#| label: ritu-csh-throm3
-csh_model("cmp_time_throm_3", "cmp_status_throm_3", "egfr_diff_pct_per10", "pre_PLT_45days")
-```
-
-## 5.5 AKI Grade 2
-
-```{r}
-#| label: ritu-csh-aki2
-csh_model("cmp_time_aki_2", "cmp_status_aki_2", "egfr_diff_pct_per10")
-```
-
-## 5.6 AKI (KDIGO)
-
-```{r}
-#| label: ritu-csh-akikdigo
-csh_model("cmp_time_aki_kdigo", "cmp_status_aki_kdigo", "egfr_diff_pct_per10")
-```
-
-## 5.7 Composite Grade 2 AEs
-
-```{r}
-#| label: ritu-csh-grade2
-csh_model("cmp_time_grade_2_aes", "cmp_status_grade_2_aes", "egfr_diff_pct_per10")
-```
-
-## 5.8 Composite Grade 3 AEs
-
-```{r}
-#| label: ritu-csh-grade3
-csh_model("cmp_time_grade_3_aes", "cmp_status_grade_3_aes", "egfr_diff_pct_per10")
-```
-
-## 5.9 Overall Hospitalization
-
-```{r}
-#| label: ritu-csh-anyhosp
-csh_model("cmp_time_any_hosp", "cmp_status_any_hosp", "egfr_diff_pct_per10")
-```
-
-## 5.10 Platinum-Related Hospitalization
-
-```{r}
-#| label: ritu-csh-sideeffect
-csh_model("cmp_time_side_effect", "cmp_status_side_effect", "egfr_diff_pct_per10")
-```
-
-## 5.11 90-Day Death (Cox PH)
-
-```{r}
-#| label: ritu-csh-death
-cox_model("time_to_death_90", "death_90", "egfr_diff_pct_per10", egfr_adj = "cockcroft")
-```
-
-::: {.callout-note}
-## Why anchor at the median (subHR = 1 at the reference)
-
-Three reasons to anchor at the **median**:
-
-1. **Interpretability**: "A patient with eGFR ratio of 0.8 has ~1.5× the subHR compared to a typical patient (at the median)."
-2. **Stability**: The median sits in the densest part of the data, so estimates near it have the tightest confidence intervals. The CIs fan out as you move away — you can see this in the plots.
-3. **No arbitrary choice**: If we picked 1.0 arbitrarily, the plot would look almost identical here (because median ≈ 1), but in cohorts where the median is 0.9 or 1.1, picking 1.0 would either shift or distort the curve without changing the actual model.
-:::
-
-# 6 Linear subHR Curves — eGFR Difference (%) (raw scale)
-
-::: {.callout-note}
-## p-value convention
-
-The p-value shown in each panel subtitle below is **Bonferroni-adjusted** across the six primary manuscript-figure AE outcomes (platinum-related hospitalisation, overall hospitalisation, 90-day mortality, grade ≥ 3 anemia, grade ≥ 3 thrombocytopenia, acute kidney injury): `p_Bonf = min(raw p × 6, 1)`. `n = 6` is displayed alongside for transparency. Raw Wald p is preserved in the Section 4 regression tables and their downloadable Word versions.
-:::
-
-```{r}
-#| label: ritu-linsubhr-helper
-plot_subhr_linear_ratio <- function(time_var, status_var, extra_adj = NULL,
-                                    outcome_label, x_axis = c("ratio","percentile"),
-                                    n_bonf = 6) {
-  x_axis <- match.arg(x_axis)
-  base_adj <- c("age","sex","score","ecog_score_cat2","cockcroft",
-                "cancer_type_cat_7","platin_group","high_dose",
-                "Paclitaxel","Pemetrexed","Gemcitabine","ici",
-                "bmi","smoking","steroids","thyroid")
-  keep <- c("egfr_diff_pct", time_var, status_var, base_adj, extra_adj)
-  d <- dat %>% dplyr::select(all_of(keep)) %>% tidyr::drop_na()
-
-  adj_df <- d[, c(base_adj, extra_adj), drop = FALSE]
-  X_adj <- model.matrix(~ ., data = adj_df)[, -1, drop = FALSE]
-  X <- cbind(egfr_diff_pct = d$egfr_diff_pct, X_adj)
-
-  stat_num <- suppressWarnings(as.integer(as.character(d[[status_var]])))
-  time_num <- as.numeric(d[[time_var]])
-
-  fit <- cmprsk::crr(ftime = time_num, fstatus = stat_num,
-                     cov1 = X, failcode = 1)
-
-  beta   <- fit$coef[1]
-  V_beta <- fit$var[1, 1]
-  se_b   <- sqrt(V_beta)
-
-  # subHR per 10 percentage-point decline and per IQR decline (delta-method CIs)
-  q1    <- as.numeric(quantile(d$egfr_diff_pct, 0.25, na.rm = TRUE))
-  q3    <- as.numeric(quantile(d$egfr_diff_pct, 0.75, na.rm = TRUE))
-  iqr_w <- q3 - q1
-  hr10  <- exp(-10 * beta);     hr10_l <- exp(-10 * beta - 1.96 * 10 * se_b);   hr10_u <- exp(-10 * beta + 1.96 * 10 * se_b)
-  hri   <- exp(-iqr_w * beta);   hri_l  <- exp(-iqr_w * beta - 1.96 * abs(iqr_w) * se_b); hri_u <- exp(-iqr_w * beta + 1.96 * abs(iqr_w) * se_b)
-  pval  <- 2 * (1 - pnorm(abs(beta / se_b)))
-  pval_bonf <- min(pval * n_bonf, 1)
-  p_shown <- if (n_bonf > 1) pval_bonf else pval
-  p_lbl   <- if (n_bonf > 1) sprintf("p_Bonf = %s (n = %d)", ifelse(p_shown < 0.001, "<0.001", sprintf("%.3f", p_shown)), n_bonf) else sprintf("p = %s", ifelse(p_shown < 0.001, "<0.001", sprintf("%.3f", p_shown)))
-  subtitle_str <- sprintf(
-    "subHR per 10 %% decline: %.2f (%.2f-%.2f), %s  |  per IQR decline (Δ = %.1f %%): %.2f (%.2f-%.2f)  |  IQR: [%.1f, %.1f] %%",
-    hr10, hr10_l, hr10_u, p_lbl, iqr_w, hri, hri_l, hri_u, q1, q3)
-
-  ref_x  <- median(d$egfr_diff_pct, na.rm = TRUE)
-  grid_x <- seq(quantile(d$egfr_diff_pct, 0.025, na.rm = TRUE),
-                quantile(d$egfr_diff_pct, 0.975, na.rm = TRUE),
-                length.out = 100)
-
-  log_hr <- beta * (grid_x - ref_x)
-  se     <- sqrt((grid_x - ref_x)^2 * V_beta)
-
-  if (x_axis == "percentile") {
-    ecdf_fn      <- ecdf(d$egfr_diff_pct)
-    grid_display <- ecdf_fn(grid_x) * 100
-    ref_display  <- ecdf_fn(ref_x)  * 100
-    xlab <- "Percentile of eGFR Difference (%)"
-  } else {
-    grid_display <- grid_x
-    ref_display  <- ref_x
-    xlab <- "eGFR difference (%): 100 × (CKD-EPI Cr-Cys − CG) / CG"
-  }
-
-  df_plot <- tibble(
-    x     = grid_display,
-    subhr = exp(log_hr),
-    lcl   = exp(log_hr - 1.96 * se),
-    ucl   = exp(log_hr + 1.96 * se)
-  )
-
-  p <- ggplot(df_plot, aes(x = x, y = subhr)) +
-    geom_ribbon(aes(ymin = lcl, ymax = ucl), alpha = 0.2, fill = "darkorange") +
-    geom_line(color = "darkorange", linewidth = 1) +
-    geom_hline(yintercept = 1, linetype = "dashed", color = "grey50") +
-    geom_vline(xintercept = ref_display, linetype = "dotted", color = "grey40") +
-    labs(x = xlab, y = "subHR (95% CI)",
-         title = outcome_label,
-         subtitle = subtitle_str) +
-    theme_minimal(base_size = 11) +
-    theme(plot.subtitle = element_text(size = 9, color = "grey25"))
-
-  p <- p + coord_cartesian(ylim = c(0, 4))
-  p_fine <- p + scale_x_continuous(breaks = seq(-100, 200, 10))
-  .lbl <- tryCatch(knitr::opts_current$get("label"), error = function(e) NULL)
-  if (!is.null(.lbl)) .pptx_pair[[.lbl]] <- list(default = p, fine = p_fine)
-  p / p_fine
-}
-# Ritu: guard against unfittable sparse-outcome models.
-plot_subhr_linear_ratio <- .wrap_plot(plot_subhr_linear_ratio)
-
-
-plot_cox_linear_ratio <- function(time_var, status_var, extra_adj = NULL,
-                                  outcome_label, x_axis = c("ratio","percentile"),
-                                  n_bonf = 6) {
-  x_axis <- match.arg(x_axis)
-  base_adj <- c("age","sex","score","ecog_score_cat2","cockcroft",
-                "cancer_type_cat_7","platin_group","high_dose",
-                "Paclitaxel","Pemetrexed","Gemcitabine","ici",
-                "bmi","smoking","steroids","thyroid")
-  keep <- c("egfr_diff_pct", time_var, status_var, base_adj, extra_adj)
-  d <- dat %>% dplyr::select(all_of(keep)) %>% tidyr::drop_na()
-
-  fmla <- as.formula(paste0(
-    "Surv(", time_var, ", ", status_var, ") ~ egfr_diff_pct + ",
-    paste(c(base_adj, extra_adj), collapse = " + ")
-  ))
-  fit <- survival::coxph(fmla, data = d)
-
-  beta   <- coef(fit)["egfr_diff_pct"]
-  V_beta <- vcov(fit)["egfr_diff_pct", "egfr_diff_pct"]
-  se_b   <- sqrt(V_beta)
-
-  q1    <- as.numeric(quantile(d$egfr_diff_pct, 0.25, na.rm = TRUE))
-  q3    <- as.numeric(quantile(d$egfr_diff_pct, 0.75, na.rm = TRUE))
-  iqr_w <- q3 - q1
-  hr10  <- exp(-10 * beta);     hr10_l <- exp(-10 * beta - 1.96 * 10 * se_b);   hr10_u <- exp(-10 * beta + 1.96 * 10 * se_b)
-  hri   <- exp(-iqr_w * beta);   hri_l  <- exp(-iqr_w * beta - 1.96 * abs(iqr_w) * se_b); hri_u <- exp(-iqr_w * beta + 1.96 * abs(iqr_w) * se_b)
-  pval  <- 2 * (1 - pnorm(abs(beta / se_b)))
-  pval_bonf <- min(pval * n_bonf, 1)
-  p_shown <- if (n_bonf > 1) pval_bonf else pval
-  p_lbl   <- if (n_bonf > 1) sprintf("p_Bonf = %s (n = %d)", ifelse(p_shown < 0.001, "<0.001", sprintf("%.3f", p_shown)), n_bonf) else sprintf("p = %s", ifelse(p_shown < 0.001, "<0.001", sprintf("%.3f", p_shown)))
-  subtitle_str <- sprintf(
-    "HR per 10 %% decline: %.2f (%.2f-%.2f), %s  |  per IQR decline (Δ = %.1f %%): %.2f (%.2f-%.2f)  |  IQR: [%.1f, %.1f] %%",
-    hr10, hr10_l, hr10_u, p_lbl, iqr_w, hri, hri_l, hri_u, q1, q3)
-
-  ref_x  <- median(d$egfr_diff_pct, na.rm = TRUE)
-  grid_x <- seq(quantile(d$egfr_diff_pct, 0.025, na.rm = TRUE),
-                quantile(d$egfr_diff_pct, 0.975, na.rm = TRUE),
-                length.out = 100)
-
-  log_hr <- beta * (grid_x - ref_x)
-  se     <- sqrt((grid_x - ref_x)^2 * V_beta)
-
-  if (x_axis == "percentile") {
-    ecdf_fn      <- ecdf(d$egfr_diff_pct)
-    grid_display <- ecdf_fn(grid_x) * 100
-    ref_display  <- ecdf_fn(ref_x)  * 100
-    xlab <- "Percentile of eGFR Difference (%)"
-  } else {
-    grid_display <- grid_x
-    ref_display  <- ref_x
-    xlab <- "eGFR difference (%): 100 × (CKD-EPI Cr-Cys − CG) / CG"
-  }
-
-  df_plot <- tibble(
-    x   = grid_display,
-    hr  = exp(log_hr),
-    lcl = exp(log_hr - 1.96 * se),
-    ucl = exp(log_hr + 1.96 * se)
-  )
-
-  p <- ggplot(df_plot, aes(x = x, y = hr)) +
-    geom_ribbon(aes(ymin = lcl, ymax = ucl), alpha = 0.2, fill = "darkorange") +
-    geom_line(color = "darkorange", linewidth = 1) +
-    geom_hline(yintercept = 1, linetype = "dashed", color = "grey50") +
-    geom_vline(xintercept = ref_display, linetype = "dotted", color = "grey40") +
-    labs(x = xlab, y = "HR (95% CI)",
-         title = outcome_label,
-         subtitle = subtitle_str) +
-    theme_minimal(base_size = 11) +
-    theme(plot.subtitle = element_text(size = 9, color = "grey25"))
-
-  p <- p + coord_cartesian(ylim = c(0, 4))
-  p_fine <- p + scale_x_continuous(breaks = seq(-100, 200, 10))
-  .lbl <- tryCatch(knitr::opts_current$get("label"), error = function(e) NULL)
-  if (!is.null(.lbl)) .pptx_pair[[.lbl]] <- list(default = p, fine = p_fine)
-  p / p_fine
-}
-# Ritu: guard against unfittable sparse-outcome models.
-plot_cox_linear_ratio <- .wrap_plot(plot_cox_linear_ratio)
-
-```
-
-## 6.1 Anemia Grade 2
-
-```{r}
-#| label: ritu-linsubhr-ratio-anemia2
-#| fig-width: 6
-#| fig-height: 8
-plot_subhr_linear_ratio("cmp_time_anemia_2", "cmp_status_anemia_2",
-                        "pre_HGB_45days", "Anemia Grade 2", "ratio")
-```
-
-## 6.2 Anemia Grade 3
-
-```{r}
-#| label: ritu-linsubhr-ratio-anemia3
-#| fig-width: 6
-#| fig-height: 8
-plot_subhr_linear_ratio("cmp_time_anemia_3", "cmp_status_anemia_3",
-                        "pre_HGB_45days", "Anemia Grade 3", "ratio")
-```
-
-## 6.3 Thrombocytopenia Grade 2
-
-```{r}
-#| label: ritu-linsubhr-ratio-throm2
-#| fig-width: 6
-#| fig-height: 8
-plot_subhr_linear_ratio("cmp_time_throm_2", "cmp_status_throm_2",
-                        "pre_PLT_45days", "Thrombocytopenia Grade 2", "ratio")
-```
-
-## 6.4 Thrombocytopenia Grade 3
-
-```{r}
-#| label: ritu-linsubhr-ratio-throm3
-#| fig-width: 6
-#| fig-height: 8
-plot_subhr_linear_ratio("cmp_time_throm_3", "cmp_status_throm_3",
-                        "pre_PLT_45days", "Thrombocytopenia Grade 3", "ratio")
-```
-
-## 6.5 AKI Grade 2
-
-```{r}
-#| label: ritu-linsubhr-ratio-aki2
-#| fig-width: 6
-#| fig-height: 8
-plot_subhr_linear_ratio("cmp_time_aki_2", "cmp_status_aki_2",
-                        NULL, "AKI Grade 2", "ratio")
-```
-
-## 6.6 AKI (KDIGO)
-
-```{r}
-#| label: ritu-linsubhr-ratio-akikdigo
-#| fig-width: 6
-#| fig-height: 8
-plot_subhr_linear_ratio("cmp_time_aki_kdigo", "cmp_status_aki_kdigo",
-                        NULL, "AKI (KDIGO)", "ratio")
-```
-
-## 6.7 Composite Grade 2 AEs
-
-```{r}
-#| label: ritu-linsubhr-ratio-grade2
-#| fig-width: 6
-#| fig-height: 8
-plot_subhr_linear_ratio("cmp_time_grade_2_aes", "cmp_status_grade_2_aes",
-                        NULL, "Composite Grade 2 AEs", "ratio")
-```
-
-## 6.8 Composite Grade 3 AEs
-
-```{r}
-#| label: ritu-linsubhr-ratio-grade3
-#| fig-width: 6
-#| fig-height: 8
-plot_subhr_linear_ratio("cmp_time_grade_3_aes", "cmp_status_grade_3_aes",
-                        NULL, "Composite Grade 3 AEs", "ratio")
-```
-
-## 6.9 Overall Hospitalization
-
-```{r}
-#| label: ritu-linsubhr-ratio-anyhosp
-#| fig-width: 6
-#| fig-height: 8
-plot_subhr_linear_ratio("cmp_time_any_hosp", "cmp_status_any_hosp",
-                        NULL, "Overall Hospitalization", "ratio")
-```
-
-## 6.10 Platinum-Related Hospitalization
-
-```{r}
-#| label: ritu-linsubhr-ratio-sideeffect
-#| fig-width: 6
-#| fig-height: 8
-plot_subhr_linear_ratio("cmp_time_side_effect", "cmp_status_side_effect",
-                        NULL, "Platinum-Related Hospitalization", "ratio")
-```
-
-## 6.11 90-Day Death (Cox PH)
-
-```{r}
-#| label: ritu-cox-linear-ratio-death
-#| fig-width: 6
-#| fig-height: 8
-plot_cox_linear_ratio("time_to_death_90", "death_90",
-                      NULL, "90-Day Death (Cox PH)", "ratio")
-```
-
-# 7 Linear subHR Curves — eGFR Discrepancy (raw scale)
-
-## 7.0 Summary table: Fine-Gray subHR per 10 mL/min decline in eGFR discrepancy
-
-One row per outcome. Multivariable Fine-Gray model fit with `egfr_disc_per10dec = -egfr_discrepancy / 10` (positive when CKD-EPI Cr-Cys is below CG) plus the same adjusters used by the curves below. The HR for `egfr_disc_per10dec` is the multiplicative change in subHR per **10 mL/min lower** eGFR discrepancy. 90-day death uses Cox PH (no competing event); all other outcomes use Fine-Gray with death as the competing event. p-values in this summary table are **raw Wald** (not Bonferroni-adjusted); the plot subtitles in Sections 7.1–7.11 apply Bonferroni correction across the six primary AE outcomes.
-
-[📄 Download Word table](../tables/whole/sec7_disc_summary.docx)
-
-```{r}
-#| label: ritu-fg-disc-summary-whole
-.disc_adj_set <- function(pre_labs = NULL) {
-  base_adj <- c("age","sex","score","ecog_score_cat2",
-                "cancer_type_cat_7","platin_group","high_dose",
-                "Paclitaxel","Pemetrexed","Gemcitabine","ici",
-                "bmi","smoking","steroids","thyroid")
-  if (!is.null(pre_labs)) base_adj <- c(base_adj, pre_labs)
-  base_adj
-}
-
-fg_disc_row <- function(time_var, status_var, label, pre_labs = NULL) {
-  adj <- .disc_adj_set(pre_labs)
-  d <- dat %>%
-    dplyr::select(all_of(c("egfr_disc_per10dec", time_var, status_var, adj))) %>%
-    tidyr::drop_na()
-  adj_df <- d[, adj, drop = FALSE]
-  X_adj  <- model.matrix(~ ., data = adj_df)[, -1, drop = FALSE]
-  X      <- cbind(egfr_disc_per10dec = d$egfr_disc_per10dec, X_adj)
-  stat_num <- suppressWarnings(as.integer(as.character(d[[status_var]])))
-  time_num <- as.numeric(d[[time_var]])
-  fit <- cmprsk::crr(time_num, stat_num, cov1 = X, failcode = 1)
-  b <- unname(fit$coef[1]); se <- sqrt(fit$var[1, 1])
-  hr <- exp(b); lcl <- exp(b - 1.96 * se); ucl <- exp(b + 1.96 * se)
-  pv <- 2 * (1 - pnorm(abs(b / se)))
-  tibble(
-    Outcome = label,
-    Model   = "Fine-Gray",
-    N       = nrow(d),
-    `Excluded (missing cov.)` = nrow(dat) - nrow(d),
-    Events  = sum(stat_num == 1, na.rm = TRUE),
-    `(sub)HR (95% CI)` = sprintf("%.2f (%.2f, %.2f)", hr, lcl, ucl),
-    `p-value` = ifelse(pv < 0.001, "<0.001", sprintf("%.3f", pv))
-  )
-}
-# Ritu: guard against unfittable sparse-outcome models.
-fg_disc_row <- .wrap_row(fg_disc_row)
-
-
-cox_disc_row <- function(time_var, status_var, label, pre_labs = NULL) {
-  adj <- .disc_adj_set(pre_labs)
-  d <- dat %>%
-    dplyr::select(all_of(c("egfr_disc_per10dec", time_var, status_var, adj))) %>%
-    tidyr::drop_na()
-  fmla <- as.formula(paste0("Surv(", time_var, ", ", status_var,
-                            ") ~ egfr_disc_per10dec + ",
-                            paste(adj, collapse = " + ")))
-  fit <- survival::coxph(fmla, data = d)
-  b   <- unname(coef(fit)["egfr_disc_per10dec"])
-  se  <- sqrt(vcov(fit)["egfr_disc_per10dec", "egfr_disc_per10dec"])
-  hr  <- exp(b); lcl <- exp(b - 1.96 * se); ucl <- exp(b + 1.96 * se)
-  pv  <- 2 * (1 - pnorm(abs(b / se)))
-  tibble(
-    Outcome = label,
-    Model   = "Cox PH",
-    N       = nrow(d),
-    `Excluded (missing cov.)` = nrow(dat) - nrow(d),
-    Events  = sum(d[[status_var]] == 1, na.rm = TRUE),
-    `(sub)HR (95% CI)` = sprintf("%.2f (%.2f, %.2f)", hr, lcl, ucl),
-    `p-value` = ifelse(pv < 0.001, "<0.001", sprintf("%.3f", pv))
-  )
-}
-# Ritu: guard against unfittable sparse-outcome models.
-cox_disc_row <- .wrap_row(cox_disc_row)
-
-
-disc_summary <- bind_rows(
-  fg_disc_row ("cmp_time_anemia_2",     "cmp_status_anemia_2",     "Anemia Grade 2",                   "pre_HGB_45days"),
-  fg_disc_row ("cmp_time_anemia_3",     "cmp_status_anemia_3",     "Anemia Grade 3",                   "pre_HGB_45days"),
-  fg_disc_row ("cmp_time_throm_2",      "cmp_status_throm_2",      "Thrombocytopenia Grade 2",         "pre_PLT_45days"),
-  fg_disc_row ("cmp_time_throm_3",      "cmp_status_throm_3",      "Thrombocytopenia Grade 3",         "pre_PLT_45days"),
-  fg_disc_row ("cmp_time_aki_2",        "cmp_status_aki_2",        "AKI Grade 2"),
-  fg_disc_row ("cmp_time_aki_kdigo",    "cmp_status_aki_kdigo",    "AKI (KDIGO)"),
-  fg_disc_row ("cmp_time_grade_2_aes",  "cmp_status_grade_2_aes",  "Composite Grade 2 AEs"),
-  fg_disc_row ("cmp_time_grade_3_aes",  "cmp_status_grade_3_aes",  "Composite Grade 3 AEs"),
-  fg_disc_row ("cmp_time_any_hosp",     "cmp_status_any_hosp",     "Overall Hospitalization"),
-  fg_disc_row ("cmp_time_side_effect",  "cmp_status_side_effect",  "Platinum-Related Hospitalization"),
-  cox_disc_row("time_to_death_90",      "death_90",                "90-Day Death")
-)
-
-ft_disc <- flextable::flextable(disc_summary) |>
-  flextable::set_caption("Multivariable (sub)HR per 10 mL/min decline in eGFR discrepancy (CKD-EPI Cr-Cys − Cockcroft-Gault). Fine-Gray for competing-risk outcomes; Cox PH for 90-day death.") |>
-  flextable::autofit()
-flextable::save_as_docx(ft_disc,
-  path = file.path(docx_dir, "sec7_disc_summary.docx"))
-ft_disc
-```
-```{r}
-#| label: ritu-linsubhr-disc-helper
-plot_subhr_linear_disc <- function(time_var, status_var, extra_adj = NULL,
-                                   outcome_label, n_bonf = 6) {
-  base_adj <- c("age","sex","score","ecog_score_cat2",
-                "cancer_type_cat_7","platin_group","high_dose",
-                "Paclitaxel","Pemetrexed","Gemcitabine","ici",
-                "bmi","smoking","steroids","thyroid")
-  keep <- c("egfr_discrepancy", time_var, status_var, base_adj, extra_adj)
-  d <- dat %>% dplyr::select(all_of(keep)) %>% tidyr::drop_na()
-
-  adj_df <- d[, c(base_adj, extra_adj), drop = FALSE]
-  X_adj <- model.matrix(~ ., data = adj_df)[, -1, drop = FALSE]
-  X <- cbind(egfr_discrepancy = d$egfr_discrepancy, X_adj)
-
-  stat_num <- suppressWarnings(as.integer(as.character(d[[status_var]])))
-  time_num <- as.numeric(d[[time_var]])
-
-  fit <- cmprsk::crr(ftime = time_num, fstatus = stat_num,
-                     cov1 = X, failcode = 1)
-
-  beta   <- fit$coef[1]
-  V_beta <- fit$var[1, 1]
-  se_b   <- sqrt(V_beta)
-
-  # subHR summaries: per 1 mL/min, and per IQR (Q3 - Q1) of egfr_discrepancy
-  q1    <- as.numeric(quantile(d$egfr_discrepancy, 0.25, na.rm = TRUE))
-  q3    <- as.numeric(quantile(d$egfr_discrepancy, 0.75, na.rm = TRUE))
-  iqr_w <- q3 - q1
-  # per 10 mL/min DECLINE: HR = exp(-10 * beta); SE on log scale = 10 * se_b
-  hr10  <- exp(-10 * beta);       hr10_l <- exp(-10 * beta - 1.96 * 10 * se_b);     hr10_u <- exp(-10 * beta + 1.96 * 10 * se_b)
-  # per IQR DECLINE: HR = exp(-iqr_w * beta); SE on log scale = |iqr_w| * se_b
-  hri   <- exp(-iqr_w * beta);    hri_l <- exp(-iqr_w * beta - 1.96 * abs(iqr_w) * se_b); hri_u <- exp(-iqr_w * beta + 1.96 * abs(iqr_w) * se_b)
-  pval  <- 2 * (1 - pnorm(abs(beta / se_b)))
-  pval_bonf <- min(pval * n_bonf, 1)
-  p_shown <- if (n_bonf > 1) pval_bonf else pval
-  p_lbl   <- if (n_bonf > 1) sprintf("p_Bonf = %s (n = %d)", ifelse(p_shown < 0.001, "<0.001", sprintf("%.3f", p_shown)), n_bonf) else sprintf("p = %s", ifelse(p_shown < 0.001, "<0.001", sprintf("%.3f", p_shown)))
-  subtitle_str <- sprintf(
-    "subHR per 10 mL/min decline: %.2f (%.2f-%.2f), %s  |  per IQR decline (Δ = %.1f): %.2f (%.2f-%.2f)  |  IQR: [%.1f, %.1f]",
-    hr10, hr10_l, hr10_u, p_lbl, iqr_w, hri, hri_l, hri_u, q1, q3)
-
-  ref_x  <- median(d$egfr_discrepancy, na.rm = TRUE)
-  grid_x <- seq(quantile(d$egfr_discrepancy, 0.025, na.rm = TRUE),
-                quantile(d$egfr_discrepancy, 0.975, na.rm = TRUE),
-                length.out = 100)
-
-  log_hr <- beta * (grid_x - ref_x)
-  se     <- sqrt((grid_x - ref_x)^2 * V_beta)
-
-  df_plot <- tibble(
-    x     = grid_x,
-    subhr = exp(log_hr),
-    lcl   = exp(log_hr - 1.96 * se),
-    ucl   = exp(log_hr + 1.96 * se)
-  )
-
-  ggplot(df_plot, aes(x = x, y = subhr)) +
-    geom_ribbon(aes(ymin = lcl, ymax = ucl), alpha = 0.2, fill = "darkorange") +
-    geom_line(color = "darkorange", linewidth = 1) +
-    geom_hline(yintercept = 1, linetype = "dashed", color = "grey50") +
-    geom_vline(xintercept = ref_x, linetype = "dotted", color = "grey40") +
-    geom_vline(xintercept = c(q1, q3), linetype = "dashed",
-               color = "steelblue", alpha = 0.7) +
-    labs(x = "eGFR Discrepancy (mL/min)",
-         y = "subHR (95% CI)",
-         title = outcome_label,
-         subtitle = subtitle_str) +
-    coord_cartesian(ylim = c(0, 4)) +
-    theme_minimal(base_size = 11) +
-    theme(plot.subtitle = element_text(size = 9, color = "grey25"))
-}
-# Ritu: guard against unfittable sparse-outcome models.
-plot_subhr_linear_disc <- .wrap_plot(plot_subhr_linear_disc)
-
-
-plot_cox_linear_disc <- function(time_var, status_var, extra_adj = NULL,
-                                 outcome_label, n_bonf = 6) {
-  base_adj <- c("age","sex","score","ecog_score_cat2",
-                "cancer_type_cat_7","platin_group","high_dose",
-                "Paclitaxel","Pemetrexed","Gemcitabine","ici",
-                "bmi","smoking","steroids","thyroid")
-  keep <- c("egfr_discrepancy", time_var, status_var, base_adj, extra_adj)
-  d <- dat %>% dplyr::select(all_of(keep)) %>% tidyr::drop_na()
-
-  fmla <- as.formula(paste0(
-    "Surv(", time_var, ", ", status_var, ") ~ egfr_discrepancy + ",
-    paste(c(base_adj, extra_adj), collapse = " + ")
-  ))
-  fit <- survival::coxph(fmla, data = d)
-
-  beta   <- coef(fit)["egfr_discrepancy"]
-  V_beta <- vcov(fit)["egfr_discrepancy", "egfr_discrepancy"]
-  se_b   <- sqrt(V_beta)
-
-  q1    <- as.numeric(quantile(d$egfr_discrepancy, 0.25, na.rm = TRUE))
-  q3    <- as.numeric(quantile(d$egfr_discrepancy, 0.75, na.rm = TRUE))
-  iqr_w <- q3 - q1
-  hr10  <- exp(-10 * beta);       hr10_l <- exp(-10 * beta - 1.96 * 10 * se_b);     hr10_u <- exp(-10 * beta + 1.96 * 10 * se_b)
-  hri   <- exp(-iqr_w * beta);    hri_l <- exp(-iqr_w * beta - 1.96 * abs(iqr_w) * se_b); hri_u <- exp(-iqr_w * beta + 1.96 * abs(iqr_w) * se_b)
-  pval  <- 2 * (1 - pnorm(abs(beta / se_b)))
-  pval_bonf <- min(pval * n_bonf, 1)
-  p_shown <- if (n_bonf > 1) pval_bonf else pval
-  p_lbl   <- if (n_bonf > 1) sprintf("p_Bonf = %s (n = %d)", ifelse(p_shown < 0.001, "<0.001", sprintf("%.3f", p_shown)), n_bonf) else sprintf("p = %s", ifelse(p_shown < 0.001, "<0.001", sprintf("%.3f", p_shown)))
-  subtitle_str <- sprintf(
-    "HR per 10 mL/min decline: %.2f (%.2f-%.2f), %s  |  per IQR decline (Δ = %.1f): %.2f (%.2f-%.2f)  |  IQR: [%.1f, %.1f]",
-    hr10, hr10_l, hr10_u, p_lbl, iqr_w, hri, hri_l, hri_u, q1, q3)
-
-  ref_x  <- median(d$egfr_discrepancy, na.rm = TRUE)
-  grid_x <- seq(quantile(d$egfr_discrepancy, 0.025, na.rm = TRUE),
-                quantile(d$egfr_discrepancy, 0.975, na.rm = TRUE),
-                length.out = 100)
-
-  log_hr <- beta * (grid_x - ref_x)
-  se     <- sqrt((grid_x - ref_x)^2 * V_beta)
-
-  df_plot <- tibble(
-    x   = grid_x,
-    hr  = exp(log_hr),
-    lcl = exp(log_hr - 1.96 * se),
-    ucl = exp(log_hr + 1.96 * se)
-  )
-
-  ggplot(df_plot, aes(x = x, y = hr)) +
-    geom_ribbon(aes(ymin = lcl, ymax = ucl), alpha = 0.2, fill = "darkorange") +
-    geom_line(color = "darkorange", linewidth = 1) +
-    geom_hline(yintercept = 1, linetype = "dashed", color = "grey50") +
-    geom_vline(xintercept = ref_x, linetype = "dotted", color = "grey40") +
-    geom_vline(xintercept = c(q1, q3), linetype = "dashed",
-               color = "steelblue", alpha = 0.7) +
-    labs(x = "eGFR Discrepancy (mL/min)",
-         y = "HR (95% CI)",
-         title = outcome_label,
-         subtitle = subtitle_str) +
-    coord_cartesian(ylim = c(0, 4)) +
-    theme_minimal(base_size = 11) +
-    theme(plot.subtitle = element_text(size = 9, color = "grey25"))
-}
-# Ritu: guard against unfittable sparse-outcome models.
-plot_cox_linear_disc <- .wrap_plot(plot_cox_linear_disc)
-
-```
-
-## 7.1 Anemia Grade 2
-
-```{r}
-#| label: ritu-linsubhr-disc-anemia2
-#| fig-width: 6
-#| fig-height: 4
-plot_subhr_linear_disc("cmp_time_anemia_2", "cmp_status_anemia_2",
-                       "pre_HGB_45days", "Anemia Grade 2")
-```
-
-## 7.2 Anemia Grade 3
-
-```{r}
-#| label: ritu-linsubhr-disc-anemia3
-#| fig-width: 6
-#| fig-height: 4
-plot_subhr_linear_disc("cmp_time_anemia_3", "cmp_status_anemia_3",
-                       "pre_HGB_45days", "Anemia Grade 3")
-```
-
-## 7.3 Thrombocytopenia Grade 2
-
-```{r}
-#| label: ritu-linsubhr-disc-throm2
-#| fig-width: 6
-#| fig-height: 4
-plot_subhr_linear_disc("cmp_time_throm_2", "cmp_status_throm_2",
-                       "pre_PLT_45days", "Thrombocytopenia Grade 2")
-```
-
-## 7.4 Thrombocytopenia Grade 3
-
-```{r}
-#| label: ritu-linsubhr-disc-throm3
-#| fig-width: 6
-#| fig-height: 4
-plot_subhr_linear_disc("cmp_time_throm_3", "cmp_status_throm_3",
-                       "pre_PLT_45days", "Thrombocytopenia Grade 3")
-```
-
-## 7.5 AKI Grade 2
-
-```{r}
-#| label: ritu-linsubhr-disc-aki2
-#| fig-width: 6
-#| fig-height: 4
-plot_subhr_linear_disc("cmp_time_aki_2", "cmp_status_aki_2",
-                       NULL, "AKI Grade 2")
-```
-
-## 7.6 AKI (KDIGO)
-
-```{r}
-#| label: ritu-linsubhr-disc-akikdigo
-#| fig-width: 6
-#| fig-height: 4
-plot_subhr_linear_disc("cmp_time_aki_kdigo", "cmp_status_aki_kdigo",
-                       NULL, "AKI (KDIGO)")
-```
-
-## 7.7 Composite Grade 2 AEs
-
-```{r}
-#| label: ritu-linsubhr-disc-grade2
-#| fig-width: 6
-#| fig-height: 4
-plot_subhr_linear_disc("cmp_time_grade_2_aes", "cmp_status_grade_2_aes",
-                       NULL, "Composite Grade 2 AEs")
-```
-
-## 7.8 Composite Grade 3 AEs
-
-```{r}
-#| label: ritu-linsubhr-disc-grade3
-#| fig-width: 6
-#| fig-height: 4
-plot_subhr_linear_disc("cmp_time_grade_3_aes", "cmp_status_grade_3_aes",
-                       NULL, "Composite Grade 3 AEs")
-```
-
-## 7.9 Overall Hospitalization
-
-```{r}
-#| label: ritu-linsubhr-disc-anyhosp
-#| fig-width: 6
-#| fig-height: 4
-plot_subhr_linear_disc("cmp_time_any_hosp", "cmp_status_any_hosp",
-                       NULL, "Overall Hospitalization")
-```
-
-## 7.10 Platinum-Related Hospitalization
-
-```{r}
-#| label: ritu-linsubhr-disc-sideeffect
-#| fig-width: 6
-#| fig-height: 4
-plot_subhr_linear_disc("cmp_time_side_effect", "cmp_status_side_effect",
-                       NULL, "Platinum-Related Hospitalization")
-```
-
-## 7.11 90-Day Death (Cox PH)
-
-```{r}
-#| label: ritu-linsubhr-disc-death
-#| fig-width: 6
-#| fig-height: 4
-plot_cox_linear_disc("time_to_death_90", "death_90",
-                     NULL, "90-Day Death (Cox PH)")
-```
-
-# 8 Linear subHR Curves — Hospitalization by Reason
-
-## 8.1 Nausea/Vomiting/GI
-
-```{r}
-#| label: ritu-linsubhr-ratio-hosp1
-#| fig-width: 6
-#| fig-height: 8
-plot_subhr_linear_ratio("cmp_time_hosp_1", "cmp_status_hosp_1",
-                        NULL, "Nausea/Vomiting/GI", n_bonf = 1)
-```
-
-## 8.2 Failure to Thrive/Fatigue/Dehydration
-
-```{r}
-#| label: ritu-linsubhr-ratio-hosp2
-#| fig-width: 6
-#| fig-height: 8
-plot_subhr_linear_ratio("cmp_time_hosp_2", "cmp_status_hosp_2",
-                        NULL, "Failure to Thrive/Fatigue/Dehydration", n_bonf = 1)
-```
-
-## 8.3 AKI
-
-```{r}
-#| label: ritu-linsubhr-ratio-hosp3
-#| fig-width: 6
-#| fig-height: 8
-plot_subhr_linear_ratio("cmp_time_hosp_3", "cmp_status_hosp_3",
-                        NULL, "AKI", n_bonf = 1)
-```
-
-## 8.4 Electrolyte Abnormalities
-
-```{r}
-#| label: ritu-linsubhr-ratio-hosp4
-#| fig-width: 6
-#| fig-height: 8
-plot_subhr_linear_ratio("cmp_time_hosp_4", "cmp_status_hosp_4",
-                        NULL, "Electrolyte Abnormalities", n_bonf = 1)
-```
-
-## 8.5 Cytopenia
-
-```{r}
-#| label: ritu-linsubhr-ratio-hosp5
-#| fig-width: 6
-#| fig-height: 8
-plot_subhr_linear_ratio("cmp_time_hosp_5", "cmp_status_hosp_5",
-                        NULL, "Cytopenia", n_bonf = 1)
-```
-
-## 8.6 Febrile Neutropenia
-
-```{r}
-#| label: ritu-linsubhr-ratio-hosp6
-#| fig-width: 6
-#| fig-height: 8
-plot_subhr_linear_ratio("cmp_time_hosp_6", "cmp_status_hosp_6",
-                        NULL, "Febrile Neutropenia", n_bonf = 1)
-```
-
-## 8.7 Infection/Sepsis
-
-```{r}
-#| label: ritu-linsubhr-ratio-hosp7
-#| fig-width: 6
-#| fig-height: 8
-plot_subhr_linear_ratio("cmp_time_hosp_7", "cmp_status_hosp_7",
-                        NULL, "Infection/Sepsis", n_bonf = 1)
-```
-
-## 8.8 Cancer Progression
-
-```{r}
-#| label: ritu-linsubhr-ratio-hosp8
-#| fig-width: 6
-#| fig-height: 8
-plot_subhr_linear_ratio("cmp_time_hosp_8", "cmp_status_hosp_8",
-                        NULL, "Cancer Progression", n_bonf = 1)
-```
-
-## 8.9 Immune-related AE & Other
-
-Composite competing-risk outcome combining hospitalisations coded as Immune-related AE (reason 9) and Other (reason 11). Event = 1 if either occurred within 90 days; time = earliest of the two.
-
-```{r}
-#| label: ritu-linsubhr-ratio-hosp-immune-other
-#| fig-width: 6
-#| fig-height: 8
-plot_subhr_linear_ratio("cmp_time_hosp_immune_other", "cmp_status_hosp_immune_other",
-                        NULL, "Immune-related AE & Other", n_bonf = 1)
-```
-
-## 8.10 Planned Surgery/Port
-
-```{r}
-#| label: ritu-linsubhr-ratio-hosp10
-#| fig-width: 6
-#| fig-height: 8
-plot_subhr_linear_ratio("cmp_time_hosp_10", "cmp_status_hosp_10",
-                        NULL, "Planned Surgery/Port", n_bonf = 1)
-```
-
-# 9 Scatter Plots — eGFR Discrepancy
-
-## 9.1 eGFR Discrepancy vs CKD-EPI Cr-Cys (unindexed)
+## 5.1 eGFR Discrepancy vs CKD-EPI Cr-Cys (unindexed)
 
 ```{r}
 #| label: ritu-scatter-egfr-epi
@@ -1589,7 +652,7 @@ ggplot(dat %>% filter(!is.na(egfr_discrepancy)),
   theme_minimal(base_size = 11)
 ```
 
-## 9.2 eGFR Discrepancy vs Cockcroft-Gault
+## 5.2 eGFR Discrepancy vs Cockcroft-Gault
 
 ```{r}
 #| label: ritu-scatter-egfr-cg
@@ -1607,7 +670,7 @@ ggplot(dat %>% filter(!is.na(egfr_discrepancy)),
 ```
 
 
-# 10 CG vs CKD-EPI Cr-Cys (highlighted by Age / BMI)
+# 6 CG vs CKD-EPI Cr-Cys (highlighted by Age / BMI)
 
 For each plot below, the x-axis is Cockcroft-Gault eGFR (mL/min) and the y-axis is CKD-EPI Cr-Cys *unindexed* eGFR (mL/min). The dashed line is `y = x` (perfect agreement). Patients meeting the highlighted threshold are coloured red; all others are grey. `N` shown in each title is the count of patients with both eGFR values non-missing; `n_red` is the count meeting the red criterion.
 
@@ -1657,7 +720,7 @@ plot_cg_vs_epi <- function(highlight_var, threshold, label) {
 }
 ```
 
-## 10.1 Age >= 70
+## 6.1 Age >= 70
 
 ```{r}
 #| label: ritu-scatter-cg-epi-age70
@@ -1666,7 +729,7 @@ plot_cg_vs_epi <- function(highlight_var, threshold, label) {
 plot_cg_vs_epi("age", 70, "Age >= 70")
 ```
 
-## 10.2 Age >= 75
+## 6.2 Age >= 75
 
 ```{r}
 #| label: ritu-scatter-cg-epi-age75
@@ -1675,7 +738,7 @@ plot_cg_vs_epi("age", 70, "Age >= 70")
 plot_cg_vs_epi("age", 75, "Age >= 75")
 ```
 
-## 10.3 Age >= 80
+## 6.3 Age >= 80
 
 ```{r}
 #| label: ritu-scatter-cg-epi-age80
@@ -1684,7 +747,7 @@ plot_cg_vs_epi("age", 75, "Age >= 75")
 plot_cg_vs_epi("age", 80, "Age >= 80")
 ```
 
-## 10.4 BMI >= 25
+## 6.4 BMI >= 25
 
 ```{r}
 #| label: ritu-scatter-cg-epi-bmi25
@@ -1693,7 +756,7 @@ plot_cg_vs_epi("age", 80, "Age >= 80")
 plot_cg_vs_epi("bmi", 25, "BMI >= 25")
 ```
 
-## 10.5 BMI >= 30
+## 6.5 BMI >= 30
 
 ```{r}
 #| label: ritu-scatter-cg-epi-bmi30
@@ -1702,7 +765,7 @@ plot_cg_vs_epi("bmi", 25, "BMI >= 25")
 plot_cg_vs_epi("bmi", 30, "BMI >= 30")
 ```
 
-## 10.6 Sex
+## 6.6 Sex
 
 ```{r}
 #| label: ritu-scatter-cg-epi-sex
@@ -1746,7 +809,7 @@ ggplot(d_sex, aes(x = cockcroft, y = ckd_epi_gfr_cre_cys_unindex,
   theme(legend.position = "top")
 ```
 
-## 10.7 – 10.12 eGFR Difference (%) distribution by category
+## 6.7 – 6.12 eGFR Difference (%) distribution by category
 
 For each of the same six splits as 10.1 – 10.6, overlaid kernel density curves of the eGFR difference (%) = 100 × (CKD-EPI Cr-Cys unindexed − Cockcroft-Gault) / Cockcroft-Gault. Red = highlighted level (≥ threshold, or Female for the sex panel); grey = reference level. Dashed grey vertical line marks the 0 % concordance point; dotted verticals mark each group's median. Subtitle carries N and median for each level plus a two-sided Mann-Whitney U p-value (equivalent to Wilcoxon rank-sum) comparing the two distributions.
 
@@ -1800,7 +863,7 @@ plot_ratio_by_group <- function(highlight_var, threshold, label,
 }
 ```
 
-### 10.7 eGFR Difference (%) by Age >= 70
+### 6.7 eGFR Difference (%) by Age >= 70
 
 ```{r}
 #| label: ritu-ratio-by-age70
@@ -1810,7 +873,7 @@ plot_ratio_by_group("age", 70, "eGFR Difference (%) by Age >= 70",
                     "Age >= 70", "Age < 70")
 ```
 
-### 10.8 eGFR Difference (%) by Age >= 75
+### 6.8 eGFR Difference (%) by Age >= 75
 
 ```{r}
 #| label: ritu-ratio-by-age75
@@ -1820,7 +883,7 @@ plot_ratio_by_group("age", 75, "eGFR Difference (%) by Age >= 75",
                     "Age >= 75", "Age < 75")
 ```
 
-### 10.9 eGFR Difference (%) by Age >= 80
+### 6.9 eGFR Difference (%) by Age >= 80
 
 ```{r}
 #| label: ritu-ratio-by-age80
@@ -1830,7 +893,7 @@ plot_ratio_by_group("age", 80, "eGFR Difference (%) by Age >= 80",
                     "Age >= 80", "Age < 80")
 ```
 
-### 10.10 eGFR Difference (%) by BMI >= 25
+### 6.10 eGFR Difference (%) by BMI >= 25
 
 ```{r}
 #| label: ritu-ratio-by-bmi25
@@ -1840,7 +903,7 @@ plot_ratio_by_group("bmi", 25, "eGFR Difference (%) by BMI >= 25",
                     "BMI >= 25", "BMI < 25")
 ```
 
-### 10.11 eGFR Difference (%) by BMI >= 30
+### 6.11 eGFR Difference (%) by BMI >= 30
 
 ```{r}
 #| label: ritu-ratio-by-bmi30
@@ -1850,7 +913,7 @@ plot_ratio_by_group("bmi", 30, "eGFR Difference (%) by BMI >= 30",
                     "BMI >= 30", "BMI < 30")
 ```
 
-### 10.12 eGFR Difference (%) by Sex
+### 6.12 eGFR Difference (%) by Sex
 
 ```{r}
 #| label: ritu-ratio-by-sex
@@ -1891,359 +954,4 @@ ggplot(d_sex_r, aes(x = egfr_diff_pct, fill = sex, color = sex)) +
         plot.subtitle = element_text(size = 9, color = "grey25"))
 ```
 
-# 11 Sensitivity Analysis — eGFR Difference (%) — (CKD-EPI 2012 CysC − CKD-EPI 2021 Cr) / CKD-EPI 2021 Cr, per 10 % decline
 
-Sensitivity analysis using an alternative eGFR-difference (%) definition for the linear exposure:
-
-- **Numerator**: eGFR<sub>CYS</sub> − eGFR<sub>CR</sub>, where eGFR<sub>CYS</sub> = CKD-EPI **2012** cystatin C-only (`baseline_cys_c_egfr_unindexed`) and eGFR<sub>CR</sub> = CKD-EPI **2021** race-free creatinine-only (`baseline_cre_egfr_unindexed`).
-- **Denominator**: eGFR<sub>CR</sub>.
-- Percent difference: `egfr_diff_pct_sens = 100 * (baseline_cys_c_egfr_unindexed - baseline_cre_egfr_unindexed) / baseline_cre_egfr_unindexed`.
-
-One row per outcome. Multivariable Fine-Gray model fit with `egfr_diff_pct_sens_per10 = -egfr_diff_pct_sens / 10` plus the same adjuster set as Section 4 (eGFR difference FG adjusted for Cockcroft-Gault). The HR for this variable reads as the multiplicative subHR per **10 % decline** in sensitivity eGFR difference. 90-day death uses Cox PH. p-values in this summary table are **raw Wald** (not Bonferroni-adjusted); the plot subtitles in Sections 11.1–11.11 apply Bonferroni correction across the six primary AE outcomes.
-
-[📄 Download Word table](../tables/whole/sec11_egfr_ratio_sens_summary.docx)
-
-```{r}
-#| label: ritu-fg-sens-ratio-summary-whole
-.sens_adj_set <- function(pre_labs = NULL) {
-  base_adj <- c("age","sex","score","ecog_score_cat2","cockcroft",
-                "cancer_type_cat_7","platin_group","high_dose",
-                "Paclitaxel","Pemetrexed","Gemcitabine","ici",
-                "bmi","smoking","steroids","thyroid")
-  if (!is.null(pre_labs)) base_adj <- c(base_adj, pre_labs)
-  base_adj
-}
-
-fg_sens_row <- function(time_var, status_var, label, pre_labs = NULL) {
-  adj <- .sens_adj_set(pre_labs)
-  d <- dat %>%
-    dplyr::select(all_of(c("egfr_diff_pct_sens_per10", time_var, status_var, adj))) %>%
-    tidyr::drop_na()
-  adj_df <- d[, adj, drop = FALSE]
-  X_adj  <- model.matrix(~ ., data = adj_df)[, -1, drop = FALSE]
-  X      <- cbind(egfr_diff_pct_sens_per10 = d$egfr_diff_pct_sens_per10, X_adj)
-  stat_num <- suppressWarnings(as.integer(as.character(d[[status_var]])))
-  time_num <- as.numeric(d[[time_var]])
-  fit <- cmprsk::crr(time_num, stat_num, cov1 = X, failcode = 1)
-  b <- unname(fit$coef[1]); se <- sqrt(fit$var[1, 1])
-  hr <- exp(b); lcl <- exp(b - 1.96 * se); ucl <- exp(b + 1.96 * se)
-  pv <- 2 * (1 - pnorm(abs(b / se)))
-  tibble(
-    Outcome = label,
-    Model   = "Fine-Gray",
-    N       = nrow(d),
-    `Excluded (missing cov.)` = nrow(dat) - nrow(d),
-    Events  = sum(stat_num == 1, na.rm = TRUE),
-    `(sub)HR (95% CI)` = sprintf("%.2f (%.2f, %.2f)", hr, lcl, ucl),
-    `p-value` = ifelse(pv < 0.001, "<0.001", sprintf("%.3f", pv))
-  )
-}
-# Ritu: guard against unfittable sparse-outcome models.
-fg_sens_row <- .wrap_row(fg_sens_row)
-
-
-cox_sens_row <- function(time_var, status_var, label, pre_labs = NULL) {
-  adj <- .sens_adj_set(pre_labs)
-  d <- dat %>%
-    dplyr::select(all_of(c("egfr_diff_pct_sens_per10", time_var, status_var, adj))) %>%
-    tidyr::drop_na()
-  fmla <- as.formula(paste0("Surv(", time_var, ", ", status_var,
-                            ") ~ egfr_diff_pct_sens_per10 + ",
-                            paste(adj, collapse = " + ")))
-  fit <- survival::coxph(fmla, data = d)
-  b   <- unname(coef(fit)["egfr_diff_pct_sens_per10"])
-  se  <- sqrt(vcov(fit)["egfr_diff_pct_sens_per10", "egfr_diff_pct_sens_per10"])
-  hr  <- exp(b); lcl <- exp(b - 1.96 * se); ucl <- exp(b + 1.96 * se)
-  pv  <- 2 * (1 - pnorm(abs(b / se)))
-  tibble(
-    Outcome = label,
-    Model   = "Cox PH",
-    N       = nrow(d),
-    `Excluded (missing cov.)` = nrow(dat) - nrow(d),
-    Events  = sum(d[[status_var]] == 1, na.rm = TRUE),
-    `(sub)HR (95% CI)` = sprintf("%.2f (%.2f, %.2f)", hr, lcl, ucl),
-    `p-value` = ifelse(pv < 0.001, "<0.001", sprintf("%.3f", pv))
-  )
-}
-# Ritu: guard against unfittable sparse-outcome models.
-cox_sens_row <- .wrap_row(cox_sens_row)
-
-
-sens_summary <- bind_rows(
-  fg_sens_row ("cmp_time_anemia_2",     "cmp_status_anemia_2",     "Anemia Grade 2",                   "pre_HGB_45days"),
-  fg_sens_row ("cmp_time_anemia_3",     "cmp_status_anemia_3",     "Anemia Grade 3",                   "pre_HGB_45days"),
-  fg_sens_row ("cmp_time_throm_2",      "cmp_status_throm_2",      "Thrombocytopenia Grade 2",         "pre_PLT_45days"),
-  fg_sens_row ("cmp_time_throm_3",      "cmp_status_throm_3",      "Thrombocytopenia Grade 3",         "pre_PLT_45days"),
-  fg_sens_row ("cmp_time_aki_2",        "cmp_status_aki_2",        "AKI Grade 2"),
-  fg_sens_row ("cmp_time_aki_kdigo",    "cmp_status_aki_kdigo",    "AKI (KDIGO)"),
-  fg_sens_row ("cmp_time_grade_2_aes",  "cmp_status_grade_2_aes",  "Composite Grade 2 AEs"),
-  fg_sens_row ("cmp_time_grade_3_aes",  "cmp_status_grade_3_aes",  "Composite Grade 3 AEs"),
-  fg_sens_row ("cmp_time_any_hosp",     "cmp_status_any_hosp",     "Overall Hospitalization"),
-  fg_sens_row ("cmp_time_side_effect",  "cmp_status_side_effect",  "Platinum-Related Hospitalization"),
-  cox_sens_row("time_to_death_90",      "death_90",                "90-Day Death")
-)
-
-ft_sens <- flextable::flextable(sens_summary) |>
-  flextable::set_caption("Sensitivity analysis: multivariable (sub)HR per 10 % decline in eGFR difference (%) — 100 × (CKD-EPI 2012 CysC − CKD-EPI 2021 Cr) / CKD-EPI 2021 Cr — Whole cohort. Fine-Gray for competing-risk outcomes; Cox PH for 90-day death.") |>
-  flextable::autofit()
-flextable::save_as_docx(ft_sens,
-  path = file.path(docx_dir, "sec11_egfr_ratio_sens_summary.docx"))
-ft_sens
-```
-
-```{r}
-#| label: ritu-linsubhr-sens-helper
-plot_subhr_linear_sens <- function(time_var, status_var, extra_adj = NULL,
-                                   outcome_label, n_bonf = 6) {
-  base_adj <- c("age","sex","score","ecog_score_cat2","cockcroft",
-                "cancer_type_cat_7","platin_group","high_dose",
-                "Paclitaxel","Pemetrexed","Gemcitabine","ici",
-                "bmi","smoking","steroids","thyroid")
-  keep <- c("egfr_diff_pct_sens", time_var, status_var, base_adj, extra_adj)
-  d <- dat %>% dplyr::select(all_of(keep)) %>% tidyr::drop_na()
-
-  adj_df <- d[, c(base_adj, extra_adj), drop = FALSE]
-  X_adj <- model.matrix(~ ., data = adj_df)[, -1, drop = FALSE]
-  X <- cbind(egfr_diff_pct_sens = d$egfr_diff_pct_sens, X_adj)
-
-  stat_num <- suppressWarnings(as.integer(as.character(d[[status_var]])))
-  time_num <- as.numeric(d[[time_var]])
-
-  fit <- cmprsk::crr(ftime = time_num, fstatus = stat_num,
-                     cov1 = X, failcode = 1)
-
-  beta   <- fit$coef[1]
-  V_beta <- fit$var[1, 1]
-  se_b   <- sqrt(V_beta)
-
-  q1    <- as.numeric(quantile(d$egfr_diff_pct_sens, 0.25, na.rm = TRUE))
-  q3    <- as.numeric(quantile(d$egfr_diff_pct_sens, 0.75, na.rm = TRUE))
-  iqr_w <- q3 - q1
-  hr10  <- exp(-10 * beta);      hr10_l <- exp(-10 * beta - 1.96 * 10 * se_b);   hr10_u <- exp(-10 * beta + 1.96 * 10 * se_b)
-  hri   <- exp(-iqr_w * beta);   hri_l  <- exp(-iqr_w * beta - 1.96 * abs(iqr_w) * se_b); hri_u <- exp(-iqr_w * beta + 1.96 * abs(iqr_w) * se_b)
-  pval  <- 2 * (1 - pnorm(abs(beta / se_b)))
-  pval_bonf <- min(pval * n_bonf, 1)
-  p_shown <- if (n_bonf > 1) pval_bonf else pval
-  p_lbl   <- if (n_bonf > 1) sprintf("p_Bonf = %s (n = %d)", ifelse(p_shown < 0.001, "<0.001", sprintf("%.3f", p_shown)), n_bonf) else sprintf("p = %s", ifelse(p_shown < 0.001, "<0.001", sprintf("%.3f", p_shown)))
-  subtitle_str <- sprintf(
-    "subHR per 10 %% decline: %.2f (%.2f-%.2f), %s  |  per IQR decline (Δ = %.1f %%): %.2f (%.2f-%.2f)  |  IQR: [%.1f, %.1f] %%",
-    hr10, hr10_l, hr10_u, p_lbl, iqr_w, hri, hri_l, hri_u, q1, q3)
-
-  ref_x  <- median(d$egfr_diff_pct_sens, na.rm = TRUE)
-  grid_x <- seq(quantile(d$egfr_diff_pct_sens, 0.025, na.rm = TRUE),
-                quantile(d$egfr_diff_pct_sens, 0.975, na.rm = TRUE),
-                length.out = 100)
-
-  log_hr <- beta * (grid_x - ref_x)
-  se     <- sqrt((grid_x - ref_x)^2 * V_beta)
-
-  df_plot <- tibble(
-    x     = grid_x,
-    subhr = exp(log_hr),
-    lcl   = exp(log_hr - 1.96 * se),
-    ucl   = exp(log_hr + 1.96 * se)
-  )
-
-  p <- ggplot(df_plot, aes(x = x, y = subhr)) +
-    geom_ribbon(aes(ymin = lcl, ymax = ucl), alpha = 0.2, fill = "darkorange") +
-    geom_line(color = "darkorange", linewidth = 1) +
-    geom_hline(yintercept = 1, linetype = "dashed", color = "grey50") +
-    geom_vline(xintercept = ref_x, linetype = "dotted", color = "grey40") +
-    geom_vline(xintercept = c(q1, q3), linetype = "dashed",
-               color = "steelblue", alpha = 0.7) +
-    labs(x = "Sensitivity eGFR Difference (%): 100 × (CKD-EPI 2012 CysC − CKD-EPI 2021 Cr) / CKD-EPI 2021 Cr",
-         y = "subHR (95% CI)",
-         title = outcome_label,
-         subtitle = subtitle_str) +
-    coord_cartesian(ylim = c(0, 4)) +
-    theme_minimal(base_size = 11) +
-    theme(plot.subtitle = element_text(size = 9, color = "grey25"))
-  p_fine <- p + scale_x_continuous(breaks = seq(-100, 200, 10))
-  .lbl <- tryCatch(knitr::opts_current$get("label"), error = function(e) NULL)
-  if (!is.null(.lbl)) .pptx_pair[[.lbl]] <- list(default = p, fine = p_fine)
-  p / p_fine
-}
-# Ritu: guard against unfittable sparse-outcome models.
-plot_subhr_linear_sens <- .wrap_plot(plot_subhr_linear_sens)
-
-
-plot_cox_linear_sens <- function(time_var, status_var, extra_adj = NULL,
-                                 outcome_label, n_bonf = 6) {
-  base_adj <- c("age","sex","score","ecog_score_cat2","cockcroft",
-                "cancer_type_cat_7","platin_group","high_dose",
-                "Paclitaxel","Pemetrexed","Gemcitabine","ici",
-                "bmi","smoking","steroids","thyroid")
-  keep <- c("egfr_diff_pct_sens", time_var, status_var, base_adj, extra_adj)
-  d <- dat %>% dplyr::select(all_of(keep)) %>% tidyr::drop_na()
-
-  fmla <- as.formula(paste0(
-    "Surv(", time_var, ", ", status_var, ") ~ egfr_diff_pct_sens + ",
-    paste(c(base_adj, extra_adj), collapse = " + ")
-  ))
-  fit <- survival::coxph(fmla, data = d)
-
-  beta   <- coef(fit)["egfr_diff_pct_sens"]
-  V_beta <- vcov(fit)["egfr_diff_pct_sens", "egfr_diff_pct_sens"]
-  se_b   <- sqrt(V_beta)
-
-  q1    <- as.numeric(quantile(d$egfr_diff_pct_sens, 0.25, na.rm = TRUE))
-  q3    <- as.numeric(quantile(d$egfr_diff_pct_sens, 0.75, na.rm = TRUE))
-  iqr_w <- q3 - q1
-  hr10  <- exp(-10 * beta);      hr10_l <- exp(-10 * beta - 1.96 * 10 * se_b);   hr10_u <- exp(-10 * beta + 1.96 * 10 * se_b)
-  hri   <- exp(-iqr_w * beta);   hri_l  <- exp(-iqr_w * beta - 1.96 * abs(iqr_w) * se_b); hri_u <- exp(-iqr_w * beta + 1.96 * abs(iqr_w) * se_b)
-  pval  <- 2 * (1 - pnorm(abs(beta / se_b)))
-  pval_bonf <- min(pval * n_bonf, 1)
-  p_shown <- if (n_bonf > 1) pval_bonf else pval
-  p_lbl   <- if (n_bonf > 1) sprintf("p_Bonf = %s (n = %d)", ifelse(p_shown < 0.001, "<0.001", sprintf("%.3f", p_shown)), n_bonf) else sprintf("p = %s", ifelse(p_shown < 0.001, "<0.001", sprintf("%.3f", p_shown)))
-  subtitle_str <- sprintf(
-    "HR per 10 %% decline: %.2f (%.2f-%.2f), %s  |  per IQR decline (Δ = %.1f %%): %.2f (%.2f-%.2f)  |  IQR: [%.1f, %.1f] %%",
-    hr10, hr10_l, hr10_u, p_lbl, iqr_w, hri, hri_l, hri_u, q1, q3)
-
-  ref_x  <- median(d$egfr_diff_pct_sens, na.rm = TRUE)
-  grid_x <- seq(quantile(d$egfr_diff_pct_sens, 0.025, na.rm = TRUE),
-                quantile(d$egfr_diff_pct_sens, 0.975, na.rm = TRUE),
-                length.out = 100)
-
-  log_hr <- beta * (grid_x - ref_x)
-  se     <- sqrt((grid_x - ref_x)^2 * V_beta)
-
-  df_plot <- tibble(
-    x   = grid_x,
-    hr  = exp(log_hr),
-    lcl = exp(log_hr - 1.96 * se),
-    ucl = exp(log_hr + 1.96 * se)
-  )
-
-  p <- ggplot(df_plot, aes(x = x, y = hr)) +
-    geom_ribbon(aes(ymin = lcl, ymax = ucl), alpha = 0.2, fill = "darkorange") +
-    geom_line(color = "darkorange", linewidth = 1) +
-    geom_hline(yintercept = 1, linetype = "dashed", color = "grey50") +
-    geom_vline(xintercept = ref_x, linetype = "dotted", color = "grey40") +
-    geom_vline(xintercept = c(q1, q3), linetype = "dashed",
-               color = "steelblue", alpha = 0.7) +
-    labs(x = "Sensitivity eGFR Difference (%): 100 × (CKD-EPI 2012 CysC − CKD-EPI 2021 Cr) / CKD-EPI 2021 Cr",
-         y = "HR (95% CI)",
-         title = outcome_label,
-         subtitle = subtitle_str) +
-    coord_cartesian(ylim = c(0, 4)) +
-    theme_minimal(base_size = 11) +
-    theme(plot.subtitle = element_text(size = 9, color = "grey25"))
-  p_fine <- p + scale_x_continuous(breaks = seq(-100, 200, 10))
-  .lbl <- tryCatch(knitr::opts_current$get("label"), error = function(e) NULL)
-  if (!is.null(.lbl)) .pptx_pair[[.lbl]] <- list(default = p, fine = p_fine)
-  p / p_fine
-}
-# Ritu: guard against unfittable sparse-outcome models.
-plot_cox_linear_sens <- .wrap_plot(plot_cox_linear_sens)
-
-```
-
-## 11.1 Anemia Grade 2
-
-```{r}
-#| label: ritu-linsubhr-sens-anemia2
-#| fig-width: 6
-#| fig-height: 8
-plot_subhr_linear_sens("cmp_time_anemia_2", "cmp_status_anemia_2",
-                       "pre_HGB_45days", "Anemia Grade 2 (Sensitivity)")
-```
-
-## 11.2 Anemia Grade 3
-
-```{r}
-#| label: ritu-linsubhr-sens-anemia3
-#| fig-width: 6
-#| fig-height: 8
-plot_subhr_linear_sens("cmp_time_anemia_3", "cmp_status_anemia_3",
-                       "pre_HGB_45days", "Anemia Grade 3 (Sensitivity)")
-```
-
-## 11.3 Thrombocytopenia Grade 2
-
-```{r}
-#| label: ritu-linsubhr-sens-throm2
-#| fig-width: 6
-#| fig-height: 8
-plot_subhr_linear_sens("cmp_time_throm_2", "cmp_status_throm_2",
-                       "pre_PLT_45days", "Thrombocytopenia Grade 2 (Sensitivity)")
-```
-
-## 11.4 Thrombocytopenia Grade 3
-
-```{r}
-#| label: ritu-linsubhr-sens-throm3
-#| fig-width: 6
-#| fig-height: 8
-plot_subhr_linear_sens("cmp_time_throm_3", "cmp_status_throm_3",
-                       "pre_PLT_45days", "Thrombocytopenia Grade 3 (Sensitivity)")
-```
-
-## 11.5 AKI Grade 2
-
-```{r}
-#| label: ritu-linsubhr-sens-aki2
-#| fig-width: 6
-#| fig-height: 8
-plot_subhr_linear_sens("cmp_time_aki_2", "cmp_status_aki_2",
-                       NULL, "AKI Grade 2 (Sensitivity)")
-```
-
-## 11.6 AKI (KDIGO)
-
-```{r}
-#| label: ritu-linsubhr-sens-akikdigo
-#| fig-width: 6
-#| fig-height: 8
-plot_subhr_linear_sens("cmp_time_aki_kdigo", "cmp_status_aki_kdigo",
-                       NULL, "AKI (KDIGO) (Sensitivity)")
-```
-
-## 11.7 Composite Grade 2 AEs
-
-```{r}
-#| label: ritu-linsubhr-sens-grade2
-#| fig-width: 6
-#| fig-height: 8
-plot_subhr_linear_sens("cmp_time_grade_2_aes", "cmp_status_grade_2_aes",
-                       NULL, "Composite Grade 2 AEs (Sensitivity)")
-```
-
-## 11.8 Composite Grade 3 AEs
-
-```{r}
-#| label: ritu-linsubhr-sens-grade3
-#| fig-width: 6
-#| fig-height: 8
-plot_subhr_linear_sens("cmp_time_grade_3_aes", "cmp_status_grade_3_aes",
-                       NULL, "Composite Grade 3 AEs (Sensitivity)")
-```
-
-## 11.9 Overall Hospitalization
-
-```{r}
-#| label: ritu-linsubhr-sens-anyhosp
-#| fig-width: 6
-#| fig-height: 8
-plot_subhr_linear_sens("cmp_time_any_hosp", "cmp_status_any_hosp",
-                       NULL, "Overall Hospitalization (Sensitivity)")
-```
-
-## 11.10 Platinum-Related Hospitalization
-
-```{r}
-#| label: ritu-linsubhr-sens-sideeffect
-#| fig-width: 6
-#| fig-height: 8
-plot_subhr_linear_sens("cmp_time_side_effect", "cmp_status_side_effect",
-                       NULL, "Platinum-Related Hospitalization (Sensitivity)")
-```
-
-## 11.11 90-Day Death (Cox PH)
-
-```{r}
-#| label: ritu-linsubhr-sens-death
-#| fig-width: 6
-#| fig-height: 8
-plot_cox_linear_sens("time_to_death_90", "death_90",
-                     NULL, "90-Day Death (Cox PH) (Sensitivity)")
-```

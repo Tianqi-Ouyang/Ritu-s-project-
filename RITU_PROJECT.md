@@ -79,7 +79,7 @@ Inherited from the Jiaxuan pipeline, then one additional step:
 
 ## 2 What changed relative to the Jiaxuan project
 
-Ten kinds of change were made. Nothing else in the analysis was touched.
+Eleven kinds of change were made. Nothing else in the analysis was touched.
 
 ### 2.1 Cohort filter
 
@@ -516,6 +516,60 @@ by more than 0.03 (e.g. composite grade 2 AEs 1.29 either way, platinum-related
 hospitalization 1.40 either way), so the 90-day cap is not biasing the exposure
 estimates. Those models were not kept.
 
+### 2.12 90-day outcome models removed; only AKI and the CKD composite are modelled
+
+Every model built on the 90-day adverse-event, hospitalization and 90-day-death
+outcomes was removed from all four analysis pages. The two long-horizon kidney
+models are the only models left.
+
+Removed, per page:
+
+| Page | Sections removed |
+|---|---|
+| `ritu_whole.qmd`, `ritu_entire.qmd` | §4.1–4.11 (Fine-Gray, 90-day outcomes), §5 (cause-specific hazards), §6–§7 (linear subHR curves vs eGFR difference and eGFR discrepancy), §8 (subHR by hospitalization reason), §11 (sensitivity exposure) |
+| `ritu_carbo.qmd`, `ritu_carbo_auc3.qmd` | §5.1–5.11, §6 (CSH), §7–§8 (dose-discrepancy Fine-Gray and CSH), §9–§12 (linear subHR curves), §14 (adjusted CIF), §16 (sensitivity exposure) |
+
+Kept and renumbered:
+
+| Page | New structure |
+|---|---|
+| whole, entire | 1 Setup · 2 Table 1 (+2.1 follow-up, 2.2 kidney outcomes) · 3 eGFR distributions · **4 Fine-Gray — long-horizon kidney outcomes** (4.1 AKI ≤ 1 yr, 4.2 CKD composite) · 5 Scatter plots · 6 CG vs CKD-EPI |
+| carbo, AUC ≥ 3 | 1 Setup · 2 Dose distribution · 3 Table 1 · 4 eGFR ratio distribution · **5 Fine-Gray — long-horizon kidney outcomes** (5.1 AKI ≤ 1 yr, 5.2 CKD composite) · 6 Scatter plots · 7 Paper |
+
+The pages shrank from ~2,250 to ~960 lines (whole, entire) and ~2,580 to ~700
+(carboplatin). Renumbering also fixed the inherited heading mismatch noted in
+§2.11: the carboplatin Fine-Gray section is now `# 5` with `## 5.1` / `## 5.2`
+subsections rather than `## 4.x`.
+
+**The pipeline is untouched.** `ritu_data.qmd` still derives every 90-day
+outcome, the `cmp_time_*` / `cmp_status_*` pairs for all of them, and
+`time_to_death_90` / `death_90`, and they are all still in
+`ritu_full_master.rds` and `ritu_final_master.rds`. Nothing was deleted from the
+data; only the model sections were removed. Restoring any of them is a matter of
+re-adding the `fg_model()` / `cox_model()` calls — both helpers are still defined
+in the surviving Fine-Gray section.
+
+**Downloads.** Only three Word tables per page remain: the kidney-outcome
+descriptive table (`sec2_kidney_longhorizon.docx` / `sec3_...`) and the two
+models (`sec4_aki_365.docx` + `sec4_ckd_composite.docx`, or `sec5_...`). The
+orphaned `.docx` and `.pptx` files from the removed sections were deleted from
+`docs/`.
+
+**Power.** The event counts for the two surviving models are small in three of
+the four cohorts:
+
+| Cohort | AKI ≤ 1 yr (events / competing deaths) | CKD composite |
+|---|---|---|
+| Entire (943) | 197 / 114 | 70 / 265 |
+| Local/Early (322) | 51 / 8 | 26 / 28 |
+| Carboplatin (189) | 23 / 5 | 11 / 15 |
+| Carbo AUC ≥ 3 (142) | 12 / 2 | 7 / 9 |
+
+Against ~20 covariate degrees of freedom only the entire-cohort AKI model meets
+the 10-events-per-covariate convention. The §3 caveats below were written for
+the 90-day outcomes and are retained as a record of that analysis; they no
+longer describe anything on the pages.
+
 ### 2.12 Explicitly unchanged
 
 - Primary exposure: `egfr_diff_pct_per10` — eGFR difference (%) per 10-percentage-point decline
@@ -523,11 +577,10 @@ estimates. Those models were not kept.
 - Alternative predictor (carbo files): `dose_discrep_per25increase`
 - Reference categories: `sex` = Female, `ecog_score_cat2` = "0"
 - Competing-risks framework: death = competing event, `tidycmprsk::crr()`
-- 90-day death modelled with Cox PH, not competing risks
 - eGFR capping rules (only `ckd_epi_gfr_cre_cys_unindex` capped at 125)
 - Plot trimming at the 2.5 / 97.5 percentile
 - Word (`.docx`) table downloads and editable PowerPoint (`.pptx`) figure downloads
-- Section numbering and ordering
+- Section numbering of the surviving sections' internal content (§2.12 renumbered the sections themselves)
 
 ---
 

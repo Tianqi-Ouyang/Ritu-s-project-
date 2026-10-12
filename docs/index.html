@@ -179,10 +179,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#pages-and-cohort-sizes" id="toc-pages-and-cohort-sizes" class="nav-link" data-scroll-target="#pages-and-cohort-sizes">Pages and Cohort Sizes</a></li>
   <li><a href="#exclusion-flow" id="toc-exclusion-flow" class="nav-link" data-scroll-target="#exclusion-flow">Exclusion Flow</a></li>
   <li><a href="#what-changed-relative-to-the-jiaxuan-project" id="toc-what-changed-relative-to-the-jiaxuan-project" class="nav-link" data-scroll-target="#what-changed-relative-to-the-jiaxuan-project">What Changed Relative to the Jiaxuan Project</a></li>
-  <li><a href="#power-caveats-localearly-pages-only" id="toc-power-caveats-localearly-pages-only" class="nav-link" data-scroll-target="#power-caveats-localearly-pages-only">Power Caveats — Local/Early pages only</a></li>
+  <li><a href="#power-caveats" id="toc-power-caveats" class="nav-link" data-scroll-target="#power-caveats">Power Caveats</a></li>
   <li><a href="#outcomes" id="toc-outcomes" class="nav-link" data-scroll-target="#outcomes">Outcomes</a>
   <ul>
-  <li><a href="#grade-23-adverse-events-within-90-days" id="toc-grade-23-adverse-events-within-90-days" class="nav-link" data-scroll-target="#grade-23-adverse-events-within-90-days">Grade 2/3 Adverse Events (within 90 days)</a></li>
+  <li><a href="#grade-23-adverse-events-within-90-days-derived-not-modelled" id="toc-grade-23-adverse-events-within-90-days-derived-not-modelled" class="nav-link" data-scroll-target="#grade-23-adverse-events-within-90-days-derived-not-modelled">Grade 2/3 Adverse Events (within 90 days) — derived, not modelled</a></li>
   <li><a href="#hospitalizations-mortality" id="toc-hospitalizations-mortality" class="nav-link" data-scroll-target="#hospitalizations-mortality">Hospitalizations &amp; Mortality</a></li>
   <li><a href="#long-horizon-kidney-outcomes-ckd-eskd-aki" id="toc-long-horizon-kidney-outcomes-ckd-eskd-aki" class="nav-link" data-scroll-target="#long-horizon-kidney-outcomes-ckd-eskd-aki">Long-Horizon Kidney Outcomes (CKD / ESKD / AKI)</a></li>
   <li><a href="#competing-risk-models-death-competing" id="toc-competing-risk-models-death-competing" class="nav-link" data-scroll-target="#competing-risk-models-death-competing">Competing-Risk Models (death competing)</a></li>
@@ -262,11 +262,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </tr>
 <tr class="odd">
 <td><strong>Follow-up</strong></td>
-<td>90 days from baseline sample date</td>
+<td>AKI administratively censored at 365 days; CKD composite to the last creatinine</td>
 </tr>
 <tr class="even">
-<td><strong>Framework</strong></td>
-<td>Competing risks (death as competing event for non-fatal outcomes)</td>
+<td><strong>Modelled outcomes</strong></td>
+<td>AKI within 1 year and the CKD composite only — Fine-Gray competing risks, death at any time as the competing event</td>
 </tr>
 <tr class="odd">
 <td><strong>Parent project</strong></td>
@@ -333,94 +333,60 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><strong>2. <code>tumor_stage</code> dropped as a covariate.</strong> It is constant within this cohort, so it carries no information and would make the design matrix rank-deficient. It is removed from Table 1 and from the adjuster set of every Fine-Gray, cause-specific hazard, Cox PH and linear-subHR model.</p>
 <p><strong>3. Two covariate fixes on the AUC ≥ 3 page only.</strong> That subgroup’s filter empties the <code>cancer_type_cat_7</code> “GI” level (0 of 143) and leaves <code>steroids</code> constant at 1 (all 143 received steroids). Together these made the design matrix rank-deficient — rank 19 of 21 — so <code>cmprsk::crr</code> failed for <em>every</em> outcome, including composite grade 2 AEs with 64 events, while the formula interface silently returned blank coefficient rows. <code>droplevels()</code> is re-applied after the cohort filter and <code>steroids</code> is dropped from that page’s adjuster sets (it stays as a descriptive Table 1 row). The whole and carboplatin cohorts are full rank throughout and keep the original adjuster set.</p>
 <p><strong>4. Sparse-outcome guards.</strong> Several outcomes have very few events in 322 patients (90-day death = 2). Each model helper is wrapped so that a model which cannot be estimated emits a short note instead of aborting the render. No model specification is altered.</p>
-<p>Unchanged: primary and sensitivity exposures, the <code>dose_discrep_per25increase</code> predictor in the carboplatin pages, reference categories (<code>sex</code> = Female, <code>ecog_score_cat2</code> = “0”), the competing-risks framework, Cox PH for 90-day death, eGFR capping rules, 2.5/97.5-percentile plot trimming, Word and PowerPoint downloads, and all section numbering.</p>
+<p>Unchanged: primary and sensitivity exposures, the <code>dose_discrep_per25increase</code> predictor in the carboplatin pages, reference categories (<code>sex</code> = Female, <code>ecog_score_cat2</code> = “0”), the competing-risks framework, eGFR capping rules, and the Word and PowerPoint downloads. Section numbering changed when the 90-day outcome models were removed — see <code>RITU_PROJECT.md</code> §2.12.</p>
 </section>
-<section id="power-caveats-localearly-pages-only" class="level1">
-<h1>Power Caveats — Local/Early pages only</h1>
-<p>These follow arithmetically from the <strong>322-patient</strong> cohort and apply to the Local/Early pages. The <a href="./qmd/ritu_entire.html">entire-cohort page</a> has roughly 3× the events and is not affected in the same way — most notably 90-day death has <strong>41 events there versus 2</strong> here, so its models are worth reading on that page and not on this one.</p>
-<p>The analyses are reported as specified; read the sparse ones with the event counts in view.</p>
+<section id="power-caveats" class="level1">
+<h1>Power Caveats</h1>
+<p>Only two outcomes are modelled: <strong>AKI within 1 year</strong> and the <strong>CKD composite</strong>, both with Fine-Gray competing risks and death at any time as the competing event. The multivariable models carry roughly 20 covariate degrees of freedom against a conventional target of 10 events per covariate, so event counts decide what is readable:</p>
 <table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
 <thead>
 <tr class="header">
-<th>Outcome</th>
-<th>Events in 322</th>
-<th>Multivariable estimate</th>
+<th>Cohort</th>
+<th>AKI ≤ 1 yr events</th>
+<th>CKD composite events</th>
+<th>Verdict</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<td>Composite grade 2 AEs</td>
-<td>148</td>
-<td>adequately powered</td>
+<td>Entire (943)</td>
+<td>197</td>
+<td>70</td>
+<td>AKI comfortably powered; CKD composite over-parameterised</td>
 </tr>
 <tr class="even">
-<td>Anemia grade 2</td>
-<td>137</td>
-<td>adequately powered</td>
-</tr>
-<tr class="odd">
-<td>Overall hospitalization</td>
-<td>68</td>
-<td>borderline</td>
-</tr>
-<tr class="even">
-<td>Platinum-related hospitalization</td>
-<td>46</td>
-<td>over-parameterised</td>
-</tr>
-<tr class="odd">
-<td>Composite grade 3 AEs</td>
-<td>43</td>
-<td>over-parameterised</td>
-</tr>
-<tr class="even">
-<td>Anemia grade 3</td>
-<td>40</td>
-<td>over-parameterised</td>
-</tr>
-<tr class="odd">
-<td>Thrombocytopenia grade 2</td>
-<td>37</td>
-<td>over-parameterised</td>
-</tr>
-<tr class="even">
-<td>AKI (KDIGO)</td>
-<td>33</td>
-<td>over-parameterised</td>
-</tr>
-<tr class="odd">
-<td>AKI grade 2</td>
+<td>Local/Early (322)</td>
+<td>51</td>
 <td>26</td>
-<td>over-parameterised</td>
-</tr>
-<tr class="even">
-<td>Thrombocytopenia grade 3</td>
-<td>9</td>
-<td>not interpretable</td>
+<td>both over-parameterised</td>
 </tr>
 <tr class="odd">
-<td>Individual hospitalization reasons</td>
-<td>5–25</td>
-<td>not interpretable</td>
+<td>Carboplatin (189)</td>
+<td>23</td>
+<td>11</td>
+<td>both over-parameterised</td>
 </tr>
 <tr class="even">
-<td><strong>90-day death</strong></td>
-<td><strong>2</strong></td>
-<td><strong>not estimable</strong></td>
+<td>Carbo AUC ≥ 3 (142)</td>
+<td>12</td>
+<td>7</td>
+<td>not interpretable</td>
 </tr>
 </tbody>
 </table>
-<p>The multivariable models carry roughly 20 covariate degrees of freedom against a conventional target of 10 events per covariate. Univariable columns remain readable throughout.</p>
-<p>Two further consequences worth stating in any write-up:</p>
-<ul>
-<li><strong>90-day mortality is 2/322 (0.6 %).</strong> Early-stage patients rarely die within 90 days of starting platinum — a finding in its own right, not just a limitation.</li>
-<li><strong>The competing-risks correction barely bites.</strong> With death nearly absent, Fine-Gray subdistribution hazards and cause-specific hazards are close to identical in this cohort.</li>
-</ul>
+<p>Univariable columns remain readable throughout. The entire-cohort AKI model is the only one of the eight that meets the 10-events-per-covariate convention.</p>
 </section>
 <section id="outcomes" class="level1">
 <h1>Outcomes</h1>
-<section id="grade-23-adverse-events-within-90-days" class="level2">
-<h2 class="anchored" data-anchor-id="grade-23-adverse-events-within-90-days">Grade 2/3 Adverse Events (within 90 days)</h2>
+<section id="grade-23-adverse-events-within-90-days-derived-not-modelled" class="level2">
+<h2 class="anchored" data-anchor-id="grade-23-adverse-events-within-90-days-derived-not-modelled">Grade 2/3 Adverse Events (within 90 days) — derived, not modelled</h2>
+<p>These are still built by the pipeline and kept in the saved master, but they are <strong>no longer modelled</strong> on any analysis page. Only AKI within 1 year and the CKD composite are modelled.</p>
 <table class="caption-top table">
 <thead>
 <tr class="header">
@@ -466,6 +432,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="hospitalizations-mortality" class="level2">
 <h2 class="anchored" data-anchor-id="hospitalizations-mortality">Hospitalizations &amp; Mortality</h2>
+<p>Also derived but <strong>no longer modelled</strong>:</p>
 <ul>
 <li><strong>Hospitalizations:</strong> 11 reason categories; reasons 1–7 define <code>side_effect</code> (platinum-related)</li>
 <li><strong>90-day mortality</strong> (<code>death_90</code>): derived from <code>pt_status</code> and <code>days_last_follow_up</code></li>

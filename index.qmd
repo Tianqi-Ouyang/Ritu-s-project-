@@ -22,8 +22,8 @@ levels; both use the newer 2022P001091 creatinine pull and carry the CKD / ESKD
 | **Local/Early cohort** | `tumor_stage == "Local/Early"` (stage I–II / local / neoadjuvant) — N = 322 |
 | **Excluded from the Local/Early pages** | `tumor_stage == "Advanced/Metastatic"` (stage III–IV) — 621 patients |
 | **Primary exposure** | `egfr_diff_pct_per10` — eGFR difference (%) per 10-percentage-point decline |
-| **Follow-up** | 90 days from baseline sample date |
-| **Framework** | Competing risks (death as competing event for non-fatal outcomes) |
+| **Follow-up** | AKI administratively censored at 365 days; CKD composite to the last creatinine |
+| **Modelled outcomes** | AKI within 1 year and the CKD composite only — Fine-Gray competing risks, death at any time as the competing event |
 | **Parent project** | [Jiaxuan project](https://tianqi-ouyang.github.io/Cys-C-project-/) |
 
 # Pages and Cohort Sizes
@@ -94,52 +94,35 @@ specification is altered.
 
 Unchanged: primary and sensitivity exposures, the `dose_discrep_per25increase`
 predictor in the carboplatin pages, reference categories (`sex` = Female,
-`ecog_score_cat2` = "0"), the competing-risks framework, Cox PH for 90-day
-death, eGFR capping rules, 2.5/97.5-percentile plot trimming, Word and
-PowerPoint downloads, and all section numbering.
+`ecog_score_cat2` = "0"), the competing-risks framework, eGFR capping rules, and
+the Word and PowerPoint downloads. Section numbering changed when the 90-day
+outcome models were removed — see `RITU_PROJECT.md` §2.12.
 
-# Power Caveats — Local/Early pages only
+# Power Caveats
 
-These follow arithmetically from the **322-patient** cohort and apply to the
-Local/Early pages. The [entire-cohort page](qmd/ritu_entire.qmd) has roughly 3×
-the events and is not affected in the same way — most notably 90-day death has
-**41 events there versus 2** here, so its models are worth reading on that page
-and not on this one.
-
-The analyses are reported as specified; read the sparse ones with the event
-counts in view.
-
-| Outcome | Events in 322 | Multivariable estimate |
-|---|---|---|
-| Composite grade 2 AEs | 148 | adequately powered |
-| Anemia grade 2 | 137 | adequately powered |
-| Overall hospitalization | 68 | borderline |
-| Platinum-related hospitalization | 46 | over-parameterised |
-| Composite grade 3 AEs | 43 | over-parameterised |
-| Anemia grade 3 | 40 | over-parameterised |
-| Thrombocytopenia grade 2 | 37 | over-parameterised |
-| AKI (KDIGO) | 33 | over-parameterised |
-| AKI grade 2 | 26 | over-parameterised |
-| Thrombocytopenia grade 3 | 9 | not interpretable |
-| Individual hospitalization reasons | 5–25 | not interpretable |
-| **90-day death** | **2** | **not estimable** |
-
+Only two outcomes are modelled: **AKI within 1 year** and the **CKD composite**,
+both with Fine-Gray competing risks and death at any time as the competing event.
 The multivariable models carry roughly 20 covariate degrees of freedom against a
-conventional target of 10 events per covariate. Univariable columns remain
-readable throughout.
+conventional target of 10 events per covariate, so event counts decide what is
+readable:
 
-Two further consequences worth stating in any write-up:
+| Cohort | AKI ≤ 1 yr events | CKD composite events | Verdict |
+|---|---|---|---|
+| Entire (943) | 197 | 70 | AKI comfortably powered; CKD composite over-parameterised |
+| Local/Early (322) | 51 | 26 | both over-parameterised |
+| Carboplatin (189) | 23 | 11 | both over-parameterised |
+| Carbo AUC ≥ 3 (142) | 12 | 7 | not interpretable |
 
-- **90-day mortality is 2/322 (0.6 %).** Early-stage patients rarely die within
-  90 days of starting platinum — a finding in its own right, not just a
-  limitation.
-- **The competing-risks correction barely bites.** With death nearly absent,
-  Fine-Gray subdistribution hazards and cause-specific hazards are close to
-  identical in this cohort.
+Univariable columns remain readable throughout. The entire-cohort AKI model is
+the only one of the eight that meets the 10-events-per-covariate convention.
 
 # Outcomes
 
-## Grade 2/3 Adverse Events (within 90 days)
+## Grade 2/3 Adverse Events (within 90 days) — derived, not modelled
+
+These are still built by the pipeline and kept in the saved master, but they are
+**no longer modelled** on any analysis page. Only AKI within 1 year and the CKD
+composite are modelled.
 
 | Outcome | Definition |
 |---|---|
@@ -153,6 +136,8 @@ Two further consequences worth stating in any write-up:
 | Composite grade 3 | Any of anemia/thrombocytopenia/AKI grade 3 |
 
 ## Hospitalizations & Mortality
+
+Also derived but **no longer modelled**:
 
 - **Hospitalizations:** 11 reason categories; reasons 1–7 define `side_effect` (platinum-related)
 - **90-day mortality** (`death_90`): derived from `pt_status` and `days_last_follow_up`

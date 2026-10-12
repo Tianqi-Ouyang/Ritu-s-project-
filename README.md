@@ -7,10 +7,17 @@ disease** (`tumor_stage == "Local/Early"`, stage I–II).
 **Live site:** https://tianqi-ouyang.github.io/Ritu-s-project-/
 
 This is a derivative of the [Jiaxuan
-project](https://tianqi-ouyang.github.io/Cys-C-project-/). Every exposure,
-model, table, figure and download is carried over unchanged. The only
-substantive difference is the cohort: all 621 advanced/metastatic patients are
-excluded, leaving **N = 322**.
+project](https://tianqi-ouyang.github.io/Cys-C-project-/), with two substantive
+differences:
+
+1. **Cohort** — all 621 advanced/metastatic patients are excluded from the
+   Local/Early pages, leaving **N = 322**. An entire-cohort page (N = 943) runs
+   the same analysis unrestricted.
+2. **Modelled outcomes** — only **AKI within 1 year** and the **CKD composite**
+   are modelled, with Fine-Gray competing risks and death at any time as the
+   competing event. The 90-day adverse-event, hospitalization and 90-day-death
+   models are no longer on the pages; those outcomes are still derived by the
+   pipeline and kept in the saved master. See `RITU_PROJECT.md` §2.12.
 
 ## Cohorts
 
