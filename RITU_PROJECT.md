@@ -582,6 +582,7 @@ each mark**.
 | `cre_day_d90` / `_d180` / `_d365` | The actual day that creatinine was drawn |
 | `delta_egfr_d90` / `_d180` / `_d365` | eGFR at the mark − `eGFR_CRE_baseline`, mL/min/1.73m² |
 | `delta_egfr_pct_d90` / `_d180` / `_d365` | The same change as a percentage of baseline |
+| `dgfr_avail_d90` / `_d180` / `_d365` | 1 if the patient had a creatinine within ± 45 days of that mark — the denominator behind each delta |
 
 Days run from `baseline_sample_date` (first platinum dose), the index date used
 by every other time variable in the pipeline. Baseline is `eGFR_CRE_baseline`,
@@ -640,8 +641,17 @@ cohort — worth stating in any write-up rather than reporting the median alone.
 
 #### Where it appears
 
-- **Table 1** on all four analysis pages — the six `delta_egfr_*` variables
-  (three absolute, three percent).
+- **Table 1** on all four analysis pages — the three `dgfr_avail_*` indicators
+  as n (%), so each delta can be read against its own denominator, followed by
+  the six `delta_egfr_*` variables (three absolute, three percent).
+
+  Availability in Table 1 is split by platinum group, which surfaces something
+  worth knowing: in the **entire cohort** cisplatin patients have materially less
+  follow-up creatinine than carboplatin patients at the later marks — 69 % vs
+  79 % at day 180 (p = 0.002) and 45 % vs 56 % at day 365 (p = 0.001). The
+  day-365 platinum-group comparison is therefore made on unequal and
+  non-randomly-missing fractions of each group. In the Local/Early cohort the
+  same difference is not significant (p = 0.5 and p = 0.4).
 - A dedicated subsection: §2.3 on the whole and entire pages, §3.3 on the two
   carboplatin pages, with n, realized day, eGFR at the mark, both deltas, and
   the count falling more than 25 %. Word download `sec2_3_delta_egfr.docx` /

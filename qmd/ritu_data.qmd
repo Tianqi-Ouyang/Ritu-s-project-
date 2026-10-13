@@ -229,6 +229,7 @@ the full length of RPDR creatinine follow-up.
 | `cre_day_d90` / `_d180` / `_d365` | The actual day of the creatinine used, so the gap from the nominal mark is auditable |
 | `delta_egfr_d90` / `_d180` / `_d365` | `eGFR at the mark - eGFR_CRE_baseline`, mL/min/1.73m². **Negative = decline** |
 | `delta_egfr_pct_d90` / `_d180` / `_d365` | The same change as a percentage of baseline. **Negative = decline** |
+| `dgfr_avail_d90` / `_d180` / `_d365` | 1 if the patient had a creatinine within +/- 45 days of that mark — the denominator behind each delta, reported as n (%) in Table 1 |
 | `death_lt` / `death_days_lt` | Death at any time with a date from the RPDR `Date_Of_Death`. An input to `death_days_any`, not used directly as a competing event |
 | `rpdr_deceased` | RPDR `Vital_status` is not "Not reported as deceased". Exceeds `death_lt` because some deaths are recorded without a date |
 | `cmp_time_aki_365` / `cmp_status_aki_365` | Competing-risk pair for AKI, administratively censored at 365 days |
@@ -2155,6 +2156,22 @@ for (mk in DGFR_MARKS) {
     left_join(dgfr_at_mark(dgfr_traj, mk), by = "EMPI")
 }
 
+# Availability indicator per mark: 1 if the patient had a creatinine within
+# DGFR_WINDOW days of it, 0 otherwise. Carried as its own variable so Table 1
+# reports the denominator as n (%) next to the delta it belongs to, rather than
+# leaving it in a gtsummary "Unknown" row.
+for (mk in DGFR_MARKS) {
+  final_master[[paste0("dgfr_avail_d", mk)]] <-
+    as.integer(!is.na(final_master[[paste0("delta_egfr_d", mk)]]))
+}
+
+cat("Creatinine available within +/-", DGFR_WINDOW, "days of each mark:\n")
+for (mk in DGFR_MARKS) {
+  n_ok <- sum(final_master[[paste0("dgfr_avail_d", mk)]] == 1)
+  cat(sprintf("  day %3d: %3d / %3d (%.1f%%)\n", mk, n_ok, nrow(final_master),
+              100 * n_ok / nrow(final_master)))
+}
+
 dgfr_summary <- purrr::map_dfr(DGFR_MARKS, function(mk) {
   d  <- final_master[[paste0("delta_egfr_d", mk)]]
   dp <- final_master[[paste0("delta_egfr_pct_d", mk)]]
@@ -2163,7 +2180,7 @@ dgfr_summary <- purrr::map_dfr(DGFR_MARKS, function(mk) {
   tibble::tibble(
     Mark = paste0("Day ", mk),
     `n with a value` = sum(ok),
-    `% of cohort` = round(100 * sum(ok) / nrow(final_master), 1),
+    `% with a value in window` = round(100 * sum(ok) / nrow(final_master), 1),
     `Actual day, median [IQR]` = sprintf("%.0f [%.0f, %.0f]",
       median(dy[ok]), quantile(dy[ok], .25), quantile(dy[ok], .75)),
     `Delta eGFR, median [IQR]` = sprintf("%.1f [%.1f, %.1f]",

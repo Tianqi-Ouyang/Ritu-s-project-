@@ -336,6 +336,9 @@ dat %>%
     eskd_defination_1, esrd_kt_after_ici, eskd_composite, ckd_composite,
     # Delta eGFR vs baseline at fixed marks (Section 5.16b). Negative =
     # decline. Closest creatinine within +/- 45 days of each mark.
+    # dgfr_avail_* is the denominator: had a creatinine within +/- 45 days of
+    # the mark. Reported as n (%) so each delta can be read against its own N.
+    dgfr_avail_d90, dgfr_avail_d180, dgfr_avail_d365,
     delta_egfr_d90, delta_egfr_d180, delta_egfr_d365,
     delta_egfr_pct_d90, delta_egfr_pct_d180, delta_egfr_pct_d365
   ) %>%
@@ -493,7 +496,7 @@ dgfr_tbl <- purrr::map_dfr(dgfr_marks, function(mk) {
   tibble::tibble(
     Mark = paste0("Day ", mk),
     n = sum(ok),
-    `% of cohort` = round(100 * sum(ok) / nrow(dat), 1),
+    `% with a value in window` = round(100 * sum(ok) / nrow(dat), 1),
     `Actual day` = sprintf("%.0f [%.0f, %.0f]",
       median(dy[ok]), quantile(dy[ok], .25), quantile(dy[ok], .75)),
     `eGFR at mark` = q3(g[ok]),
