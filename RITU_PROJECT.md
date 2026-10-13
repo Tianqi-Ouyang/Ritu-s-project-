@@ -79,7 +79,7 @@ Inherited from the Jiaxuan pipeline, then one additional step:
 
 ## 2 What changed relative to the Jiaxuan project
 
-Eleven kinds of change were made. Nothing else in the analysis was touched.
+Twelve kinds of change were made. Nothing else in the analysis was touched.
 
 ### 2.1 Cohort filter
 
@@ -569,6 +569,85 @@ Against ~20 covariate degrees of freedom only the entire-cohort AKI model meets
 the 10-events-per-covariate convention. The §3 caveats below were written for
 the 90-day outcomes and are retained as a record of that analysis; they no
 longer describe anything on the pages.
+
+### 2.13 Delta eGFR (creatinine) vs baseline at 90 / 180 / 365 days
+
+Section 5.16b of `ritu_data.qmd` adds the change in creatinine eGFR from
+baseline at three fixed post-baseline marks, using the creatinine **closest to
+each mark**.
+
+| Variable | Definition |
+|---|---|
+| `eGFR_CRE_d90` / `_d180` / `_d365` | CKD-EPI 2021 creatinine eGFR from the closest creatinine, within ± 45 days of the mark |
+| `cre_day_d90` / `_d180` / `_d365` | The actual day that creatinine was drawn |
+| `delta_egfr_d90` / `_d180` / `_d365` | eGFR at the mark − `eGFR_CRE_baseline`, mL/min/1.73m² |
+| `delta_egfr_pct_d90` / `_d180` / `_d365` | The same change as a percentage of baseline |
+
+Days run from `baseline_sample_date` (first platinum dose), the index date used
+by every other time variable in the pipeline. Baseline is `eGFR_CRE_baseline`,
+the same baseline the CKD outcomes reference.
+
+**Sign convention: negative = decline.** This is the opposite sign to `pct_drop`
+in §5.16, which is positive for a drop. The two are deliberately not unified —
+`pct_drop` feeds the CKD-outcome thresholds and changing its sign would mean
+rewriting those conditions.
+
+#### The ± 45-day window
+
+The request was for "the creatinine closest to timepoint". Taken without a
+window that is not a timepoint measurement: every patient gets a value at every
+mark, but the closest creatinine to day 365 is more than 276 days away for a
+tenth of the cohort and up to 358 days away, so some patients' "365-day" eGFR
+would come from their first week.
+
+± 45 days was chosen because it matches the window this pipeline already uses
+for baseline labs (`pre_CRE_45days`), and it is the widest window that keeps the
+90-day and 180-day marks from drawing on the same measurement — at ± 90 days
+their intervals would be 0–180 and 90–270. It is a single constant,
+`DGFR_WINDOW`, if a different choice is wanted.
+
+Coverage by window, entire cohort (936 of 943 have any post-baseline creatinine):
+
+| Mark | ± 30 d | ± 45 d | ± 60 d | ± 90 d | no window |
+|---|---|---|---|---|---|
+| Day 90 | 815 | **876** | 901 | 933 | 936 |
+| Day 180 | 603 | **710** | 756 | 815 | 936 |
+| Day 365 | 425 | **489** | 530 | 593 | 936 |
+
+#### Results
+
+| Mark | n (of 943) | Actual day, median [IQR] | Δ eGFR | Δ eGFR % | Fell > 25 % |
+|---|---|---|---|---|---|
+| Day 90 | 876 (92.9 %) | 86 [82, 91] | 1.0 [−6.4, 7.8] | 1.1 [−7.5, 10.0] | 56 (6.4 %) |
+| Day 180 | 710 (75.3 %) | 179 [168, 188] | −2.6 [−12.0, 4.2] | −2.8 [−14.6, 5.5] | 94 (13.2 %) |
+| Day 365 | 489 (51.9 %) | 363 [353, 371] | −6.7 [−15.4, 1.6] | −7.8 [−18.5, 1.5] | 75 (15.3 %) |
+
+Per cohort, Δ eGFR at day 90 / 180 / 365:
+
+| Cohort | Day 90 | Day 180 | Day 365 |
+|---|---|---|---|
+| Entire (943) | 1.0 (n = 876) | −2.6 (n = 710) | −6.7 (n = 489) |
+| Local/Early (322) | 0.9 (n = 301) | −2.2 (n = 244) | −7.5 (n = 176) |
+| Carboplatin (189) | 2.0 (n = 173) | −0.6 (n = 146) | −3.9 (n = 107) |
+| Carbo AUC ≥ 3 (142) | 2.0 (n = 133) | −0.9 (n = 111) | −5.9 (n = 85) |
+
+The realized day sits close to each nominal mark (medians 86 / 179 / 363), so the
+window is selecting near the target rather than shifting it. **Coverage is the
+caveat**: it falls from 93 % at day 90 to 52 % at day 365, because creatinine is
+drawn less often once treatment finishes. The day-365 row describes the half of
+the cohort still under monitoring a year out, which is not a random half of the
+cohort — worth stating in any write-up rather than reporting the median alone.
+
+#### Where it appears
+
+- **Table 1** on all four analysis pages — the six `delta_egfr_*` variables
+  (three absolute, three percent).
+- A dedicated subsection: §2.3 on the whole and entire pages, §3.3 on the two
+  carboplatin pages, with n, realized day, eGFR at the mark, both deltas, and
+  the count falling more than 25 %. Word download `sec2_3_delta_egfr.docx` /
+  `sec3_3_delta_egfr.docx`.
+- **Not modelled.** Per the current scope only `aki` and `ckd_composite` are
+  modelled (§2.12).
 
 ### 2.12 Explicitly unchanged
 

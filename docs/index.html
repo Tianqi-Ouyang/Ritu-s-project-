@@ -185,6 +185,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#grade-23-adverse-events-within-90-days-derived-not-modelled" id="toc-grade-23-adverse-events-within-90-days-derived-not-modelled" class="nav-link" data-scroll-target="#grade-23-adverse-events-within-90-days-derived-not-modelled">Grade 2/3 Adverse Events (within 90 days) — derived, not modelled</a></li>
   <li><a href="#hospitalizations-mortality" id="toc-hospitalizations-mortality" class="nav-link" data-scroll-target="#hospitalizations-mortality">Hospitalizations &amp; Mortality</a></li>
   <li><a href="#long-horizon-kidney-outcomes-ckd-eskd-aki" id="toc-long-horizon-kidney-outcomes-ckd-eskd-aki" class="nav-link" data-scroll-target="#long-horizon-kidney-outcomes-ckd-eskd-aki">Long-Horizon Kidney Outcomes (CKD / ESKD / AKI)</a></li>
+  <li><a href="#delta-egfr-vs-baseline-at-90-180-365-days" id="toc-delta-egfr-vs-baseline-at-90-180-365-days" class="nav-link" data-scroll-target="#delta-egfr-vs-baseline-at-90-180-365-days">Delta eGFR vs Baseline at 90 / 180 / 365 Days</a></li>
   <li><a href="#competing-risk-models-death-competing" id="toc-competing-risk-models-death-competing" class="nav-link" data-scroll-target="#competing-risk-models-death-competing">Competing-Risk Models (death competing)</a></li>
   </ul></li>
   <li><a href="#data-sources" id="toc-data-sources" class="nav-link" data-scroll-target="#data-sources">Data Sources</a></li>
@@ -516,6 +517,56 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </table>
 <p><code>ckd_composite</code> uses <code>ckd_incidence</code> (&gt; 25 %), not <code>ckd_incidence_any</code>. The progression definition now requires a further &gt; 30 % drop; previously it counted anyone below 60 before and after, i.e.&nbsp;stable CKD, which is why that count fell from 61 to 8.</p>
 </section>
+<section id="delta-egfr-vs-baseline-at-90-180-365-days" class="level2">
+<h2 class="anchored" data-anchor-id="delta-egfr-vs-baseline-at-90-180-365-days">Delta eGFR vs Baseline at 90 / 180 / 365 Days</h2>
+<p>Change in creatinine eGFR from <code>eGFR_CRE_baseline</code>, using the creatinine <strong>closest to each mark</strong> and only when it falls within <strong>± 45 days</strong> of it. Days run from <code>baseline_sample_date</code>. Built in Section 5.16b of <a href="./qmd/ritu_data.html">Data Management</a> and reported per cohort in §2.3 (whole, entire) and §3.3 (carboplatin pages). Descriptive only — not modelled.</p>
+<p><strong>Negative means decline</strong>, i.e.&nbsp;eGFR at the mark minus eGFR at baseline. This is the opposite sign to <code>pct_drop</code> in the pipeline.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Mark</th>
+<th>n (of 943)</th>
+<th>Δ eGFR, median [IQR]</th>
+<th>Δ eGFR %, median [IQR]</th>
+<th>Fell &gt; 25 %</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Day 90</td>
+<td>876 (92.9 %)</td>
+<td>1.0 [−6.4, 7.8]</td>
+<td>1.1 [−7.5, 10.0]</td>
+<td>56 (6.4 %)</td>
+</tr>
+<tr class="even">
+<td>Day 180</td>
+<td>710 (75.3 %)</td>
+<td>−2.6 [−12.0, 4.2]</td>
+<td>−2.8 [−14.6, 5.5]</td>
+<td>94 (13.2 %)</td>
+</tr>
+<tr class="odd">
+<td>Day 365</td>
+<td>489 (51.9 %)</td>
+<td>−6.7 [−15.4, 1.6]</td>
+<td>−7.8 [−18.5, 1.5]</td>
+<td>75 (15.3 %)</td>
+</tr>
+</tbody>
+</table>
+<p>Local/Early (322): day 90 n = 301, Δ 0.9 [−5.9, 7.2]; day 180 n = 244, Δ −2.2 [−12.7, 3.3]; day 365 n = 176, Δ −7.5 [−14.9, −0.3].</p>
+<p>The two carboplatin cohorts decline less: carboplatin (189) Δ +2.0 at day 90 and −3.9 at day 365; AUC ≥ 3 (142) Δ +2.0 and −5.9.</p>
+<p>Two things to read with it. The <strong>realized day is tight</strong> — median 86, 179 and 364 against nominal 90, 180 and 365 — so the window is doing its job rather than quietly shifting the timepoint. But <strong>coverage falls with time</strong>, from 93 % at day 90 to 52 % at day 365, because creatinine is drawn less often once treatment ends. The day-365 figures therefore describe the half of the cohort still being monitored a year out, who are not a random half.</p>
+<p>The ± 45-day window matches the pipeline’s existing baseline-lab window (<code>pre_CRE_45days</code>) and is the widest that keeps the 90- and 180-day marks from drawing on the same measurement. Without any window every patient gets a value at every mark, but the closest creatinine to day 365 would be over 276 days away for a tenth of the cohort.</p>
+</section>
 <section id="competing-risk-models-death-competing" class="level2">
 <h2 class="anchored" data-anchor-id="competing-risk-models-death-competing">Competing-Risk Models (death competing)</h2>
 <p>Fine-Gray models for <code>egfr_diff_pct_per10</code> are in §4.12–4.13 of the whole and entire pages and §5.12–5.13 of the carboplatin pages. These are the only two long-horizon outcomes modelled; the 90-day adverse-event and hospitalization outcomes are modelled with the 90-day competing event in §4 / §5.</p>
@@ -672,6 +723,22 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="even">
 <td><code>ckd_stage_baseline</code></td>
 <td>KDIGO stage from <code>eGFR_CRE_baseline</code>, ICI-CKD convention (G3a + G3b collapsed into one stage 3)</td>
+</tr>
+<tr class="odd">
+<td><code>eGFR_CRE_d90</code> / <code>_d180</code> / <code>_d365</code></td>
+<td>Creatinine eGFR from the creatinine closest to that day, within ± 45 days of it</td>
+</tr>
+<tr class="even">
+<td><code>cre_day_d90</code> / <code>_d180</code> / <code>_d365</code></td>
+<td>The actual day of the creatinine used — lets the gap from the nominal mark be checked</td>
+</tr>
+<tr class="odd">
+<td><code>delta_egfr_d90</code> / <code>_d180</code> / <code>_d365</code></td>
+<td>eGFR at the mark − <code>eGFR_CRE_baseline</code>, mL/min/1.73m². <strong>Negative = decline</strong></td>
+</tr>
+<tr class="even">
+<td><code>delta_egfr_pct_d90</code> / <code>_d180</code> / <code>_d365</code></td>
+<td>The same change as a percentage of baseline. <strong>Negative = decline</strong></td>
 </tr>
 </tbody>
 </table>

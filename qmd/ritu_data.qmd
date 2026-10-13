@@ -225,6 +225,10 @@ the full length of RPDR creatinine follow-up.
 | `ckd_composite` | `eskd_composite == 1 \| ckd_incidence == 1 \| ckd_progression == 1` |
 | `time_to_ckd_incidence` / `_progression` / `_eskd_composite` / `_ckd_composite` | Days from `baseline_sample_date` to each event |
 | `aki_before_ckd` | 1 if `aki_days <= time_to_ckd_composite` |
+| `eGFR_CRE_d90` / `_d180` / `_d365` | CKD-EPI creatinine eGFR from the creatinine closest to that day, within +/- 45 days (Section 5.16b) |
+| `cre_day_d90` / `_d180` / `_d365` | The actual day of the creatinine used, so the gap from the nominal mark is auditable |
+| `delta_egfr_d90` / `_d180` / `_d365` | `eGFR at the mark - eGFR_CRE_baseline`, mL/min/1.73m². **Negative = decline** |
+| `delta_egfr_pct_d90` / `_d180` / `_d365` | The same change as a percentage of baseline. **Negative = decline** |
 | `death_lt` / `death_days_lt` | Death at any time with a date from the RPDR `Date_Of_Death`. An input to `death_days_any`, not used directly as a competing event |
 | `rpdr_deceased` | RPDR `Vital_status` is not "Not reported as deceased". Exceeds `death_lt` because some deaths are recorded without a date |
 | `cmp_time_aki_365` / `cmp_status_aki_365` | Competing-risk pair for AKI, administratively censored at 365 days |
@@ -2093,6 +2097,86 @@ final_master <- final_master %>%
   mutate(across(c(ckd_incidence, ckd_incidence_any, ckd_progression,
                   eskd_defination_1),
                 ~ ifelse(is.na(.x), 0L, as.integer(.x))))
+```
+
+## 5.16b Delta eGFR (creatinine) vs baseline at 90 / 180 / 365 days
+
+Change in creatinine-based eGFR from baseline at three fixed post-baseline
+marks. For each mark the creatinine **closest to that day** is used, provided it
+falls within `DGFR_WINDOW` days of it.
+
+`DGFR_WINDOW` is 45 days: it matches the window this pipeline already uses for
+baseline labs (`pre_CRE_45days`), and it is the widest window that keeps the
+90-day and 180-day marks from drawing on the same measurement (at +/- 90 days
+their intervals would be 0-180 and 90-270). Taken without a window the closest
+creatinine to day 365 is more than 276 days away for a tenth of the cohort, so
+an unwindowed value would not be a 365-day measurement.
+
+Days are counted from `baseline_sample_date` (first platinum dose), the index
+date used by every other time variable here. The baseline eGFR is
+`eGFR_CRE_baseline`, the same baseline the CKD outcomes are referenced to.
+
+**Sign convention: negative means decline.** `delta_egfr_d90` is
+`eGFR at day 90 - eGFR at baseline`, so a fall in kidney function is a negative
+number. This is the opposite sign to `pct_drop` in Section 5.16, which is
+positive for a drop.
+
+```{r}
+#| label: clean-delta-egfr
+DGFR_WINDOW <- 45
+DGFR_MARKS  <- c(90, 180, 365)
+
+# Day offsets for the trajectory, measured from baseline_sample_date rather than
+# from the pre-baseline creatinine draw that anchors egfr_traj.
+dgfr_traj <- egfr_traj %>%
+  left_join(final_master %>% select(EMPI, baseline_sample_date), by = "EMPI") %>%
+  mutate(cre_day = as.numeric(eGFR_CRE_date - baseline_sample_date)) %>%
+  filter(!is.na(cre_day), cre_day > 0)
+
+dgfr_at_mark <- function(traj, mark, window = DGFR_WINDOW) {
+  traj %>%
+    mutate(.gap = abs(cre_day - mark)) %>%
+    filter(.gap <= window) %>%
+    group_by(EMPI) %>%
+    slice_min(.gap, n = 1, with_ties = FALSE) %>%
+    ungroup() %>%
+    transmute(
+      EMPI,
+      !!paste0("eGFR_CRE_d", mark)       := round(eGFR_CRE, 1),
+      !!paste0("cre_day_d", mark)        := cre_day,
+      !!paste0("delta_egfr_d", mark)     := round(eGFR_CRE - eGFR_CRE_baseline, 1),
+      !!paste0("delta_egfr_pct_d", mark) := round(
+        100 * (eGFR_CRE - eGFR_CRE_baseline) / eGFR_CRE_baseline, 1)
+    )
+}
+
+for (mk in DGFR_MARKS) {
+  final_master <- final_master %>%
+    left_join(dgfr_at_mark(dgfr_traj, mk), by = "EMPI")
+}
+
+dgfr_summary <- purrr::map_dfr(DGFR_MARKS, function(mk) {
+  d  <- final_master[[paste0("delta_egfr_d", mk)]]
+  dp <- final_master[[paste0("delta_egfr_pct_d", mk)]]
+  dy <- final_master[[paste0("cre_day_d", mk)]]
+  ok <- !is.na(d)
+  tibble::tibble(
+    Mark = paste0("Day ", mk),
+    `n with a value` = sum(ok),
+    `% of cohort` = round(100 * sum(ok) / nrow(final_master), 1),
+    `Actual day, median [IQR]` = sprintf("%.0f [%.0f, %.0f]",
+      median(dy[ok]), quantile(dy[ok], .25), quantile(dy[ok], .75)),
+    `Delta eGFR, median [IQR]` = sprintf("%.1f [%.1f, %.1f]",
+      median(d[ok]), quantile(d[ok], .25), quantile(d[ok], .75)),
+    `Delta eGFR %, median [IQR]` = sprintf("%.1f [%.1f, %.1f]",
+      median(dp[ok]), quantile(dp[ok], .25), quantile(dp[ok], .75))
+  )
+})
+
+knitr::kable(dgfr_summary, caption = paste0(
+  "Delta eGFR (creatinine) vs baseline, full pipeline cohort (N = ",
+  nrow(final_master), "), closest creatinine within +/- ", DGFR_WINDOW,
+  " days of each mark. Negative = decline from baseline."))
 ```
 
 ## 5.17 AKI from serial creatinine (KDIGO-style)

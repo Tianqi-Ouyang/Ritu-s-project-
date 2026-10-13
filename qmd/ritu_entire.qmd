@@ -236,7 +236,11 @@ dat %>%
     # NOT censored at 90 days like every other outcome in this project.
     eGFR_CRE_baseline, ckd_stage_baseline, last_cre_days,
     aki, aki_any, ckd_incidence, ckd_incidence_any, ckd_progression,
-    eskd_defination_1, esrd_kt_after_ici, eskd_composite, ckd_composite
+    eskd_defination_1, esrd_kt_after_ici, eskd_composite, ckd_composite,
+    # Delta eGFR vs baseline at fixed marks (Section 5.16b). Negative =
+    # decline. Closest creatinine within +/- 45 days of each mark.
+    delta_egfr_d90, delta_egfr_d180, delta_egfr_d365,
+    delta_egfr_pct_d90, delta_egfr_pct_d180, delta_egfr_pct_d365
   ) %>%
   tbl_summary(
     by = platin_group,
@@ -251,12 +255,10 @@ dat %>%
 
 ## 2.1 Follow-up time (days from baseline to last known status)
 
-`days_last_follow_up` = `last_follow_up_date − baseline_sample_date`. Four alternative definitions of "follow-up time" are shown side-by-side so the reader can pick the most defensible one for their purpose:
+`days_last_follow_up` = `last_follow_up_date − baseline_sample_date`. Two alternative definitions of "follow-up time" are shown side-by-side so the reader can pick the most defensible one for their purpose:
 
 - **A — Raw days**: unrestricted calendar follow-up (median dominated by patients who kept returning for years).
 - **B — Raw days, ≤ 365 days**: restricts to patients whose last-known contact was **within 1 year** of baseline (drops the long tail of years-later return visits; more comparable across patients).
-- **C — Analytic, capped at 90 days**: `min(days_last_follow_up, 90)` — the 90-day window the adverse-event and hospitalization outcomes were abstracted in.
-- **D — Analytic (capped at 90) & ≤ 365 days raw**: same as C but excluding the long-tail returners.
 
 ```{r}
 #| label: ritu-entire-followup-desc-entire
@@ -290,18 +292,14 @@ fu_row <- function(label, xs) {
 
 def_A <- function(v) v
 def_B <- function(v) v[v <= 365]
-def_C <- function(v) pmin(v, 90)
-def_D <- function(v) pmin(v[v <= 365], 90)
 
 followup_tbl <- dplyr::bind_rows(
-  fu_row("A — Raw days",                                   groups_split(def_A)),
-  fu_row("B — Raw days, ≤ 365 days",                       groups_split(def_B)),
-  fu_row("C — Analytic (capped at 90 days), whole cohort", groups_split(def_C)),
-  fu_row("D — Analytic (capped at 90 days), ≤ 365 days",   groups_split(def_D))
+  fu_row("A — Raw days",             groups_split(def_A)),
+  fu_row("B — Raw days, ≤ 365 days", groups_split(def_B))
 )
 
 flextable::flextable(followup_tbl) |>
-  flextable::set_caption("Follow-up time from baseline to last known status (whole cohort). Four alternative definitions shown side-by-side.") |>
+  flextable::set_caption("Follow-up time from baseline to last known status (whole cohort). Two alternative definitions shown side-by-side.") |>
   flextable::autofit()
 ```
 
@@ -311,11 +309,11 @@ Ported from the [ICI-CKD project](https://tianqi-ouyang.github.io/ICI-CKD-/data_
 and built in Sections 5.16–5.19 of [Data Management](ritu_data.qmd). Creatinine
 for these comes from the newer 2022P001091 RPDR pull.
 
-> **These are the only outcomes on this page that are not censored at 90 days.**
-> A qualifying CKD episode has to be *sustained for ≥ 90 days*, so they run over
-> the full length of RPDR creatinine follow-up rather than the 90-day window used
-> by every model above and below. They are reported descriptively here and are
-> **not** in any Fine-Gray, cause-specific or Cox model.
+> **None of these are censored at 90 days.** A qualifying CKD episode has to be
+> *sustained for ≥ 90 days*, so they run over the full length of RPDR creatinine
+> follow-up. `aki` is restricted to events within 1 year. This section reports all
+> of them descriptively; **`aki` and `ckd_composite` are the two that are
+> modelled** — see the Fine-Gray section below. The rest are descriptive only.
 
 **Definitions as of the latest revision.** `aki` is now restricted to events
 **within 1 year** of baseline (`aki_any` keeps the unrestricted count for
@@ -382,6 +380,59 @@ cat(sprintf("Patients with no post-baseline creatinine: %d\n",
             sum(is.na(dat$last_cre_days))))
 cat("\nSerial-creatinine AKI (rows) vs 90-day KDIGO AKI (columns):\n")
 print(table(`serial aki` = dat$aki, `AKI_kdigo_90days` = dat$AKI_kdigo_90days))
+```
+
+## 2.3 Delta eGFR (creatinine) vs Baseline at 90 / 180 / 365 Days
+
+Change in creatinine eGFR from `eGFR_CRE_baseline`, using the creatinine
+**closest to each mark** and taking it only when it falls within **± 45 days**
+of that mark. Days run from `baseline_sample_date`. Built in Section 5.16b of
+[Data Management](ritu_data.qmd).
+
+> **Negative means decline.** `delta_egfr_d90` is eGFR at day 90 minus eGFR at
+> baseline, so a fall in kidney function is a negative number — the opposite sign
+> to `pct_drop` in the data-management pipeline.
+>
+> The ± 45-day window matches the window used for every other baseline lab in
+> this pipeline (`pre_CRE_45days`), and it is the widest window that stops the
+> 90-day and 180-day marks drawing on the same measurement. It costs coverage at
+> the later marks — the `n` column below shows how much.
+
+[📄 Download Word table](../tables/entire/sec2_3_delta_egfr.docx)
+
+```{r}
+#| label: ritu-entire-delta-egfr
+dgfr_marks <- c(90, 180, 365)
+
+dgfr_tbl <- purrr::map_dfr(dgfr_marks, function(mk) {
+  d  <- dat[[paste0("delta_egfr_d", mk)]]
+  dp <- dat[[paste0("delta_egfr_pct_d", mk)]]
+  dy <- dat[[paste0("cre_day_d", mk)]]
+  g  <- dat[[paste0("eGFR_CRE_d", mk)]]
+  ok <- !is.na(d)
+  q3 <- function(x) sprintf("%.1f [%.1f, %.1f]",
+         median(x), quantile(x, .25), quantile(x, .75))
+  tibble::tibble(
+    Mark = paste0("Day ", mk),
+    n = sum(ok),
+    `% of cohort` = round(100 * sum(ok) / nrow(dat), 1),
+    `Actual day` = sprintf("%.0f [%.0f, %.0f]",
+      median(dy[ok]), quantile(dy[ok], .25), quantile(dy[ok], .75)),
+    `eGFR at mark` = q3(g[ok]),
+    `Delta eGFR` = q3(d[ok]),
+    `Delta eGFR (%)` = q3(dp[ok]),
+    `Fell > 25 %` = sprintf("%d (%.1f%%)", sum(dp[ok] < -25),
+                            100 * sum(dp[ok] < -25) / sum(ok))
+  )
+})
+
+ft_dgfr <- flextable::flextable(dgfr_tbl) |>
+  flextable::set_caption(sprintf(paste0(
+    "Delta eGFR (creatinine) vs baseline, N = %d. eGFR in mL/min/1.73m², ",
+    "median [IQR] throughout. Negative = decline from baseline."), nrow(dat))) |>
+  flextable::autofit()
+flextable::save_as_docx(ft_dgfr, path = file.path(docx_dir, "sec2_3_delta_egfr.docx"))
+ft_dgfr
 ```
 
 

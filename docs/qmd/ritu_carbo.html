@@ -187,6 +187,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <ul>
   <li><a href="#follow-up-time-days-from-baseline-to-last-known-status" id="toc-follow-up-time-days-from-baseline-to-last-known-status" class="nav-link" data-scroll-target="#follow-up-time-days-from-baseline-to-last-known-status">3.1 Follow-up time (days from baseline to last known status)</a></li>
   <li><a href="#long-horizon-kidney-outcomes-ckd-eskd-aki" id="toc-long-horizon-kidney-outcomes-ckd-eskd-aki" class="nav-link" data-scroll-target="#long-horizon-kidney-outcomes-ckd-eskd-aki">3.2 Long-Horizon Kidney Outcomes (CKD / ESKD / AKI)</a></li>
+  <li><a href="#delta-egfr-creatinine-vs-baseline-at-90-180-365-days" id="toc-delta-egfr-creatinine-vs-baseline-at-90-180-365-days" class="nav-link" data-scroll-target="#delta-egfr-creatinine-vs-baseline-at-90-180-365-days">3.3 Delta eGFR (creatinine) vs Baseline at 90 / 180 / 365 Days</a></li>
   </ul></li>
   <li><a href="#egfr-ratio-distribution-carboplatin" id="toc-egfr-ratio-distribution-carboplatin" class="nav-link" data-scroll-target="#egfr-ratio-distribution-carboplatin">4 eGFR Ratio Distribution (Carboplatin)</a></li>
   <li><a href="#fine-gray-models-long-horizon-kidney-outcomes-egfr-difference-per-10-decline-adjusted-for-cockcroft-gault-carboplatin" id="toc-fine-gray-models-long-horizon-kidney-outcomes-egfr-difference-per-10-decline-adjusted-for-cockcroft-gault-carboplatin" class="nav-link" data-scroll-target="#fine-gray-models-long-horizon-kidney-outcomes-egfr-difference-per-10-decline-adjusted-for-cockcroft-gault-carboplatin">5 Fine-Gray Models — Long-Horizon Kidney Outcomes (eGFR Difference (%) per 10 % decline, adjusted for Cockcroft-Gault) (Carboplatin)</a>
@@ -596,30 +597,34 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a>    <span class="co"># NOT censored at 90 days like every other outcome in this project.</span></span>
 <span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a>    eGFR_CRE_baseline, ckd_stage_baseline, last_cre_days,</span>
 <span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>    aki, aki_any, ckd_incidence, ckd_incidence_any, ckd_progression,</span>
-<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a>    eskd_defination_1, esrd_kt_after_ici, eskd_composite, ckd_composite</span>
-<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
-<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tbl_summary</span>(</span>
-<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a>    <span class="at">statistic =</span> <span class="fu">list</span>(age <span class="sc">~</span> <span class="st">"{mean} ({sd})"</span>)</span>
-<span id="cb6-31"><a href="#cb6-31" aria-hidden="true" tabindex="-1"></a>  )</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a>    eskd_defination_1, esrd_kt_after_ici, eskd_composite, ckd_composite,</span>
+<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Delta eGFR vs baseline at fixed marks (Section 5.16b). Negative =</span></span>
+<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a>    <span class="co"># decline. Closest creatinine within +/- 45 days of each mark.</span></span>
+<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a>    delta_egfr_d90, delta_egfr_d180, delta_egfr_d365,</span>
+<span id="cb6-31"><a href="#cb6-31" aria-hidden="true" tabindex="-1"></a>    delta_egfr_pct_d90, delta_egfr_pct_d180, delta_egfr_pct_d365</span>
+<span id="cb6-32"><a href="#cb6-32" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
+<span id="cb6-33"><a href="#cb6-33" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tbl_summary</span>(</span>
+<span id="cb6-34"><a href="#cb6-34" aria-hidden="true" tabindex="-1"></a>    <span class="at">statistic =</span> <span class="fu">list</span>(age <span class="sc">~</span> <span class="st">"{mean} ({sd})"</span>)</span>
+<span id="cb6-35"><a href="#cb6-35" aria-hidden="true" tabindex="-1"></a>  )</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output-display">
-<div id="lkzswmyayu" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#lkzswmyayu table {
+<div id="okygwepevz" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#okygwepevz table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#lkzswmyayu thead, #lkzswmyayu tbody, #lkzswmyayu tfoot, #lkzswmyayu tr, #lkzswmyayu td, #lkzswmyayu th {
+#okygwepevz thead, #okygwepevz tbody, #okygwepevz tfoot, #okygwepevz tr, #okygwepevz td, #okygwepevz th {
   border-style: none;
 }
 
-#lkzswmyayu p {
+#okygwepevz p {
   margin: 0;
   padding: 0;
 }
 
-#lkzswmyayu .gt_table {
+#okygwepevz .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -645,12 +650,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   border-left-color: #D3D3D3;
 }
 
-#lkzswmyayu .gt_caption {
+#okygwepevz .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#lkzswmyayu .gt_title {
+#okygwepevz .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -662,7 +667,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   border-bottom-width: 0;
 }
 
-#lkzswmyayu .gt_subtitle {
+#okygwepevz .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -674,7 +679,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   border-top-width: 0;
 }
 
-#lkzswmyayu .gt_heading {
+#okygwepevz .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -686,13 +691,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   border-right-color: #D3D3D3;
 }
 
-#lkzswmyayu .gt_bottom_border {
+#okygwepevz .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#lkzswmyayu .gt_col_headings {
+#okygwepevz .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -707,7 +712,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   border-right-color: #D3D3D3;
 }
 
-#lkzswmyayu .gt_col_heading {
+#okygwepevz .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -727,7 +732,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   overflow-x: hidden;
 }
 
-#lkzswmyayu .gt_column_spanner_outer {
+#okygwepevz .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -739,15 +744,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   padding-right: 4px;
 }
 
-#lkzswmyayu .gt_column_spanner_outer:first-child {
+#okygwepevz .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#lkzswmyayu .gt_column_spanner_outer:last-child {
+#okygwepevz .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#lkzswmyayu .gt_column_spanner {
+#okygwepevz .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -759,11 +764,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   width: 100%;
 }
 
-#lkzswmyayu .gt_spanner_row {
+#okygwepevz .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#lkzswmyayu .gt_group_heading {
+#okygwepevz .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -789,7 +794,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   text-align: left;
 }
 
-#lkzswmyayu .gt_empty_group_heading {
+#okygwepevz .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -804,15 +809,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   vertical-align: middle;
 }
 
-#lkzswmyayu .gt_from_md > :first-child {
+#okygwepevz .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#lkzswmyayu .gt_from_md > :last-child {
+#okygwepevz .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#lkzswmyayu .gt_row {
+#okygwepevz .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -831,7 +836,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   overflow-x: hidden;
 }
 
-#lkzswmyayu .gt_stub {
+#okygwepevz .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -844,7 +849,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   padding-right: 5px;
 }
 
-#lkzswmyayu .gt_stub_row_group {
+#okygwepevz .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -858,15 +863,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   vertical-align: top;
 }
 
-#lkzswmyayu .gt_row_group_first td {
+#okygwepevz .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#lkzswmyayu .gt_row_group_first th {
+#okygwepevz .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#lkzswmyayu .gt_summary_row {
+#okygwepevz .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -876,16 +881,16 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   padding-right: 5px;
 }
 
-#lkzswmyayu .gt_first_summary_row {
+#okygwepevz .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#lkzswmyayu .gt_first_summary_row.thick {
+#okygwepevz .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#lkzswmyayu .gt_last_summary_row {
+#okygwepevz .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -895,7 +900,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   border-bottom-color: #D3D3D3;
 }
 
-#lkzswmyayu .gt_grand_summary_row {
+#okygwepevz .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -905,7 +910,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   padding-right: 5px;
 }
 
-#lkzswmyayu .gt_first_grand_summary_row {
+#okygwepevz .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -915,7 +920,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   border-top-color: #D3D3D3;
 }
 
-#lkzswmyayu .gt_last_grand_summary_row_top {
+#okygwepevz .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -925,11 +930,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   border-bottom-color: #D3D3D3;
 }
 
-#lkzswmyayu .gt_striped {
+#okygwepevz .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#lkzswmyayu .gt_table_body {
+#okygwepevz .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -938,7 +943,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   border-bottom-color: #D3D3D3;
 }
 
-#lkzswmyayu .gt_footnotes {
+#okygwepevz .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -952,7 +957,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   border-right-color: #D3D3D3;
 }
 
-#lkzswmyayu .gt_footnote {
+#okygwepevz .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -961,7 +966,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   padding-right: 5px;
 }
 
-#lkzswmyayu .gt_sourcenotes {
+#okygwepevz .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -975,7 +980,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   border-right-color: #D3D3D3;
 }
 
-#lkzswmyayu .gt_sourcenote {
+#okygwepevz .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -983,72 +988,72 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   padding-right: 5px;
 }
 
-#lkzswmyayu .gt_left {
+#okygwepevz .gt_left {
   text-align: left;
 }
 
-#lkzswmyayu .gt_center {
+#okygwepevz .gt_center {
   text-align: center;
 }
 
-#lkzswmyayu .gt_right {
+#okygwepevz .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#lkzswmyayu .gt_font_normal {
+#okygwepevz .gt_font_normal {
   font-weight: normal;
 }
 
-#lkzswmyayu .gt_font_bold {
+#okygwepevz .gt_font_bold {
   font-weight: bold;
 }
 
-#lkzswmyayu .gt_font_italic {
+#okygwepevz .gt_font_italic {
   font-style: italic;
 }
 
-#lkzswmyayu .gt_super {
+#okygwepevz .gt_super {
   font-size: 65%;
 }
 
-#lkzswmyayu .gt_footnote_marks {
+#okygwepevz .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#lkzswmyayu .gt_asterisk {
+#okygwepevz .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#lkzswmyayu .gt_indent_1 {
+#okygwepevz .gt_indent_1 {
   text-indent: 5px;
 }
 
-#lkzswmyayu .gt_indent_2 {
+#okygwepevz .gt_indent_2 {
   text-indent: 10px;
 }
 
-#lkzswmyayu .gt_indent_3 {
+#okygwepevz .gt_indent_3 {
   text-indent: 15px;
 }
 
-#lkzswmyayu .gt_indent_4 {
+#okygwepevz .gt_indent_4 {
   text-indent: 20px;
 }
 
-#lkzswmyayu .gt_indent_5 {
+#okygwepevz .gt_indent_5 {
   text-indent: 25px;
 }
 
-#lkzswmyayu .katex-display {
+#okygwepevz .katex-display {
   display: inline-flex !important;
   margin-bottom: 0.75em !important;
 }
 
-#lkzswmyayu div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#okygwepevz div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
   height: 0px !important;
 }
 </style>
@@ -1523,6 +1528,54 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td class="gt_row gt_left" headers="label">ckd_composite</td>
 <td class="gt_row gt_center" headers="stat_0">11 (5.8%)</td>
 </tr>
+<tr class="even">
+<td class="gt_row gt_left" headers="label">delta_egfr_d90</td>
+<td class="gt_row gt_center" headers="stat_0">2 (-3, 7)</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_left" headers="label">&nbsp;&nbsp;&nbsp;&nbsp;Unknown</td>
+<td class="gt_row gt_center" headers="stat_0">16</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_left" headers="label">delta_egfr_d180</td>
+<td class="gt_row gt_center" headers="stat_0">-1 (-9, 4)</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_left" headers="label">&nbsp;&nbsp;&nbsp;&nbsp;Unknown</td>
+<td class="gt_row gt_center" headers="stat_0">43</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_left" headers="label">delta_egfr_d365</td>
+<td class="gt_row gt_center" headers="stat_0">-4 (-14, 3)</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_left" headers="label">&nbsp;&nbsp;&nbsp;&nbsp;Unknown</td>
+<td class="gt_row gt_center" headers="stat_0">82</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_left" headers="label">delta_egfr_pct_d90</td>
+<td class="gt_row gt_center" headers="stat_0">2 (-4, 9)</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_left" headers="label">&nbsp;&nbsp;&nbsp;&nbsp;Unknown</td>
+<td class="gt_row gt_center" headers="stat_0">16</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_left" headers="label">delta_egfr_pct_d180</td>
+<td class="gt_row gt_center" headers="stat_0">-1 (-10, 4)</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_left" headers="label">&nbsp;&nbsp;&nbsp;&nbsp;Unknown</td>
+<td class="gt_row gt_center" headers="stat_0">43</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_left" headers="label">delta_egfr_pct_d365</td>
+<td class="gt_row gt_center" headers="stat_0">-5 (-17, 3)</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_left" headers="label">&nbsp;&nbsp;&nbsp;&nbsp;Unknown</td>
+<td class="gt_row gt_center" headers="stat_0">82</td>
+</tr>
 </tbody><tfoot class="gt_footnotes">
 <tr class="odd">
 <td colspan="2" class="gt_footnote"><span class="gt_footnote_marks" style="white-space:nowrap;font-style:italic;font-weight:normal;line-height:0;"><sup>1</sup></span> Mean (SD); n (%); Median (Q1, Q3)</td>
@@ -1536,12 +1589,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <section id="follow-up-time-days-from-baseline-to-last-known-status" class="level2">
 <h2 class="anchored" data-anchor-id="follow-up-time-days-from-baseline-to-last-known-status">3.1 Follow-up time (days from baseline to last known status)</h2>
-<p>Four alternative definitions of follow-up time shown side-by-side:</p>
+<p>Two alternative definitions of follow-up time shown side-by-side:</p>
 <ul>
 <li><strong>A — Raw days</strong>: unrestricted calendar follow-up (median dominated by patients who kept returning for years).</li>
 <li><strong>B — Raw days, ≤ 365 days</strong>: restricts to patients whose last-known contact was within 1 year of baseline.</li>
-<li><strong>C — Analytic, capped at 90 days</strong>: <code>min(days_last_follow_up, 90)</code> — the 90-day abstraction window for the adverse-event and hospitalization outcomes.</li>
-<li><strong>D — Analytic (capped at 90) &amp; ≤ 365 days raw</strong>: same as C but excluding long-tail returners.</li>
 </ul>
 <div class="cell">
 <details class="code-fold">
@@ -1565,18 +1616,16 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>v <span class="ot">&lt;-</span> followup_summary<span class="sc">$</span>days_last_follow_up</span>
 <span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>followup_tbl <span class="ot">&lt;-</span> dplyr<span class="sc">::</span><span class="fu">bind_rows</span>(</span>
-<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">fu_row</span>(<span class="st">"A — Raw days"</span>,                                 v),</span>
-<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">fu_row</span>(<span class="st">"B — Raw days, ≤ 365 days"</span>,                     v[v <span class="sc">&lt;=</span> <span class="dv">365</span>]),</span>
-<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">fu_row</span>(<span class="st">"C — Analytic (capped at 90 days)"</span>,             <span class="fu">pmin</span>(v, <span class="dv">90</span>)),</span>
-<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">fu_row</span>(<span class="st">"D — Analytic (capped at 90 days), ≤ 365 days"</span>, <span class="fu">pmin</span>(v[v <span class="sc">&lt;=</span> <span class="dv">365</span>], <span class="dv">90</span>))</span>
-<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a>flextable<span class="sc">::</span><span class="fu">flextable</span>(followup_tbl) <span class="sc">|&gt;</span></span>
-<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a>  flextable<span class="sc">::</span><span class="fu">set_caption</span>(<span class="st">"Follow-up time from baseline to last known status (Carboplatin cohort). Four alternative definitions."</span>) <span class="sc">|&gt;</span></span>
-<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a>  flextable<span class="sc">::</span><span class="fu">autofit</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">fu_row</span>(<span class="st">"A — Raw days"</span>,             v),</span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">fu_row</span>(<span class="st">"B — Raw days, ≤ 365 days"</span>, v[v <span class="sc">&lt;=</span> <span class="dv">365</span>])</span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>flextable<span class="sc">::</span><span class="fu">flextable</span>(followup_tbl) <span class="sc">|&gt;</span></span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>  flextable<span class="sc">::</span><span class="fu">set_caption</span>(<span class="st">"Follow-up time from baseline to last known status (Carboplatin cohort). Two alternative definitions."</span>) <span class="sc">|&gt;</span></span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a>  flextable<span class="sc">::</span><span class="fu">autofit</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output-display">
-<div class="tabwid"><style>.cl-59426274{}.cl-59404aca{font-family:'Helvetica';font-size:11pt;font-weight:normal;font-style:normal;text-decoration:none;color:rgba(0, 0, 0, 1.00);background-color:transparent;}.cl-59411d88{margin:0;text-align:left;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);padding-bottom:5pt;padding-top:5pt;padding-left:5pt;padding-right:5pt;line-height: 1;background-color:transparent;}.cl-59411d89{margin:0;text-align:right;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);padding-bottom:5pt;padding-top:5pt;padding-left:5pt;padding-right:5pt;line-height: 1;background-color:transparent;}.cl-5941272e{width:3.392in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 1.5pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-5941272f{width:0.54in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 1.5pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-59412730{width:2.306in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 1.5pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-59412731{width:3.392in;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-59412738{width:0.54in;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-59412739{width:2.306in;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-59412742{width:3.392in;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-59412743{width:0.54in;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-59412744{width:2.306in;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-59412745{width:3.392in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-5941274c{width:0.54in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-5941274d{width:2.306in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}</style><table data-quarto-disable-processing="true" class="cl-59426274"><thead><tr style="overflow-wrap:break-word;"><th class="cl-5941272e"><p class="cl-59411d88"><span class="cl-59404aca">Interpretation</span></p></th><th class="cl-5941272f"><p class="cl-59411d89"><span class="cl-59404aca">N</span></p></th><th class="cl-59412730"><p class="cl-59411d88"><span class="cl-59404aca">Median [IQR] follow-up (days)</span></p></th></tr></thead><tbody><tr style="overflow-wrap:break-word;"><td class="cl-59412731"><p class="cl-59411d88"><span class="cl-59404aca">A — Raw days</span></p></td><td class="cl-59412738"><p class="cl-59411d89"><span class="cl-59404aca">189</span></p></td><td class="cl-59412739"><p class="cl-59411d88"><span class="cl-59404aca">606 [428, 889]</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-59412731"><p class="cl-59411d88"><span class="cl-59404aca">B — Raw days, ≤ 365 days</span></p></td><td class="cl-59412738"><p class="cl-59411d89"><span class="cl-59404aca">32</span></p></td><td class="cl-59412739"><p class="cl-59411d88"><span class="cl-59404aca">289 [218, 324]</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-59412742"><p class="cl-59411d88"><span class="cl-59404aca">C — Analytic (capped at 90 days)</span></p></td><td class="cl-59412743"><p class="cl-59411d89"><span class="cl-59404aca">189</span></p></td><td class="cl-59412744"><p class="cl-59411d88"><span class="cl-59404aca">90 [90, 90]</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-59412745"><p class="cl-59411d88"><span class="cl-59404aca">D — Analytic (capped at 90 days), ≤ 365 days</span></p></td><td class="cl-5941274c"><p class="cl-59411d89"><span class="cl-59404aca">32</span></p></td><td class="cl-5941274d"><p class="cl-59411d88"><span class="cl-59404aca">90 [90, 90]</span></p></td></tr></tbody></table></div>
+<div class="tabwid"><style>.cl-22f6f5fa{}.cl-22f4d77a{font-family:'Helvetica';font-size:11pt;font-weight:normal;font-style:normal;text-decoration:none;color:rgba(0, 0, 0, 1.00);background-color:transparent;}.cl-22f5aede{margin:0;text-align:left;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);padding-bottom:5pt;padding-top:5pt;padding-left:5pt;padding-right:5pt;line-height: 1;background-color:transparent;}.cl-22f5aedf{margin:0;text-align:right;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);padding-bottom:5pt;padding-top:5pt;padding-left:5pt;padding-right:5pt;line-height: 1;background-color:transparent;}.cl-22f5b8a2{width:2.127in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 1.5pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-22f5b8ac{width:0.54in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 1.5pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-22f5b8ad{width:2.306in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 1.5pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-22f5b8ae{width:2.127in;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-22f5b8af{width:0.54in;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-22f5b8b6{width:2.306in;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-22f5b8b7{width:2.127in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-22f5b8b8{width:0.54in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-22f5b8b9{width:2.306in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}</style><table data-quarto-disable-processing="true" class="cl-22f6f5fa"><thead><tr style="overflow-wrap:break-word;"><th class="cl-22f5b8a2"><p class="cl-22f5aede"><span class="cl-22f4d77a">Interpretation</span></p></th><th class="cl-22f5b8ac"><p class="cl-22f5aedf"><span class="cl-22f4d77a">N</span></p></th><th class="cl-22f5b8ad"><p class="cl-22f5aede"><span class="cl-22f4d77a">Median [IQR] follow-up (days)</span></p></th></tr></thead><tbody><tr style="overflow-wrap:break-word;"><td class="cl-22f5b8ae"><p class="cl-22f5aede"><span class="cl-22f4d77a">A — Raw days</span></p></td><td class="cl-22f5b8af"><p class="cl-22f5aedf"><span class="cl-22f4d77a">189</span></p></td><td class="cl-22f5b8b6"><p class="cl-22f5aede"><span class="cl-22f4d77a">606 [428, 889]</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-22f5b8b7"><p class="cl-22f5aede"><span class="cl-22f4d77a">B — Raw days, ≤ 365 days</span></p></td><td class="cl-22f5b8b8"><p class="cl-22f5aedf"><span class="cl-22f4d77a">32</span></p></td><td class="cl-22f5b8b9"><p class="cl-22f5aede"><span class="cl-22f4d77a">289 [218, 324]</span></p></td></tr></tbody></table></div>
 </div>
 </div>
 </section>
@@ -1584,7 +1633,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h2 class="anchored" data-anchor-id="long-horizon-kidney-outcomes-ckd-eskd-aki">3.2 Long-Horizon Kidney Outcomes (CKD / ESKD / AKI)</h2>
 <p>Ported from the <a href="https://tianqi-ouyang.github.io/ICI-CKD-/data_management.html">ICI-CKD project</a> and built in Sections 5.16–5.19 of <a href="../qmd/ritu_data.html">Data Management</a>. Creatinine for these comes from the newer 2022P001091 RPDR pull.</p>
 <blockquote class="blockquote">
-<p><strong>These are the only outcomes on this page that are not censored at 90 days.</strong> A qualifying CKD episode has to be <em>sustained for ≥ 90 days</em>, so they run over the full length of RPDR creatinine follow-up rather than the 90-day window used by every model above and below. They are reported descriptively here and are <strong>not</strong> in any Fine-Gray, cause-specific or Cox model.</p>
+<p><strong>None of these are censored at 90 days.</strong> A qualifying CKD episode has to be <em>sustained for ≥ 90 days</em>, so they run over the full length of RPDR creatinine follow-up. <code>aki</code> is restricted to events within 1 year. This section reports all of them descriptively; <strong><code>aki</code> and <code>ckd_composite</code> are the two that are modelled</strong> — see the Fine-Gray section below. The rest are descriptive only.</p>
 </blockquote>
 <p><strong>Definitions as of the latest revision.</strong> <code>aki</code> is now restricted to events <strong>within 1 year</strong> of baseline (<code>aki_any</code> keeps the unrestricted count for reference and is not modelled). <code>ckd_incidence</code> uses a <strong>&gt; 25 %</strong> eGFR drop; <code>ckd_incidence_any</code> drops the percent requirement entirely; <code>ckd_progression</code> now additionally requires a <strong>&gt; 30 %</strong> further drop, where it previously counted any patient who was simply below 60 before and after — which flagged stable CKD as progression and is why that count fell sharply.</p>
 <p><code>aki</code> is also not the same variable as <code>AKI_g2_90days</code> / <code>AKI_kdigo_90days</code>: it compares each creatinine against the patient’s own preceding 90-day median (or 2-day low) rather than against a fixed pre-baseline value. The cross-tabulation below shows how far the two diverge.</p>
@@ -1626,7 +1675,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb8-32"><a href="#cb8-32" aria-hidden="true" tabindex="-1"></a>ft_kid</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output-display">
-<div class="tabwid"><style>.cl-59544f34{}.cl-59525206{font-family:'Helvetica';font-size:11pt;font-weight:normal;font-style:normal;text-decoration:none;color:rgba(0, 0, 0, 1.00);background-color:transparent;}.cl-59531e3e{margin:0;text-align:left;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);padding-bottom:5pt;padding-top:5pt;padding-left:5pt;padding-right:5pt;line-height: 1;background-color:transparent;}.cl-5953271c{width:5.16in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 1.5pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-5953271d{width:1.033in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 1.5pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-59532726{width:2.153in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 1.5pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-59532727{width:5.16in;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-59532728{width:1.033in;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-59532729{width:2.153in;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-59532730{width:5.16in;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-59532731{width:1.033in;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-59532732{width:2.153in;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-59532733{width:5.16in;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-5953273a{width:1.033in;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-5953273b{width:2.153in;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-5953273c{width:5.16in;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-5953273d{width:1.033in;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-5953273e{width:2.153in;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-59532744{width:5.16in;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-59532745{width:1.033in;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-59532746{width:2.153in;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-5953274e{width:5.16in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-5953274f{width:1.033in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-59532750{width:2.153in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}</style><table data-quarto-disable-processing="true" class="cl-59544f34"><thead><tr style="overflow-wrap:break-word;"><th class="cl-5953271c"><p class="cl-59531e3e"><span class="cl-59525206">Outcome</span></p></th><th class="cl-5953271d"><p class="cl-59531e3e"><span class="cl-59525206">n (%)</span></p></th><th class="cl-59532726"><p class="cl-59531e3e"><span class="cl-59525206">Median days to event (IQR)</span></p></th></tr></thead><tbody><tr style="overflow-wrap:break-word;"><td class="cl-59532727"><p class="cl-59531e3e"><span class="cl-59525206">AKI within 1 year (serial creatinine)</span></p></td><td class="cl-59532728"><p class="cl-59531e3e"><span class="cl-59525206">23 (12.2%)</span></p></td><td class="cl-59532729"><p class="cl-59531e3e"><span class="cl-59525206">94 (60-184)</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-59532727"><p class="cl-59531e3e"><span class="cl-59525206">AKI at any time (reference only, not modelled)</span></p></td><td class="cl-59532728"><p class="cl-59531e3e"><span class="cl-59525206">31 (16.4%)</span></p></td><td class="cl-59532729"><p class="cl-59531e3e"><span class="cl-59525206">132 (68-326)</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-59532730"><p class="cl-59531e3e"><span class="cl-59525206">CKD incidence (&gt;25% eGFR drop to &lt;60, sustained &gt;=90d)</span></p></td><td class="cl-59532731"><p class="cl-59531e3e"><span class="cl-59525206">9 (4.8%)</span></p></td><td class="cl-59532732"><p class="cl-59531e3e"><span class="cl-59525206">273 (172-408)</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-59532733"><p class="cl-59531e3e"><span class="cl-59525206">CKD incidence any (&gt;=60 to &lt;60, sustained &gt;=90d, no % drop)</span></p></td><td class="cl-5953273a"><p class="cl-59531e3e"><span class="cl-59525206">20 (10.6%)</span></p></td><td class="cl-5953273b"><p class="cl-59531e3e"><span class="cl-59525206">265 (112-440)</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-5953273c"><p class="cl-59531e3e"><span class="cl-59525206">CKD progression (&lt;60 at baseline, further &gt;30% drop, sustained &gt;=90d)</span></p></td><td class="cl-5953273d"><p class="cl-59531e3e"><span class="cl-59525206">2 (1.1%)</span></p></td><td class="cl-5953273e"><p class="cl-59531e3e"><span class="cl-59525206">430 (425-436)</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-59532744"><p class="cl-59531e3e"><span class="cl-59525206">ESKD (eGFR &lt;10, sustained &gt;=90d)</span></p></td><td class="cl-59532745"><p class="cl-59531e3e"><span class="cl-59525206">1 (0.5%)</span></p></td><td class="cl-59532746"><p class="cl-59531e3e"><span class="cl-59525206">-</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-59532733"><p class="cl-59531e3e"><span class="cl-59525206">ESRD / kidney transplant after baseline</span></p></td><td class="cl-5953273a"><p class="cl-59531e3e"><span class="cl-59525206">1 (0.5%)</span></p></td><td class="cl-5953273b"><p class="cl-59531e3e"><span class="cl-59525206">-</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-59532730"><p class="cl-59531e3e"><span class="cl-59525206">ESKD composite</span></p></td><td class="cl-59532731"><p class="cl-59531e3e"><span class="cl-59525206">1 (0.5%)</span></p></td><td class="cl-59532732"><p class="cl-59531e3e"><span class="cl-59525206">38 (38-38)</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-5953274e"><p class="cl-59531e3e"><span class="cl-59525206">CKD composite (incidence + progression + ESKD composite)</span></p></td><td class="cl-5953274f"><p class="cl-59531e3e"><span class="cl-59525206">11 (5.8%)</span></p></td><td class="cl-59532750"><p class="cl-59531e3e"><span class="cl-59525206">273 (160-414)</span></p></td></tr></tbody></table></div>
+<div class="tabwid"><style>.cl-230829ec{}.cl-23063042{font-family:'Helvetica';font-size:11pt;font-weight:normal;font-style:normal;text-decoration:none;color:rgba(0, 0, 0, 1.00);background-color:transparent;}.cl-2306fa0e{margin:0;text-align:left;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);padding-bottom:5pt;padding-top:5pt;padding-left:5pt;padding-right:5pt;line-height: 1;background-color:transparent;}.cl-2307031e{width:5.16in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 1.5pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-2307031f{width:1.033in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 1.5pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-23070320{width:2.153in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 1.5pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-23070321{width:5.16in;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-23070328{width:1.033in;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-23070329{width:2.153in;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-2307032a{width:5.16in;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-2307032b{width:1.033in;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-2307032c{width:2.153in;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-23070332{width:5.16in;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-23070333{width:1.033in;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-23070334{width:2.153in;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-23070335{width:5.16in;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-2307033c{width:1.033in;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-2307033d{width:2.153in;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-2307033e{width:5.16in;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-2307033f{width:1.033in;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-23070346{width:2.153in;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-23070347{width:5.16in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-23070348{width:1.033in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-23070349{width:2.153in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}</style><table data-quarto-disable-processing="true" class="cl-230829ec"><thead><tr style="overflow-wrap:break-word;"><th class="cl-2307031e"><p class="cl-2306fa0e"><span class="cl-23063042">Outcome</span></p></th><th class="cl-2307031f"><p class="cl-2306fa0e"><span class="cl-23063042">n (%)</span></p></th><th class="cl-23070320"><p class="cl-2306fa0e"><span class="cl-23063042">Median days to event (IQR)</span></p></th></tr></thead><tbody><tr style="overflow-wrap:break-word;"><td class="cl-23070321"><p class="cl-2306fa0e"><span class="cl-23063042">AKI within 1 year (serial creatinine)</span></p></td><td class="cl-23070328"><p class="cl-2306fa0e"><span class="cl-23063042">23 (12.2%)</span></p></td><td class="cl-23070329"><p class="cl-2306fa0e"><span class="cl-23063042">94 (60-184)</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-23070321"><p class="cl-2306fa0e"><span class="cl-23063042">AKI at any time (reference only, not modelled)</span></p></td><td class="cl-23070328"><p class="cl-2306fa0e"><span class="cl-23063042">31 (16.4%)</span></p></td><td class="cl-23070329"><p class="cl-2306fa0e"><span class="cl-23063042">132 (68-326)</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-2307032a"><p class="cl-2306fa0e"><span class="cl-23063042">CKD incidence (&gt;25% eGFR drop to &lt;60, sustained &gt;=90d)</span></p></td><td class="cl-2307032b"><p class="cl-2306fa0e"><span class="cl-23063042">9 (4.8%)</span></p></td><td class="cl-2307032c"><p class="cl-2306fa0e"><span class="cl-23063042">273 (172-408)</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-23070332"><p class="cl-2306fa0e"><span class="cl-23063042">CKD incidence any (&gt;=60 to &lt;60, sustained &gt;=90d, no % drop)</span></p></td><td class="cl-23070333"><p class="cl-2306fa0e"><span class="cl-23063042">20 (10.6%)</span></p></td><td class="cl-23070334"><p class="cl-2306fa0e"><span class="cl-23063042">265 (112-440)</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-23070335"><p class="cl-2306fa0e"><span class="cl-23063042">CKD progression (&lt;60 at baseline, further &gt;30% drop, sustained &gt;=90d)</span></p></td><td class="cl-2307033c"><p class="cl-2306fa0e"><span class="cl-23063042">2 (1.1%)</span></p></td><td class="cl-2307033d"><p class="cl-2306fa0e"><span class="cl-23063042">430 (425-436)</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-2307033e"><p class="cl-2306fa0e"><span class="cl-23063042">ESKD (eGFR &lt;10, sustained &gt;=90d)</span></p></td><td class="cl-2307033f"><p class="cl-2306fa0e"><span class="cl-23063042">1 (0.5%)</span></p></td><td class="cl-23070346"><p class="cl-2306fa0e"><span class="cl-23063042">-</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-23070332"><p class="cl-2306fa0e"><span class="cl-23063042">ESRD / kidney transplant after baseline</span></p></td><td class="cl-23070333"><p class="cl-2306fa0e"><span class="cl-23063042">1 (0.5%)</span></p></td><td class="cl-23070334"><p class="cl-2306fa0e"><span class="cl-23063042">-</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-2307032a"><p class="cl-2306fa0e"><span class="cl-23063042">ESKD composite</span></p></td><td class="cl-2307032b"><p class="cl-2306fa0e"><span class="cl-23063042">1 (0.5%)</span></p></td><td class="cl-2307032c"><p class="cl-2306fa0e"><span class="cl-23063042">38 (38-38)</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-23070347"><p class="cl-2306fa0e"><span class="cl-23063042">CKD composite (incidence + progression + ESKD composite)</span></p></td><td class="cl-23070348"><p class="cl-2306fa0e"><span class="cl-23063042">11 (5.8%)</span></p></td><td class="cl-23070349"><p class="cl-2306fa0e"><span class="cl-23063042">273 (160-414)</span></p></td></tr></tbody></table></div>
 </div>
 </div>
 <p>Creatinine follow-up actually available for these outcomes, and how the two AKI definitions compare:</p>
@@ -1670,28 +1719,76 @@ serial aki   0   1
 </div>
 </div>
 </section>
+<section id="delta-egfr-creatinine-vs-baseline-at-90-180-365-days" class="level2">
+<h2 class="anchored" data-anchor-id="delta-egfr-creatinine-vs-baseline-at-90-180-365-days">3.3 Delta eGFR (creatinine) vs Baseline at 90 / 180 / 365 Days</h2>
+<p>Change in creatinine eGFR from <code>eGFR_CRE_baseline</code>, using the creatinine <strong>closest to each mark</strong> and taking it only when it falls within <strong>± 45 days</strong> of that mark. Days run from <code>baseline_sample_date</code>. Built in Section 5.16b of <a href="../qmd/ritu_data.html">Data Management</a>.</p>
+<blockquote class="blockquote">
+<p><strong>Negative means decline.</strong> <code>delta_egfr_d90</code> is eGFR at day 90 minus eGFR at baseline, so a fall in kidney function is a negative number — the opposite sign to <code>pct_drop</code> in the data-management pipeline.</p>
+<p>The ± 45-day window matches the window used for every other baseline lab in this pipeline (<code>pre_CRE_45days</code>), and it is the widest window that stops the 90-day and 180-day marks drawing on the same measurement. It costs coverage at the later marks — the <code>n</code> column below shows how much.</p>
+</blockquote>
+<p><a href="../tables/carbo/sec3_3_delta_egfr.docx">📄 Download Word table</a></p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>dgfr_marks <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">90</span>, <span class="dv">180</span>, <span class="dv">365</span>)</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>dgfr_tbl <span class="ot">&lt;-</span> purrr<span class="sc">::</span><span class="fu">map_dfr</span>(dgfr_marks, <span class="cf">function</span>(mk) {</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>  d  <span class="ot">&lt;-</span> dat[[<span class="fu">paste0</span>(<span class="st">"delta_egfr_d"</span>, mk)]]</span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>  dp <span class="ot">&lt;-</span> dat[[<span class="fu">paste0</span>(<span class="st">"delta_egfr_pct_d"</span>, mk)]]</span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>  dy <span class="ot">&lt;-</span> dat[[<span class="fu">paste0</span>(<span class="st">"cre_day_d"</span>, mk)]]</span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>  g  <span class="ot">&lt;-</span> dat[[<span class="fu">paste0</span>(<span class="st">"eGFR_CRE_d"</span>, mk)]]</span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>  ok <span class="ot">&lt;-</span> <span class="sc">!</span><span class="fu">is.na</span>(d)</span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>  q3 <span class="ot">&lt;-</span> <span class="cf">function</span>(x) <span class="fu">sprintf</span>(<span class="st">"%.1f [%.1f, %.1f]"</span>,</span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>         <span class="fu">median</span>(x), <span class="fu">quantile</span>(x, .<span class="dv">25</span>), <span class="fu">quantile</span>(x, .<span class="dv">75</span>))</span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a>  tibble<span class="sc">::</span><span class="fu">tibble</span>(</span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">Mark =</span> <span class="fu">paste0</span>(<span class="st">"Day "</span>, mk),</span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> <span class="fu">sum</span>(ok),</span>
+<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a>    <span class="st">`</span><span class="at">% of cohort</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">round</span>(<span class="dv">100</span> <span class="sc">*</span> <span class="fu">sum</span>(ok) <span class="sc">/</span> <span class="fu">nrow</span>(dat), <span class="dv">1</span>),</span>
+<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a>    <span class="st">`</span><span class="at">Actual day</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">sprintf</span>(<span class="st">"%.0f [%.0f, %.0f]"</span>,</span>
+<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a>      <span class="fu">median</span>(dy[ok]), <span class="fu">quantile</span>(dy[ok], .<span class="dv">25</span>), <span class="fu">quantile</span>(dy[ok], .<span class="dv">75</span>)),</span>
+<span id="cb17-17"><a href="#cb17-17" aria-hidden="true" tabindex="-1"></a>    <span class="st">`</span><span class="at">eGFR at mark</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">q3</span>(g[ok]),</span>
+<span id="cb17-18"><a href="#cb17-18" aria-hidden="true" tabindex="-1"></a>    <span class="st">`</span><span class="at">Delta eGFR</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">q3</span>(d[ok]),</span>
+<span id="cb17-19"><a href="#cb17-19" aria-hidden="true" tabindex="-1"></a>    <span class="st">`</span><span class="at">Delta eGFR (%)</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">q3</span>(dp[ok]),</span>
+<span id="cb17-20"><a href="#cb17-20" aria-hidden="true" tabindex="-1"></a>    <span class="st">`</span><span class="at">Fell &gt; 25 %</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">sprintf</span>(<span class="st">"%d (%.1f%%)"</span>, <span class="fu">sum</span>(dp[ok] <span class="sc">&lt;</span> <span class="sc">-</span><span class="dv">25</span>),</span>
+<span id="cb17-21"><a href="#cb17-21" aria-hidden="true" tabindex="-1"></a>                            <span class="dv">100</span> <span class="sc">*</span> <span class="fu">sum</span>(dp[ok] <span class="sc">&lt;</span> <span class="sc">-</span><span class="dv">25</span>) <span class="sc">/</span> <span class="fu">sum</span>(ok))</span>
+<span id="cb17-22"><a href="#cb17-22" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb17-23"><a href="#cb17-23" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb17-24"><a href="#cb17-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-25"><a href="#cb17-25" aria-hidden="true" tabindex="-1"></a>ft_dgfr <span class="ot">&lt;-</span> flextable<span class="sc">::</span><span class="fu">flextable</span>(dgfr_tbl) <span class="sc">|&gt;</span></span>
+<span id="cb17-26"><a href="#cb17-26" aria-hidden="true" tabindex="-1"></a>  flextable<span class="sc">::</span><span class="fu">set_caption</span>(<span class="fu">sprintf</span>(<span class="fu">paste0</span>(</span>
+<span id="cb17-27"><a href="#cb17-27" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Delta eGFR (creatinine) vs baseline, N = %d. eGFR in mL/min/1.73m², "</span>,</span>
+<span id="cb17-28"><a href="#cb17-28" aria-hidden="true" tabindex="-1"></a>    <span class="st">"median [IQR] throughout. Negative = decline from baseline."</span>), <span class="fu">nrow</span>(dat))) <span class="sc">|&gt;</span></span>
+<span id="cb17-29"><a href="#cb17-29" aria-hidden="true" tabindex="-1"></a>  flextable<span class="sc">::</span><span class="fu">autofit</span>()</span>
+<span id="cb17-30"><a href="#cb17-30" aria-hidden="true" tabindex="-1"></a>flextable<span class="sc">::</span><span class="fu">save_as_docx</span>(ft_dgfr, <span class="at">path =</span> <span class="fu">file.path</span>(docx_dir, <span class="st">"sec3_3_delta_egfr.docx"</span>))</span>
+<span id="cb17-31"><a href="#cb17-31" aria-hidden="true" tabindex="-1"></a>ft_dgfr</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output-display">
+<div class="tabwid"><style>.cl-231af432{}.cl-2318f15a{font-family:'Helvetica';font-size:11pt;font-weight:normal;font-style:normal;text-decoration:none;color:rgba(0, 0, 0, 1.00);background-color:transparent;}.cl-2319bc98{margin:0;text-align:left;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);padding-bottom:5pt;padding-top:5pt;padding-left:5pt;padding-right:5pt;line-height: 1;background-color:transparent;}.cl-2319bc99{margin:0;text-align:right;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);padding-bottom:5pt;padding-top:5pt;padding-left:5pt;padding-right:5pt;line-height: 1;background-color:transparent;}.cl-2319c5bc{width:0.854in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 1.5pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-2319c5c6{width:0.54in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 1.5pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-2319c5c7{width:1.058in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 1.5pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-2319c5c8{width:1.262in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 1.5pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-2319c5c9{width:1.389in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 1.5pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-2319c5ca{width:1.321in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 1.5pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-2319c5d0{width:1.372in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 1.5pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-2319c5d1{width:1.054in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 1.5pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-2319c5d2{width:0.854in;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-2319c5d3{width:0.54in;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-2319c5da{width:1.058in;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-2319c5db{width:1.262in;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-2319c5dc{width:1.389in;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-2319c5dd{width:1.321in;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-2319c5de{width:1.372in;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-2319c5e4{width:1.054in;background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-2319c5e5{width:0.854in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-2319c5e6{width:0.54in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-2319c5e7{width:1.058in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-2319c5ee{width:1.262in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-2319c5ef{width:1.389in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-2319c5f0{width:1.321in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-2319c5f1{width:1.372in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-2319c5f8{width:1.054in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}</style><table data-quarto-disable-processing="true" class="cl-231af432"><thead><tr style="overflow-wrap:break-word;"><th class="cl-2319c5bc"><p class="cl-2319bc98"><span class="cl-2318f15a">Mark</span></p></th><th class="cl-2319c5c6"><p class="cl-2319bc99"><span class="cl-2318f15a">n</span></p></th><th class="cl-2319c5c7"><p class="cl-2319bc99"><span class="cl-2318f15a">% of cohort</span></p></th><th class="cl-2319c5c8"><p class="cl-2319bc98"><span class="cl-2318f15a">Actual day</span></p></th><th class="cl-2319c5c9"><p class="cl-2319bc98"><span class="cl-2318f15a">eGFR at mark</span></p></th><th class="cl-2319c5ca"><p class="cl-2319bc98"><span class="cl-2318f15a">Delta eGFR</span></p></th><th class="cl-2319c5d0"><p class="cl-2319bc98"><span class="cl-2318f15a">Delta eGFR (%)</span></p></th><th class="cl-2319c5d1"><p class="cl-2319bc98"><span class="cl-2318f15a">Fell &gt; 25 %</span></p></th></tr></thead><tbody><tr style="overflow-wrap:break-word;"><td class="cl-2319c5d2"><p class="cl-2319bc98"><span class="cl-2318f15a">Day 90</span></p></td><td class="cl-2319c5d3"><p class="cl-2319bc99"><span class="cl-2318f15a">173</span></p></td><td class="cl-2319c5da"><p class="cl-2319bc99"><span class="cl-2318f15a">91.5</span></p></td><td class="cl-2319c5db"><p class="cl-2319bc98"><span class="cl-2318f15a">84 [82, 90]</span></p></td><td class="cl-2319c5dc"><p class="cl-2319bc98"><span class="cl-2318f15a">90.1 [78.6, 99.6]</span></p></td><td class="cl-2319c5dd"><p class="cl-2319bc98"><span class="cl-2318f15a">2.0 [-2.8, 7.4]</span></p></td><td class="cl-2319c5de"><p class="cl-2319bc98"><span class="cl-2318f15a">2.2 [-3.6, 9.1]</span></p></td><td class="cl-2319c5e4"><p class="cl-2319bc98"><span class="cl-2318f15a">4 (2.3%)</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-2319c5d2"><p class="cl-2319bc98"><span class="cl-2318f15a">Day 180</span></p></td><td class="cl-2319c5d3"><p class="cl-2319bc99"><span class="cl-2318f15a">146</span></p></td><td class="cl-2319c5da"><p class="cl-2319bc99"><span class="cl-2318f15a">77.2</span></p></td><td class="cl-2319c5db"><p class="cl-2319bc98"><span class="cl-2318f15a">180 [167, 189]</span></p></td><td class="cl-2319c5dc"><p class="cl-2319bc98"><span class="cl-2318f15a">86.2 [69.8, 98.4]</span></p></td><td class="cl-2319c5dd"><p class="cl-2319bc98"><span class="cl-2318f15a">-0.6 [-8.5, 3.7]</span></p></td><td class="cl-2319c5de"><p class="cl-2319bc98"><span class="cl-2318f15a">-0.6 [-9.5, 4.0]</span></p></td><td class="cl-2319c5e4"><p class="cl-2319bc98"><span class="cl-2318f15a">11 (7.5%)</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-2319c5e5"><p class="cl-2319bc98"><span class="cl-2318f15a">Day 365</span></p></td><td class="cl-2319c5e6"><p class="cl-2319bc99"><span class="cl-2318f15a">107</span></p></td><td class="cl-2319c5e7"><p class="cl-2319bc99"><span class="cl-2318f15a">56.6</span></p></td><td class="cl-2319c5ee"><p class="cl-2319bc98"><span class="cl-2318f15a">360 [350, 368]</span></p></td><td class="cl-2319c5ef"><p class="cl-2319bc98"><span class="cl-2318f15a">82.9 [64.8, 94.2]</span></p></td><td class="cl-2319c5f0"><p class="cl-2319bc98"><span class="cl-2318f15a">-3.9 [-13.6, 2.5]</span></p></td><td class="cl-2319c5f1"><p class="cl-2319bc98"><span class="cl-2318f15a">-4.9 [-17.2, 3.2]</span></p></td><td class="cl-2319c5f8"><p class="cl-2319bc98"><span class="cl-2318f15a">13 (12.1%)</span></p></td></tr></tbody></table></div>
+</div>
+</div>
+</section>
 </section>
 <section id="egfr-ratio-distribution-carboplatin" class="level1">
 <h1>4 eGFR Ratio Distribution (Carboplatin)</h1>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>ratio_hist <span class="ot">&lt;-</span> dat <span class="sc">%&gt;%</span></span>
-<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(egfr_ratio)) <span class="sc">%&gt;%</span></span>
-<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">side =</span> <span class="fu">ifelse</span>(egfr_ratio <span class="sc">&lt;</span> <span class="dv">1</span>, <span class="st">"neg"</span>, <span class="st">"pos"</span>))</span>
-<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(ratio_hist, <span class="fu">aes</span>(<span class="at">x =</span> egfr_ratio, <span class="at">fill =</span> side)) <span class="sc">+</span></span>
-<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_histogram</span>(<span class="fu">aes</span>(<span class="at">y =</span> <span class="fu">after_stat</span>(count) <span class="sc">/</span> <span class="fu">sum</span>(<span class="fu">after_stat</span>(count)) <span class="sc">*</span> <span class="dv">100</span>),</span>
-<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>                 <span class="at">binwidth =</span> <span class="fl">0.1</span>, <span class="at">boundary =</span> <span class="dv">0</span>,</span>
-<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>                 <span class="at">color =</span> <span class="st">"black"</span>, <span class="at">alpha =</span> <span class="fl">0.85</span>) <span class="sc">+</span></span>
-<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_vline</span>(<span class="at">xintercept =</span> <span class="dv">1</span>, <span class="at">linetype =</span> <span class="st">"dashed"</span>, <span class="at">color =</span> <span class="st">"grey30"</span>) <span class="sc">+</span></span>
-<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="at">neg =</span> <span class="st">"#E31A1C"</span>, <span class="at">pos =</span> <span class="st">"grey60"</span>),</span>
-<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a>                    <span class="at">guide =</span> <span class="st">"none"</span>) <span class="sc">+</span></span>
-<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Distribution of eGFR Ratio (Carboplatin)"</span>,</span>
-<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">"eGFR Ratio"</span>,</span>
-<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"Percent of Patients (%)"</span>) <span class="sc">+</span></span>
-<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(<span class="at">breaks =</span> <span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">3</span>, <span class="fl">0.2</span>)) <span class="sc">+</span></span>
-<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>(<span class="at">base_size =</span> <span class="dv">14</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>ratio_hist <span class="ot">&lt;-</span> dat <span class="sc">%&gt;%</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(egfr_ratio)) <span class="sc">%&gt;%</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">side =</span> <span class="fu">ifelse</span>(egfr_ratio <span class="sc">&lt;</span> <span class="dv">1</span>, <span class="st">"neg"</span>, <span class="st">"pos"</span>))</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(ratio_hist, <span class="fu">aes</span>(<span class="at">x =</span> egfr_ratio, <span class="at">fill =</span> side)) <span class="sc">+</span></span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_histogram</span>(<span class="fu">aes</span>(<span class="at">y =</span> <span class="fu">after_stat</span>(count) <span class="sc">/</span> <span class="fu">sum</span>(<span class="fu">after_stat</span>(count)) <span class="sc">*</span> <span class="dv">100</span>),</span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>                 <span class="at">binwidth =</span> <span class="fl">0.1</span>, <span class="at">boundary =</span> <span class="dv">0</span>,</span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>                 <span class="at">color =</span> <span class="st">"black"</span>, <span class="at">alpha =</span> <span class="fl">0.85</span>) <span class="sc">+</span></span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_vline</span>(<span class="at">xintercept =</span> <span class="dv">1</span>, <span class="at">linetype =</span> <span class="st">"dashed"</span>, <span class="at">color =</span> <span class="st">"grey30"</span>) <span class="sc">+</span></span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="at">neg =</span> <span class="st">"#E31A1C"</span>, <span class="at">pos =</span> <span class="st">"grey60"</span>),</span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>                    <span class="at">guide =</span> <span class="st">"none"</span>) <span class="sc">+</span></span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Distribution of eGFR Ratio (Carboplatin)"</span>,</span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">"eGFR Ratio"</span>,</span>
+<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"Percent of Patients (%)"</span>) <span class="sc">+</span></span>
+<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(<span class="at">breaks =</span> <span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">3</span>, <span class="fl">0.2</span>)) <span class="sc">+</span></span>
+<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>(<span class="at">base_size =</span> <span class="dv">14</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -1711,98 +1808,98 @@ serial aki   0   1
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>.adj_set <span class="ot">&lt;-</span> <span class="cf">function</span>(pre_labs, egfr_adj) {</span>
-<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>  adj <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"age"</span>,<span class="st">"sex"</span>,<span class="st">"score"</span>,<span class="st">"ecog_score_cat2"</span>,</span>
-<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>           <span class="st">"cancer_type_cat_7"</span>,<span class="st">"high_dose"</span>,</span>
-<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>           <span class="st">"Paclitaxel"</span>,<span class="st">"Pemetrexed"</span>,<span class="st">"Gemcitabine"</span>,<span class="st">"ici"</span>,</span>
-<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>           <span class="st">"bmi"</span>,<span class="st">"smoking"</span>,<span class="st">"steroids"</span>,<span class="st">"thyroid"</span>)</span>
-<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (egfr_adj <span class="sc">==</span> <span class="st">"cockcroft"</span>) adj <span class="ot">&lt;-</span> <span class="fu">c</span>(adj, <span class="st">"cockcroft"</span>)</span>
-<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (egfr_adj <span class="sc">==</span> <span class="st">"ckd_epi"</span>)   adj <span class="ot">&lt;-</span> <span class="fu">c</span>(adj, <span class="st">"ckd_epi_gfr_cre_cys_unindex"</span>)</span>
-<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.null</span>(pre_labs)) adj <span class="ot">&lt;-</span> <span class="fu">c</span>(adj, pre_labs)</span>
-<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>  adj</span>
-<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a><span class="co"># fg_model: returns univariable + multivariable merged Fine-Gray table.</span></span>
-<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a><span class="co"># If docx_name is supplied, also saves the table as a .docx in docx_dir.</span></span>
-<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a>fg_model <span class="ot">&lt;-</span> <span class="cf">function</span>(time_var, status_var, pred_var, <span class="at">pre_labs =</span> <span class="cn">NULL</span>,</span>
-<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a>                     <span class="at">egfr_adj =</span> <span class="fu">c</span>(<span class="st">"none"</span>, <span class="st">"cockcroft"</span>, <span class="st">"ckd_epi"</span>),</span>
-<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a>                     <span class="at">docx_name =</span> <span class="cn">NULL</span>) {</span>
-<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a>  egfr_adj <span class="ot">&lt;-</span> <span class="fu">match.arg</span>(egfr_adj)</span>
-<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a>  adj <span class="ot">&lt;-</span> <span class="fu">.adj_set</span>(pre_labs, egfr_adj)</span>
-<span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a>  all_vars <span class="ot">&lt;-</span> <span class="fu">c</span>(pred_var, adj)</span>
-<span id="cb18-20"><a href="#cb18-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-21"><a href="#cb18-21" aria-hidden="true" tabindex="-1"></a>  fmla_mv <span class="ot">&lt;-</span> <span class="fu">as.formula</span>(<span class="fu">paste0</span>(</span>
-<span id="cb18-22"><a href="#cb18-22" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Surv("</span>, time_var, <span class="st">", "</span>, status_var, <span class="st">") ~ "</span>,</span>
-<span id="cb18-23"><a href="#cb18-23" aria-hidden="true" tabindex="-1"></a>    <span class="fu">paste</span>(all_vars, <span class="at">collapse =</span> <span class="st">" + "</span>)</span>
-<span id="cb18-24"><a href="#cb18-24" aria-hidden="true" tabindex="-1"></a>  ))</span>
-<span id="cb18-25"><a href="#cb18-25" aria-hidden="true" tabindex="-1"></a>  tbl_mv <span class="ot">&lt;-</span> tidycmprsk<span class="sc">::</span><span class="fu">crr</span>(fmla_mv, <span class="at">failcode =</span> <span class="dv">1</span>, <span class="at">data =</span> dat) <span class="sc">%&gt;%</span></span>
-<span id="cb18-26"><a href="#cb18-26" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tbl_regression</span>(<span class="at">exp =</span> <span class="cn">TRUE</span>,</span>
-<span id="cb18-27"><a href="#cb18-27" aria-hidden="true" tabindex="-1"></a>                   <span class="at">pvalue_fun =</span> <span class="cf">function</span>(x) <span class="fu">style_pvalue</span>(x, <span class="at">digits =</span> <span class="dv">3</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb18-28"><a href="#cb18-28" aria-hidden="true" tabindex="-1"></a>    <span class="fu">add_n</span>()</span>
-<span id="cb18-29"><a href="#cb18-29" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-30"><a href="#cb18-30" aria-hidden="true" tabindex="-1"></a>  y_call <span class="ot">&lt;-</span> <span class="fu">str2lang</span>(<span class="fu">sprintf</span>(<span class="st">"Surv(%s, %s)"</span>, time_var, status_var))</span>
-<span id="cb18-31"><a href="#cb18-31" aria-hidden="true" tabindex="-1"></a>  tbl_uv <span class="ot">&lt;-</span> rlang<span class="sc">::</span><span class="fu">inject</span>(</span>
-<span id="cb18-32"><a href="#cb18-32" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tbl_uvregression</span>(</span>
-<span id="cb18-33"><a href="#cb18-33" aria-hidden="true" tabindex="-1"></a>      <span class="at">data =</span> dat,</span>
-<span id="cb18-34"><a href="#cb18-34" aria-hidden="true" tabindex="-1"></a>      <span class="at">method =</span> tidycmprsk<span class="sc">::</span>crr,</span>
-<span id="cb18-35"><a href="#cb18-35" aria-hidden="true" tabindex="-1"></a>      <span class="at">y =</span> <span class="sc">!!</span>y_call,</span>
-<span id="cb18-36"><a href="#cb18-36" aria-hidden="true" tabindex="-1"></a>      <span class="at">include =</span> dplyr<span class="sc">::</span><span class="fu">all_of</span>(all_vars),</span>
-<span id="cb18-37"><a href="#cb18-37" aria-hidden="true" tabindex="-1"></a>      <span class="at">exponentiate =</span> <span class="cn">TRUE</span>,</span>
-<span id="cb18-38"><a href="#cb18-38" aria-hidden="true" tabindex="-1"></a>      <span class="at">pvalue_fun =</span> <span class="cf">function</span>(x) <span class="fu">style_pvalue</span>(x, <span class="at">digits =</span> <span class="dv">3</span>),</span>
-<span id="cb18-39"><a href="#cb18-39" aria-hidden="true" tabindex="-1"></a>      <span class="at">method.args =</span> <span class="fu">list</span>(<span class="at">failcode =</span> <span class="dv">1</span>)</span>
-<span id="cb18-40"><a href="#cb18-40" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb18-41"><a href="#cb18-41" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb18-42"><a href="#cb18-42" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-43"><a href="#cb18-43" aria-hidden="true" tabindex="-1"></a>  out <span class="ot">&lt;-</span> <span class="fu">tbl_merge</span>(</span>
-<span id="cb18-44"><a href="#cb18-44" aria-hidden="true" tabindex="-1"></a>    <span class="at">tbls =</span> <span class="fu">list</span>(tbl_uv, tbl_mv),</span>
-<span id="cb18-45"><a href="#cb18-45" aria-hidden="true" tabindex="-1"></a>    <span class="at">tab_spanner =</span> <span class="fu">c</span>(<span class="st">"**Univariable**"</span>, <span class="st">"**Multivariable**"</span>)</span>
-<span id="cb18-46"><a href="#cb18-46" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb18-47"><a href="#cb18-47" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-48"><a href="#cb18-48" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.null</span>(docx_name)) <span class="fu">save_tbl_docx</span>(out, docx_name)</span>
-<span id="cb18-49"><a href="#cb18-49" aria-hidden="true" tabindex="-1"></a>  out</span>
-<span id="cb18-50"><a href="#cb18-50" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb18-51"><a href="#cb18-51" aria-hidden="true" tabindex="-1"></a><span class="co"># Ritu: guard against unfittable sparse-outcome models.</span></span>
-<span id="cb18-52"><a href="#cb18-52" aria-hidden="true" tabindex="-1"></a>fg_model <span class="ot">&lt;-</span> <span class="fu">.wrap_tbl</span>(fg_model)</span>
-<span id="cb18-53"><a href="#cb18-53" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-54"><a href="#cb18-54" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-55"><a href="#cb18-55" aria-hidden="true" tabindex="-1"></a>cox_model <span class="ot">&lt;-</span> <span class="cf">function</span>(time_var, status_var, pred_var, <span class="at">pre_labs =</span> <span class="cn">NULL</span>,</span>
-<span id="cb18-56"><a href="#cb18-56" aria-hidden="true" tabindex="-1"></a>                      <span class="at">egfr_adj =</span> <span class="fu">c</span>(<span class="st">"none"</span>, <span class="st">"cockcroft"</span>, <span class="st">"ckd_epi"</span>),</span>
-<span id="cb18-57"><a href="#cb18-57" aria-hidden="true" tabindex="-1"></a>                      <span class="at">docx_name =</span> <span class="cn">NULL</span>) {</span>
-<span id="cb18-58"><a href="#cb18-58" aria-hidden="true" tabindex="-1"></a>  egfr_adj <span class="ot">&lt;-</span> <span class="fu">match.arg</span>(egfr_adj)</span>
-<span id="cb18-59"><a href="#cb18-59" aria-hidden="true" tabindex="-1"></a>  adj <span class="ot">&lt;-</span> <span class="fu">.adj_set</span>(pre_labs, egfr_adj)</span>
-<span id="cb18-60"><a href="#cb18-60" aria-hidden="true" tabindex="-1"></a>  all_vars <span class="ot">&lt;-</span> <span class="fu">c</span>(pred_var, adj)</span>
-<span id="cb18-61"><a href="#cb18-61" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-62"><a href="#cb18-62" aria-hidden="true" tabindex="-1"></a>  fmla_mv <span class="ot">&lt;-</span> <span class="fu">as.formula</span>(<span class="fu">paste0</span>(</span>
-<span id="cb18-63"><a href="#cb18-63" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Surv("</span>, time_var, <span class="st">", "</span>, status_var, <span class="st">") ~ "</span>,</span>
-<span id="cb18-64"><a href="#cb18-64" aria-hidden="true" tabindex="-1"></a>    <span class="fu">paste</span>(all_vars, <span class="at">collapse =</span> <span class="st">" + "</span>)</span>
-<span id="cb18-65"><a href="#cb18-65" aria-hidden="true" tabindex="-1"></a>  ))</span>
-<span id="cb18-66"><a href="#cb18-66" aria-hidden="true" tabindex="-1"></a>  tbl_mv <span class="ot">&lt;-</span> survival<span class="sc">::</span><span class="fu">coxph</span>(fmla_mv, <span class="at">data =</span> dat) <span class="sc">%&gt;%</span></span>
-<span id="cb18-67"><a href="#cb18-67" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tbl_regression</span>(<span class="at">exp =</span> <span class="cn">TRUE</span>,</span>
-<span id="cb18-68"><a href="#cb18-68" aria-hidden="true" tabindex="-1"></a>                   <span class="at">pvalue_fun =</span> <span class="cf">function</span>(x) <span class="fu">style_pvalue</span>(x, <span class="at">digits =</span> <span class="dv">3</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb18-69"><a href="#cb18-69" aria-hidden="true" tabindex="-1"></a>    <span class="fu">add_n</span>()</span>
-<span id="cb18-70"><a href="#cb18-70" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-71"><a href="#cb18-71" aria-hidden="true" tabindex="-1"></a>  y_call <span class="ot">&lt;-</span> <span class="fu">str2lang</span>(<span class="fu">sprintf</span>(<span class="st">"Surv(%s, %s)"</span>, time_var, status_var))</span>
-<span id="cb18-72"><a href="#cb18-72" aria-hidden="true" tabindex="-1"></a>  tbl_uv <span class="ot">&lt;-</span> rlang<span class="sc">::</span><span class="fu">inject</span>(</span>
-<span id="cb18-73"><a href="#cb18-73" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tbl_uvregression</span>(</span>
-<span id="cb18-74"><a href="#cb18-74" aria-hidden="true" tabindex="-1"></a>      <span class="at">data =</span> dat,</span>
-<span id="cb18-75"><a href="#cb18-75" aria-hidden="true" tabindex="-1"></a>      <span class="at">method =</span> survival<span class="sc">::</span>coxph,</span>
-<span id="cb18-76"><a href="#cb18-76" aria-hidden="true" tabindex="-1"></a>      <span class="at">y =</span> <span class="sc">!!</span>y_call,</span>
-<span id="cb18-77"><a href="#cb18-77" aria-hidden="true" tabindex="-1"></a>      <span class="at">include =</span> dplyr<span class="sc">::</span><span class="fu">all_of</span>(all_vars),</span>
-<span id="cb18-78"><a href="#cb18-78" aria-hidden="true" tabindex="-1"></a>      <span class="at">exponentiate =</span> <span class="cn">TRUE</span>,</span>
-<span id="cb18-79"><a href="#cb18-79" aria-hidden="true" tabindex="-1"></a>      <span class="at">pvalue_fun =</span> <span class="cf">function</span>(x) <span class="fu">style_pvalue</span>(x, <span class="at">digits =</span> <span class="dv">3</span>)</span>
-<span id="cb18-80"><a href="#cb18-80" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb18-81"><a href="#cb18-81" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb18-82"><a href="#cb18-82" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-83"><a href="#cb18-83" aria-hidden="true" tabindex="-1"></a>  out <span class="ot">&lt;-</span> <span class="fu">tbl_merge</span>(</span>
-<span id="cb18-84"><a href="#cb18-84" aria-hidden="true" tabindex="-1"></a>    <span class="at">tbls =</span> <span class="fu">list</span>(tbl_uv, tbl_mv),</span>
-<span id="cb18-85"><a href="#cb18-85" aria-hidden="true" tabindex="-1"></a>    <span class="at">tab_spanner =</span> <span class="fu">c</span>(<span class="st">"**Univariable**"</span>, <span class="st">"**Multivariable**"</span>)</span>
-<span id="cb18-86"><a href="#cb18-86" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb18-87"><a href="#cb18-87" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-88"><a href="#cb18-88" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.null</span>(docx_name)) <span class="fu">save_tbl_docx</span>(out, docx_name)</span>
-<span id="cb18-89"><a href="#cb18-89" aria-hidden="true" tabindex="-1"></a>  out</span>
-<span id="cb18-90"><a href="#cb18-90" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb18-91"><a href="#cb18-91" aria-hidden="true" tabindex="-1"></a><span class="co"># Ritu: guard against unfittable sparse-outcome models.</span></span>
-<span id="cb18-92"><a href="#cb18-92" aria-hidden="true" tabindex="-1"></a>cox_model <span class="ot">&lt;-</span> <span class="fu">.wrap_tbl</span>(cox_model)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>.adj_set <span class="ot">&lt;-</span> <span class="cf">function</span>(pre_labs, egfr_adj) {</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>  adj <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"age"</span>,<span class="st">"sex"</span>,<span class="st">"score"</span>,<span class="st">"ecog_score_cat2"</span>,</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>           <span class="st">"cancer_type_cat_7"</span>,<span class="st">"high_dose"</span>,</span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>           <span class="st">"Paclitaxel"</span>,<span class="st">"Pemetrexed"</span>,<span class="st">"Gemcitabine"</span>,<span class="st">"ici"</span>,</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>           <span class="st">"bmi"</span>,<span class="st">"smoking"</span>,<span class="st">"steroids"</span>,<span class="st">"thyroid"</span>)</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (egfr_adj <span class="sc">==</span> <span class="st">"cockcroft"</span>) adj <span class="ot">&lt;-</span> <span class="fu">c</span>(adj, <span class="st">"cockcroft"</span>)</span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (egfr_adj <span class="sc">==</span> <span class="st">"ckd_epi"</span>)   adj <span class="ot">&lt;-</span> <span class="fu">c</span>(adj, <span class="st">"ckd_epi_gfr_cre_cys_unindex"</span>)</span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.null</span>(pre_labs)) adj <span class="ot">&lt;-</span> <span class="fu">c</span>(adj, pre_labs)</span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a>  adj</span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a><span class="co"># fg_model: returns univariable + multivariable merged Fine-Gray table.</span></span>
+<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a><span class="co"># If docx_name is supplied, also saves the table as a .docx in docx_dir.</span></span>
+<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a>fg_model <span class="ot">&lt;-</span> <span class="cf">function</span>(time_var, status_var, pred_var, <span class="at">pre_labs =</span> <span class="cn">NULL</span>,</span>
+<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a>                     <span class="at">egfr_adj =</span> <span class="fu">c</span>(<span class="st">"none"</span>, <span class="st">"cockcroft"</span>, <span class="st">"ckd_epi"</span>),</span>
+<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a>                     <span class="at">docx_name =</span> <span class="cn">NULL</span>) {</span>
+<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a>  egfr_adj <span class="ot">&lt;-</span> <span class="fu">match.arg</span>(egfr_adj)</span>
+<span id="cb19-18"><a href="#cb19-18" aria-hidden="true" tabindex="-1"></a>  adj <span class="ot">&lt;-</span> <span class="fu">.adj_set</span>(pre_labs, egfr_adj)</span>
+<span id="cb19-19"><a href="#cb19-19" aria-hidden="true" tabindex="-1"></a>  all_vars <span class="ot">&lt;-</span> <span class="fu">c</span>(pred_var, adj)</span>
+<span id="cb19-20"><a href="#cb19-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-21"><a href="#cb19-21" aria-hidden="true" tabindex="-1"></a>  fmla_mv <span class="ot">&lt;-</span> <span class="fu">as.formula</span>(<span class="fu">paste0</span>(</span>
+<span id="cb19-22"><a href="#cb19-22" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Surv("</span>, time_var, <span class="st">", "</span>, status_var, <span class="st">") ~ "</span>,</span>
+<span id="cb19-23"><a href="#cb19-23" aria-hidden="true" tabindex="-1"></a>    <span class="fu">paste</span>(all_vars, <span class="at">collapse =</span> <span class="st">" + "</span>)</span>
+<span id="cb19-24"><a href="#cb19-24" aria-hidden="true" tabindex="-1"></a>  ))</span>
+<span id="cb19-25"><a href="#cb19-25" aria-hidden="true" tabindex="-1"></a>  tbl_mv <span class="ot">&lt;-</span> tidycmprsk<span class="sc">::</span><span class="fu">crr</span>(fmla_mv, <span class="at">failcode =</span> <span class="dv">1</span>, <span class="at">data =</span> dat) <span class="sc">%&gt;%</span></span>
+<span id="cb19-26"><a href="#cb19-26" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tbl_regression</span>(<span class="at">exp =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb19-27"><a href="#cb19-27" aria-hidden="true" tabindex="-1"></a>                   <span class="at">pvalue_fun =</span> <span class="cf">function</span>(x) <span class="fu">style_pvalue</span>(x, <span class="at">digits =</span> <span class="dv">3</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb19-28"><a href="#cb19-28" aria-hidden="true" tabindex="-1"></a>    <span class="fu">add_n</span>()</span>
+<span id="cb19-29"><a href="#cb19-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-30"><a href="#cb19-30" aria-hidden="true" tabindex="-1"></a>  y_call <span class="ot">&lt;-</span> <span class="fu">str2lang</span>(<span class="fu">sprintf</span>(<span class="st">"Surv(%s, %s)"</span>, time_var, status_var))</span>
+<span id="cb19-31"><a href="#cb19-31" aria-hidden="true" tabindex="-1"></a>  tbl_uv <span class="ot">&lt;-</span> rlang<span class="sc">::</span><span class="fu">inject</span>(</span>
+<span id="cb19-32"><a href="#cb19-32" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tbl_uvregression</span>(</span>
+<span id="cb19-33"><a href="#cb19-33" aria-hidden="true" tabindex="-1"></a>      <span class="at">data =</span> dat,</span>
+<span id="cb19-34"><a href="#cb19-34" aria-hidden="true" tabindex="-1"></a>      <span class="at">method =</span> tidycmprsk<span class="sc">::</span>crr,</span>
+<span id="cb19-35"><a href="#cb19-35" aria-hidden="true" tabindex="-1"></a>      <span class="at">y =</span> <span class="sc">!!</span>y_call,</span>
+<span id="cb19-36"><a href="#cb19-36" aria-hidden="true" tabindex="-1"></a>      <span class="at">include =</span> dplyr<span class="sc">::</span><span class="fu">all_of</span>(all_vars),</span>
+<span id="cb19-37"><a href="#cb19-37" aria-hidden="true" tabindex="-1"></a>      <span class="at">exponentiate =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb19-38"><a href="#cb19-38" aria-hidden="true" tabindex="-1"></a>      <span class="at">pvalue_fun =</span> <span class="cf">function</span>(x) <span class="fu">style_pvalue</span>(x, <span class="at">digits =</span> <span class="dv">3</span>),</span>
+<span id="cb19-39"><a href="#cb19-39" aria-hidden="true" tabindex="-1"></a>      <span class="at">method.args =</span> <span class="fu">list</span>(<span class="at">failcode =</span> <span class="dv">1</span>)</span>
+<span id="cb19-40"><a href="#cb19-40" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb19-41"><a href="#cb19-41" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb19-42"><a href="#cb19-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-43"><a href="#cb19-43" aria-hidden="true" tabindex="-1"></a>  out <span class="ot">&lt;-</span> <span class="fu">tbl_merge</span>(</span>
+<span id="cb19-44"><a href="#cb19-44" aria-hidden="true" tabindex="-1"></a>    <span class="at">tbls =</span> <span class="fu">list</span>(tbl_uv, tbl_mv),</span>
+<span id="cb19-45"><a href="#cb19-45" aria-hidden="true" tabindex="-1"></a>    <span class="at">tab_spanner =</span> <span class="fu">c</span>(<span class="st">"**Univariable**"</span>, <span class="st">"**Multivariable**"</span>)</span>
+<span id="cb19-46"><a href="#cb19-46" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb19-47"><a href="#cb19-47" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-48"><a href="#cb19-48" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.null</span>(docx_name)) <span class="fu">save_tbl_docx</span>(out, docx_name)</span>
+<span id="cb19-49"><a href="#cb19-49" aria-hidden="true" tabindex="-1"></a>  out</span>
+<span id="cb19-50"><a href="#cb19-50" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb19-51"><a href="#cb19-51" aria-hidden="true" tabindex="-1"></a><span class="co"># Ritu: guard against unfittable sparse-outcome models.</span></span>
+<span id="cb19-52"><a href="#cb19-52" aria-hidden="true" tabindex="-1"></a>fg_model <span class="ot">&lt;-</span> <span class="fu">.wrap_tbl</span>(fg_model)</span>
+<span id="cb19-53"><a href="#cb19-53" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-54"><a href="#cb19-54" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-55"><a href="#cb19-55" aria-hidden="true" tabindex="-1"></a>cox_model <span class="ot">&lt;-</span> <span class="cf">function</span>(time_var, status_var, pred_var, <span class="at">pre_labs =</span> <span class="cn">NULL</span>,</span>
+<span id="cb19-56"><a href="#cb19-56" aria-hidden="true" tabindex="-1"></a>                      <span class="at">egfr_adj =</span> <span class="fu">c</span>(<span class="st">"none"</span>, <span class="st">"cockcroft"</span>, <span class="st">"ckd_epi"</span>),</span>
+<span id="cb19-57"><a href="#cb19-57" aria-hidden="true" tabindex="-1"></a>                      <span class="at">docx_name =</span> <span class="cn">NULL</span>) {</span>
+<span id="cb19-58"><a href="#cb19-58" aria-hidden="true" tabindex="-1"></a>  egfr_adj <span class="ot">&lt;-</span> <span class="fu">match.arg</span>(egfr_adj)</span>
+<span id="cb19-59"><a href="#cb19-59" aria-hidden="true" tabindex="-1"></a>  adj <span class="ot">&lt;-</span> <span class="fu">.adj_set</span>(pre_labs, egfr_adj)</span>
+<span id="cb19-60"><a href="#cb19-60" aria-hidden="true" tabindex="-1"></a>  all_vars <span class="ot">&lt;-</span> <span class="fu">c</span>(pred_var, adj)</span>
+<span id="cb19-61"><a href="#cb19-61" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-62"><a href="#cb19-62" aria-hidden="true" tabindex="-1"></a>  fmla_mv <span class="ot">&lt;-</span> <span class="fu">as.formula</span>(<span class="fu">paste0</span>(</span>
+<span id="cb19-63"><a href="#cb19-63" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Surv("</span>, time_var, <span class="st">", "</span>, status_var, <span class="st">") ~ "</span>,</span>
+<span id="cb19-64"><a href="#cb19-64" aria-hidden="true" tabindex="-1"></a>    <span class="fu">paste</span>(all_vars, <span class="at">collapse =</span> <span class="st">" + "</span>)</span>
+<span id="cb19-65"><a href="#cb19-65" aria-hidden="true" tabindex="-1"></a>  ))</span>
+<span id="cb19-66"><a href="#cb19-66" aria-hidden="true" tabindex="-1"></a>  tbl_mv <span class="ot">&lt;-</span> survival<span class="sc">::</span><span class="fu">coxph</span>(fmla_mv, <span class="at">data =</span> dat) <span class="sc">%&gt;%</span></span>
+<span id="cb19-67"><a href="#cb19-67" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tbl_regression</span>(<span class="at">exp =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb19-68"><a href="#cb19-68" aria-hidden="true" tabindex="-1"></a>                   <span class="at">pvalue_fun =</span> <span class="cf">function</span>(x) <span class="fu">style_pvalue</span>(x, <span class="at">digits =</span> <span class="dv">3</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb19-69"><a href="#cb19-69" aria-hidden="true" tabindex="-1"></a>    <span class="fu">add_n</span>()</span>
+<span id="cb19-70"><a href="#cb19-70" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-71"><a href="#cb19-71" aria-hidden="true" tabindex="-1"></a>  y_call <span class="ot">&lt;-</span> <span class="fu">str2lang</span>(<span class="fu">sprintf</span>(<span class="st">"Surv(%s, %s)"</span>, time_var, status_var))</span>
+<span id="cb19-72"><a href="#cb19-72" aria-hidden="true" tabindex="-1"></a>  tbl_uv <span class="ot">&lt;-</span> rlang<span class="sc">::</span><span class="fu">inject</span>(</span>
+<span id="cb19-73"><a href="#cb19-73" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tbl_uvregression</span>(</span>
+<span id="cb19-74"><a href="#cb19-74" aria-hidden="true" tabindex="-1"></a>      <span class="at">data =</span> dat,</span>
+<span id="cb19-75"><a href="#cb19-75" aria-hidden="true" tabindex="-1"></a>      <span class="at">method =</span> survival<span class="sc">::</span>coxph,</span>
+<span id="cb19-76"><a href="#cb19-76" aria-hidden="true" tabindex="-1"></a>      <span class="at">y =</span> <span class="sc">!!</span>y_call,</span>
+<span id="cb19-77"><a href="#cb19-77" aria-hidden="true" tabindex="-1"></a>      <span class="at">include =</span> dplyr<span class="sc">::</span><span class="fu">all_of</span>(all_vars),</span>
+<span id="cb19-78"><a href="#cb19-78" aria-hidden="true" tabindex="-1"></a>      <span class="at">exponentiate =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb19-79"><a href="#cb19-79" aria-hidden="true" tabindex="-1"></a>      <span class="at">pvalue_fun =</span> <span class="cf">function</span>(x) <span class="fu">style_pvalue</span>(x, <span class="at">digits =</span> <span class="dv">3</span>)</span>
+<span id="cb19-80"><a href="#cb19-80" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb19-81"><a href="#cb19-81" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb19-82"><a href="#cb19-82" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-83"><a href="#cb19-83" aria-hidden="true" tabindex="-1"></a>  out <span class="ot">&lt;-</span> <span class="fu">tbl_merge</span>(</span>
+<span id="cb19-84"><a href="#cb19-84" aria-hidden="true" tabindex="-1"></a>    <span class="at">tbls =</span> <span class="fu">list</span>(tbl_uv, tbl_mv),</span>
+<span id="cb19-85"><a href="#cb19-85" aria-hidden="true" tabindex="-1"></a>    <span class="at">tab_spanner =</span> <span class="fu">c</span>(<span class="st">"**Univariable**"</span>, <span class="st">"**Multivariable**"</span>)</span>
+<span id="cb19-86"><a href="#cb19-86" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb19-87"><a href="#cb19-87" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-88"><a href="#cb19-88" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.null</span>(docx_name)) <span class="fu">save_tbl_docx</span>(out, docx_name)</span>
+<span id="cb19-89"><a href="#cb19-89" aria-hidden="true" tabindex="-1"></a>  out</span>
+<span id="cb19-90"><a href="#cb19-90" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb19-91"><a href="#cb19-91" aria-hidden="true" tabindex="-1"></a><span class="co"># Ritu: guard against unfittable sparse-outcome models.</span></span>
+<span id="cb19-92"><a href="#cb19-92" aria-hidden="true" tabindex="-1"></a>cox_model <span class="ot">&lt;-</span> <span class="fu">.wrap_tbl</span>(cox_model)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 </div>
 <section id="aki-within-1-year-fine-gray-death-competing" class="level2">
@@ -1815,27 +1912,27 @@ serial aki   0   1
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">fg_model</span>(<span class="st">"cmp_time_aki_365"</span>, <span class="st">"cmp_status_aki_365"</span>, <span class="st">"egfr_diff_pct_per10"</span>,</span>
-<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>         <span class="at">egfr_adj =</span> <span class="st">"cockcroft"</span>, <span class="at">docx_name =</span> <span class="st">"sec5_aki_365"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="fu">fg_model</span>(<span class="st">"cmp_time_aki_365"</span>, <span class="st">"cmp_status_aki_365"</span>, <span class="st">"egfr_diff_pct_per10"</span>,</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>         <span class="at">egfr_adj =</span> <span class="st">"cockcroft"</span>, <span class="at">docx_name =</span> <span class="st">"sec5_aki_365"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output-display">
-<div id="wrjsdkzjpe" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#wrjsdkzjpe table {
+<div id="ocmmtlomfp" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#ocmmtlomfp table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#wrjsdkzjpe thead, #wrjsdkzjpe tbody, #wrjsdkzjpe tfoot, #wrjsdkzjpe tr, #wrjsdkzjpe td, #wrjsdkzjpe th {
+#ocmmtlomfp thead, #ocmmtlomfp tbody, #ocmmtlomfp tfoot, #ocmmtlomfp tr, #ocmmtlomfp td, #ocmmtlomfp th {
   border-style: none;
 }
 
-#wrjsdkzjpe p {
+#ocmmtlomfp p {
   margin: 0;
   padding: 0;
 }
 
-#wrjsdkzjpe .gt_table {
+#ocmmtlomfp .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -1861,12 +1958,12 @@ serial aki   0   1
   border-left-color: #D3D3D3;
 }
 
-#wrjsdkzjpe .gt_caption {
+#ocmmtlomfp .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#wrjsdkzjpe .gt_title {
+#ocmmtlomfp .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -1878,7 +1975,7 @@ serial aki   0   1
   border-bottom-width: 0;
 }
 
-#wrjsdkzjpe .gt_subtitle {
+#ocmmtlomfp .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -1890,7 +1987,7 @@ serial aki   0   1
   border-top-width: 0;
 }
 
-#wrjsdkzjpe .gt_heading {
+#ocmmtlomfp .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -1902,13 +1999,13 @@ serial aki   0   1
   border-right-color: #D3D3D3;
 }
 
-#wrjsdkzjpe .gt_bottom_border {
+#ocmmtlomfp .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#wrjsdkzjpe .gt_col_headings {
+#ocmmtlomfp .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1923,7 +2020,7 @@ serial aki   0   1
   border-right-color: #D3D3D3;
 }
 
-#wrjsdkzjpe .gt_col_heading {
+#ocmmtlomfp .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1943,7 +2040,7 @@ serial aki   0   1
   overflow-x: hidden;
 }
 
-#wrjsdkzjpe .gt_column_spanner_outer {
+#ocmmtlomfp .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1955,15 +2052,15 @@ serial aki   0   1
   padding-right: 4px;
 }
 
-#wrjsdkzjpe .gt_column_spanner_outer:first-child {
+#ocmmtlomfp .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#wrjsdkzjpe .gt_column_spanner_outer:last-child {
+#ocmmtlomfp .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#wrjsdkzjpe .gt_column_spanner {
+#ocmmtlomfp .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -1975,11 +2072,11 @@ serial aki   0   1
   width: 100%;
 }
 
-#wrjsdkzjpe .gt_spanner_row {
+#ocmmtlomfp .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#wrjsdkzjpe .gt_group_heading {
+#ocmmtlomfp .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -2005,7 +2102,7 @@ serial aki   0   1
   text-align: left;
 }
 
-#wrjsdkzjpe .gt_empty_group_heading {
+#ocmmtlomfp .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -2020,15 +2117,15 @@ serial aki   0   1
   vertical-align: middle;
 }
 
-#wrjsdkzjpe .gt_from_md > :first-child {
+#ocmmtlomfp .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#wrjsdkzjpe .gt_from_md > :last-child {
+#ocmmtlomfp .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#wrjsdkzjpe .gt_row {
+#ocmmtlomfp .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -2047,7 +2144,7 @@ serial aki   0   1
   overflow-x: hidden;
 }
 
-#wrjsdkzjpe .gt_stub {
+#ocmmtlomfp .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -2060,7 +2157,7 @@ serial aki   0   1
   padding-right: 5px;
 }
 
-#wrjsdkzjpe .gt_stub_row_group {
+#ocmmtlomfp .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -2074,15 +2171,15 @@ serial aki   0   1
   vertical-align: top;
 }
 
-#wrjsdkzjpe .gt_row_group_first td {
+#ocmmtlomfp .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#wrjsdkzjpe .gt_row_group_first th {
+#ocmmtlomfp .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#wrjsdkzjpe .gt_summary_row {
+#ocmmtlomfp .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -2092,16 +2189,16 @@ serial aki   0   1
   padding-right: 5px;
 }
 
-#wrjsdkzjpe .gt_first_summary_row {
+#ocmmtlomfp .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#wrjsdkzjpe .gt_first_summary_row.thick {
+#ocmmtlomfp .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#wrjsdkzjpe .gt_last_summary_row {
+#ocmmtlomfp .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -2111,7 +2208,7 @@ serial aki   0   1
   border-bottom-color: #D3D3D3;
 }
 
-#wrjsdkzjpe .gt_grand_summary_row {
+#ocmmtlomfp .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -2121,7 +2218,7 @@ serial aki   0   1
   padding-right: 5px;
 }
 
-#wrjsdkzjpe .gt_first_grand_summary_row {
+#ocmmtlomfp .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -2131,7 +2228,7 @@ serial aki   0   1
   border-top-color: #D3D3D3;
 }
 
-#wrjsdkzjpe .gt_last_grand_summary_row_top {
+#ocmmtlomfp .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -2141,11 +2238,11 @@ serial aki   0   1
   border-bottom-color: #D3D3D3;
 }
 
-#wrjsdkzjpe .gt_striped {
+#ocmmtlomfp .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#wrjsdkzjpe .gt_table_body {
+#ocmmtlomfp .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -2154,7 +2251,7 @@ serial aki   0   1
   border-bottom-color: #D3D3D3;
 }
 
-#wrjsdkzjpe .gt_footnotes {
+#ocmmtlomfp .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -2168,7 +2265,7 @@ serial aki   0   1
   border-right-color: #D3D3D3;
 }
 
-#wrjsdkzjpe .gt_footnote {
+#ocmmtlomfp .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -2177,7 +2274,7 @@ serial aki   0   1
   padding-right: 5px;
 }
 
-#wrjsdkzjpe .gt_sourcenotes {
+#ocmmtlomfp .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -2191,7 +2288,7 @@ serial aki   0   1
   border-right-color: #D3D3D3;
 }
 
-#wrjsdkzjpe .gt_sourcenote {
+#ocmmtlomfp .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -2199,72 +2296,72 @@ serial aki   0   1
   padding-right: 5px;
 }
 
-#wrjsdkzjpe .gt_left {
+#ocmmtlomfp .gt_left {
   text-align: left;
 }
 
-#wrjsdkzjpe .gt_center {
+#ocmmtlomfp .gt_center {
   text-align: center;
 }
 
-#wrjsdkzjpe .gt_right {
+#ocmmtlomfp .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#wrjsdkzjpe .gt_font_normal {
+#ocmmtlomfp .gt_font_normal {
   font-weight: normal;
 }
 
-#wrjsdkzjpe .gt_font_bold {
+#ocmmtlomfp .gt_font_bold {
   font-weight: bold;
 }
 
-#wrjsdkzjpe .gt_font_italic {
+#ocmmtlomfp .gt_font_italic {
   font-style: italic;
 }
 
-#wrjsdkzjpe .gt_super {
+#ocmmtlomfp .gt_super {
   font-size: 65%;
 }
 
-#wrjsdkzjpe .gt_footnote_marks {
+#ocmmtlomfp .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#wrjsdkzjpe .gt_asterisk {
+#ocmmtlomfp .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#wrjsdkzjpe .gt_indent_1 {
+#ocmmtlomfp .gt_indent_1 {
   text-indent: 5px;
 }
 
-#wrjsdkzjpe .gt_indent_2 {
+#ocmmtlomfp .gt_indent_2 {
   text-indent: 10px;
 }
 
-#wrjsdkzjpe .gt_indent_3 {
+#ocmmtlomfp .gt_indent_3 {
   text-indent: 15px;
 }
 
-#wrjsdkzjpe .gt_indent_4 {
+#ocmmtlomfp .gt_indent_4 {
   text-indent: 20px;
 }
 
-#wrjsdkzjpe .gt_indent_5 {
+#ocmmtlomfp .gt_indent_5 {
   text-indent: 25px;
 }
 
-#wrjsdkzjpe .katex-display {
+#ocmmtlomfp .katex-display {
   display: inline-flex !important;
   margin-bottom: 0.75em !important;
 }
 
-#wrjsdkzjpe div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#ocmmtlomfp div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
   height: 0px !important;
 }
 </style>
@@ -2698,27 +2795,27 @@ serial aki   0   1
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="fu">fg_model</span>(<span class="st">"cmp_time_ckd_composite"</span>, <span class="st">"cmp_status_ckd_composite"</span>, <span class="st">"egfr_diff_pct_per10"</span>,</span>
-<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>         <span class="at">egfr_adj =</span> <span class="st">"cockcroft"</span>, <span class="at">docx_name =</span> <span class="st">"sec5_ckd_composite"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">fg_model</span>(<span class="st">"cmp_time_ckd_composite"</span>, <span class="st">"cmp_status_ckd_composite"</span>, <span class="st">"egfr_diff_pct_per10"</span>,</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>         <span class="at">egfr_adj =</span> <span class="st">"cockcroft"</span>, <span class="at">docx_name =</span> <span class="st">"sec5_ckd_composite"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output-display">
-<div id="mjyrnhxtzk" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#mjyrnhxtzk table {
+<div id="nbjbvxeqpn" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#nbjbvxeqpn table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#mjyrnhxtzk thead, #mjyrnhxtzk tbody, #mjyrnhxtzk tfoot, #mjyrnhxtzk tr, #mjyrnhxtzk td, #mjyrnhxtzk th {
+#nbjbvxeqpn thead, #nbjbvxeqpn tbody, #nbjbvxeqpn tfoot, #nbjbvxeqpn tr, #nbjbvxeqpn td, #nbjbvxeqpn th {
   border-style: none;
 }
 
-#mjyrnhxtzk p {
+#nbjbvxeqpn p {
   margin: 0;
   padding: 0;
 }
 
-#mjyrnhxtzk .gt_table {
+#nbjbvxeqpn .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -2744,12 +2841,12 @@ serial aki   0   1
   border-left-color: #D3D3D3;
 }
 
-#mjyrnhxtzk .gt_caption {
+#nbjbvxeqpn .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#mjyrnhxtzk .gt_title {
+#nbjbvxeqpn .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -2761,7 +2858,7 @@ serial aki   0   1
   border-bottom-width: 0;
 }
 
-#mjyrnhxtzk .gt_subtitle {
+#nbjbvxeqpn .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -2773,7 +2870,7 @@ serial aki   0   1
   border-top-width: 0;
 }
 
-#mjyrnhxtzk .gt_heading {
+#nbjbvxeqpn .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -2785,13 +2882,13 @@ serial aki   0   1
   border-right-color: #D3D3D3;
 }
 
-#mjyrnhxtzk .gt_bottom_border {
+#nbjbvxeqpn .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#mjyrnhxtzk .gt_col_headings {
+#nbjbvxeqpn .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -2806,7 +2903,7 @@ serial aki   0   1
   border-right-color: #D3D3D3;
 }
 
-#mjyrnhxtzk .gt_col_heading {
+#nbjbvxeqpn .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -2826,7 +2923,7 @@ serial aki   0   1
   overflow-x: hidden;
 }
 
-#mjyrnhxtzk .gt_column_spanner_outer {
+#nbjbvxeqpn .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -2838,15 +2935,15 @@ serial aki   0   1
   padding-right: 4px;
 }
 
-#mjyrnhxtzk .gt_column_spanner_outer:first-child {
+#nbjbvxeqpn .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#mjyrnhxtzk .gt_column_spanner_outer:last-child {
+#nbjbvxeqpn .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#mjyrnhxtzk .gt_column_spanner {
+#nbjbvxeqpn .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -2858,11 +2955,11 @@ serial aki   0   1
   width: 100%;
 }
 
-#mjyrnhxtzk .gt_spanner_row {
+#nbjbvxeqpn .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#mjyrnhxtzk .gt_group_heading {
+#nbjbvxeqpn .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -2888,7 +2985,7 @@ serial aki   0   1
   text-align: left;
 }
 
-#mjyrnhxtzk .gt_empty_group_heading {
+#nbjbvxeqpn .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -2903,15 +3000,15 @@ serial aki   0   1
   vertical-align: middle;
 }
 
-#mjyrnhxtzk .gt_from_md > :first-child {
+#nbjbvxeqpn .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#mjyrnhxtzk .gt_from_md > :last-child {
+#nbjbvxeqpn .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#mjyrnhxtzk .gt_row {
+#nbjbvxeqpn .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -2930,7 +3027,7 @@ serial aki   0   1
   overflow-x: hidden;
 }
 
-#mjyrnhxtzk .gt_stub {
+#nbjbvxeqpn .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -2943,7 +3040,7 @@ serial aki   0   1
   padding-right: 5px;
 }
 
-#mjyrnhxtzk .gt_stub_row_group {
+#nbjbvxeqpn .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -2957,15 +3054,15 @@ serial aki   0   1
   vertical-align: top;
 }
 
-#mjyrnhxtzk .gt_row_group_first td {
+#nbjbvxeqpn .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#mjyrnhxtzk .gt_row_group_first th {
+#nbjbvxeqpn .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#mjyrnhxtzk .gt_summary_row {
+#nbjbvxeqpn .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -2975,16 +3072,16 @@ serial aki   0   1
   padding-right: 5px;
 }
 
-#mjyrnhxtzk .gt_first_summary_row {
+#nbjbvxeqpn .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#mjyrnhxtzk .gt_first_summary_row.thick {
+#nbjbvxeqpn .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#mjyrnhxtzk .gt_last_summary_row {
+#nbjbvxeqpn .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -2994,7 +3091,7 @@ serial aki   0   1
   border-bottom-color: #D3D3D3;
 }
 
-#mjyrnhxtzk .gt_grand_summary_row {
+#nbjbvxeqpn .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -3004,7 +3101,7 @@ serial aki   0   1
   padding-right: 5px;
 }
 
-#mjyrnhxtzk .gt_first_grand_summary_row {
+#nbjbvxeqpn .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -3014,7 +3111,7 @@ serial aki   0   1
   border-top-color: #D3D3D3;
 }
 
-#mjyrnhxtzk .gt_last_grand_summary_row_top {
+#nbjbvxeqpn .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -3024,11 +3121,11 @@ serial aki   0   1
   border-bottom-color: #D3D3D3;
 }
 
-#mjyrnhxtzk .gt_striped {
+#nbjbvxeqpn .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#mjyrnhxtzk .gt_table_body {
+#nbjbvxeqpn .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -3037,7 +3134,7 @@ serial aki   0   1
   border-bottom-color: #D3D3D3;
 }
 
-#mjyrnhxtzk .gt_footnotes {
+#nbjbvxeqpn .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -3051,7 +3148,7 @@ serial aki   0   1
   border-right-color: #D3D3D3;
 }
 
-#mjyrnhxtzk .gt_footnote {
+#nbjbvxeqpn .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -3060,7 +3157,7 @@ serial aki   0   1
   padding-right: 5px;
 }
 
-#mjyrnhxtzk .gt_sourcenotes {
+#nbjbvxeqpn .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -3074,7 +3171,7 @@ serial aki   0   1
   border-right-color: #D3D3D3;
 }
 
-#mjyrnhxtzk .gt_sourcenote {
+#nbjbvxeqpn .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -3082,72 +3179,72 @@ serial aki   0   1
   padding-right: 5px;
 }
 
-#mjyrnhxtzk .gt_left {
+#nbjbvxeqpn .gt_left {
   text-align: left;
 }
 
-#mjyrnhxtzk .gt_center {
+#nbjbvxeqpn .gt_center {
   text-align: center;
 }
 
-#mjyrnhxtzk .gt_right {
+#nbjbvxeqpn .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#mjyrnhxtzk .gt_font_normal {
+#nbjbvxeqpn .gt_font_normal {
   font-weight: normal;
 }
 
-#mjyrnhxtzk .gt_font_bold {
+#nbjbvxeqpn .gt_font_bold {
   font-weight: bold;
 }
 
-#mjyrnhxtzk .gt_font_italic {
+#nbjbvxeqpn .gt_font_italic {
   font-style: italic;
 }
 
-#mjyrnhxtzk .gt_super {
+#nbjbvxeqpn .gt_super {
   font-size: 65%;
 }
 
-#mjyrnhxtzk .gt_footnote_marks {
+#nbjbvxeqpn .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#mjyrnhxtzk .gt_asterisk {
+#nbjbvxeqpn .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#mjyrnhxtzk .gt_indent_1 {
+#nbjbvxeqpn .gt_indent_1 {
   text-indent: 5px;
 }
 
-#mjyrnhxtzk .gt_indent_2 {
+#nbjbvxeqpn .gt_indent_2 {
   text-indent: 10px;
 }
 
-#mjyrnhxtzk .gt_indent_3 {
+#nbjbvxeqpn .gt_indent_3 {
   text-indent: 15px;
 }
 
-#mjyrnhxtzk .gt_indent_4 {
+#nbjbvxeqpn .gt_indent_4 {
   text-indent: 20px;
 }
 
-#mjyrnhxtzk .gt_indent_5 {
+#nbjbvxeqpn .gt_indent_5 {
   text-indent: 25px;
 }
 
-#mjyrnhxtzk .katex-display {
+#nbjbvxeqpn .katex-display {
   display: inline-flex !important;
   margin-bottom: 0.75em !important;
 }
 
-#mjyrnhxtzk div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#nbjbvxeqpn div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
   height: 0px !important;
 }
 </style>
@@ -3577,18 +3674,18 @@ serial aki   0   1
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>lt_counts <span class="ot">&lt;-</span> tibble<span class="sc">::</span><span class="fu">tibble</span>(</span>
-<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">Outcome =</span> <span class="fu">c</span>(<span class="st">"AKI within 1 year"</span>, <span class="st">"CKD composite (any time)"</span>),</span>
-<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">Censored =</span> <span class="fu">c</span>(<span class="fu">sum</span>(dat<span class="sc">$</span>cmp_status_aki_365 <span class="sc">==</span> <span class="dv">0</span>), <span class="fu">sum</span>(dat<span class="sc">$</span>cmp_status_ckd_composite <span class="sc">==</span> <span class="dv">0</span>)),</span>
-<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">Event    =</span> <span class="fu">c</span>(<span class="fu">sum</span>(dat<span class="sc">$</span>cmp_status_aki_365 <span class="sc">==</span> <span class="dv">1</span>), <span class="fu">sum</span>(dat<span class="sc">$</span>cmp_status_ckd_composite <span class="sc">==</span> <span class="dv">1</span>)),</span>
-<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">Death    =</span> <span class="fu">c</span>(<span class="fu">sum</span>(dat<span class="sc">$</span>cmp_status_aki_365 <span class="sc">==</span> <span class="dv">2</span>), <span class="fu">sum</span>(dat<span class="sc">$</span>cmp_status_ckd_composite <span class="sc">==</span> <span class="dv">2</span>)),</span>
-<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>  <span class="st">`</span><span class="at">Median follow-up (d)</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">c</span>(</span>
-<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">round</span>(<span class="fu">median</span>(dat<span class="sc">$</span>cmp_time_aki_365, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)),</span>
-<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">round</span>(<span class="fu">median</span>(dat<span class="sc">$</span>cmp_time_ckd_composite, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)))</span>
-<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(lt_counts, <span class="at">caption =</span> <span class="fu">sprintf</span>(</span>
-<span id="cb21-11"><a href="#cb21-11" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Competing-risk event counts, N = %d. Status 0 = censored, 1 = event, 2 = death."</span>,</span>
-<span id="cb21-12"><a href="#cb21-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">nrow</span>(dat)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>lt_counts <span class="ot">&lt;-</span> tibble<span class="sc">::</span><span class="fu">tibble</span>(</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">Outcome =</span> <span class="fu">c</span>(<span class="st">"AKI within 1 year"</span>, <span class="st">"CKD composite (any time)"</span>),</span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">Censored =</span> <span class="fu">c</span>(<span class="fu">sum</span>(dat<span class="sc">$</span>cmp_status_aki_365 <span class="sc">==</span> <span class="dv">0</span>), <span class="fu">sum</span>(dat<span class="sc">$</span>cmp_status_ckd_composite <span class="sc">==</span> <span class="dv">0</span>)),</span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">Event    =</span> <span class="fu">c</span>(<span class="fu">sum</span>(dat<span class="sc">$</span>cmp_status_aki_365 <span class="sc">==</span> <span class="dv">1</span>), <span class="fu">sum</span>(dat<span class="sc">$</span>cmp_status_ckd_composite <span class="sc">==</span> <span class="dv">1</span>)),</span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">Death    =</span> <span class="fu">c</span>(<span class="fu">sum</span>(dat<span class="sc">$</span>cmp_status_aki_365 <span class="sc">==</span> <span class="dv">2</span>), <span class="fu">sum</span>(dat<span class="sc">$</span>cmp_status_ckd_composite <span class="sc">==</span> <span class="dv">2</span>)),</span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>  <span class="st">`</span><span class="at">Median follow-up (d)</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">c</span>(</span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">round</span>(<span class="fu">median</span>(dat<span class="sc">$</span>cmp_time_aki_365, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)),</span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">round</span>(<span class="fu">median</span>(dat<span class="sc">$</span>cmp_time_ckd_composite, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)))</span>
+<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb22-10"><a href="#cb22-10" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(lt_counts, <span class="at">caption =</span> <span class="fu">sprintf</span>(</span>
+<span id="cb22-11"><a href="#cb22-11" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Competing-risk event counts, N = %d. Status 0 = censored, 1 = event, 2 = death."</span>,</span>
+<span id="cb22-12"><a href="#cb22-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">nrow</span>(dat)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output-display">
 <table class="caption-top table table-sm table-striped small">
@@ -3637,14 +3734,14 @@ serial aki   0   1
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(dat <span class="sc">%&gt;%</span> <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(dose_discrepancy)),</span>
-<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>       <span class="fu">aes</span>(<span class="at">x =</span> ckd_epi_gfr_cre_cys_unindex, <span class="at">y =</span> dose_discrepancy)) <span class="sc">+</span></span>
-<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">alpha =</span> <span class="fl">0.3</span>) <span class="sc">+</span></span>
-<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>(<span class="at">method =</span> <span class="st">"lm"</span>, <span class="at">se =</span> <span class="cn">TRUE</span>, <span class="at">color =</span> <span class="st">"steelblue"</span>) <span class="sc">+</span></span>
-<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"CKD-EPI Cr-Cys eGFR (unindexed, mL/min)"</span>,</span>
-<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"Dose Discrepancy (mg)"</span>,</span>
-<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a>       <span class="at">title =</span> <span class="st">"Dose Discrepancy vs CKD-EPI Cr-Cys eGFR (Carboplatin)"</span>) <span class="sc">+</span></span>
-<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>(<span class="at">base_size =</span> <span class="dv">11</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(dat <span class="sc">%&gt;%</span> <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(dose_discrepancy)),</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>       <span class="fu">aes</span>(<span class="at">x =</span> ckd_epi_gfr_cre_cys_unindex, <span class="at">y =</span> dose_discrepancy)) <span class="sc">+</span></span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">alpha =</span> <span class="fl">0.3</span>) <span class="sc">+</span></span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>(<span class="at">method =</span> <span class="st">"lm"</span>, <span class="at">se =</span> <span class="cn">TRUE</span>, <span class="at">color =</span> <span class="st">"steelblue"</span>) <span class="sc">+</span></span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"CKD-EPI Cr-Cys eGFR (unindexed, mL/min)"</span>,</span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"Dose Discrepancy (mg)"</span>,</span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>       <span class="at">title =</span> <span class="st">"Dose Discrepancy vs CKD-EPI Cr-Cys eGFR (Carboplatin)"</span>) <span class="sc">+</span></span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>(<span class="at">base_size =</span> <span class="dv">11</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -3663,14 +3760,14 @@ serial aki   0   1
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(dat <span class="sc">%&gt;%</span> <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(dose_discrepancy)),</span>
-<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>       <span class="fu">aes</span>(<span class="at">x =</span> cockcroft, <span class="at">y =</span> dose_discrepancy)) <span class="sc">+</span></span>
-<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">alpha =</span> <span class="fl">0.3</span>) <span class="sc">+</span></span>
-<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>(<span class="at">method =</span> <span class="st">"lm"</span>, <span class="at">se =</span> <span class="cn">TRUE</span>, <span class="at">color =</span> <span class="st">"steelblue"</span>) <span class="sc">+</span></span>
-<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Cockcroft-Gault eGFR (mL/min)"</span>,</span>
-<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"Dose Discrepancy (mg)"</span>,</span>
-<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>       <span class="at">title =</span> <span class="st">"Dose Discrepancy vs Cockcroft-Gault eGFR (Carboplatin)"</span>) <span class="sc">+</span></span>
-<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>(<span class="at">base_size =</span> <span class="dv">11</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(dat <span class="sc">%&gt;%</span> <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(dose_discrepancy)),</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>       <span class="fu">aes</span>(<span class="at">x =</span> cockcroft, <span class="at">y =</span> dose_discrepancy)) <span class="sc">+</span></span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">alpha =</span> <span class="fl">0.3</span>) <span class="sc">+</span></span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>(<span class="at">method =</span> <span class="st">"lm"</span>, <span class="at">se =</span> <span class="cn">TRUE</span>, <span class="at">color =</span> <span class="st">"steelblue"</span>) <span class="sc">+</span></span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Cockcroft-Gault eGFR (mL/min)"</span>,</span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"Dose Discrepancy (mg)"</span>,</span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a>       <span class="at">title =</span> <span class="st">"Dose Discrepancy vs Cockcroft-Gault eGFR (Carboplatin)"</span>) <span class="sc">+</span></span>
+<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>(<span class="at">base_size =</span> <span class="dv">11</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output-display">
 <div>

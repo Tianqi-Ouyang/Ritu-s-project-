@@ -241,6 +241,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#charlson-comorbidity-index" id="toc-charlson-comorbidity-index" class="nav-link" data-scroll-target="#charlson-comorbidity-index">5.14 Charlson Comorbidity Index</a></li>
   <li><a href="#competing-risk-variables" id="toc-competing-risk-variables" class="nav-link" data-scroll-target="#competing-risk-variables">5.15 Competing risk variables</a></li>
   <li><a href="#longitudinal-creatinine-egfr-trajectory-ckd-outcomes" id="toc-longitudinal-creatinine-egfr-trajectory-ckd-outcomes" class="nav-link" data-scroll-target="#longitudinal-creatinine-egfr-trajectory-ckd-outcomes">5.16 Longitudinal creatinine → eGFR trajectory &amp; CKD outcomes</a></li>
+  <li><a href="#b-delta-egfr-creatinine-vs-baseline-at-90-180-365-days" id="toc-b-delta-egfr-creatinine-vs-baseline-at-90-180-365-days" class="nav-link" data-scroll-target="#b-delta-egfr-creatinine-vs-baseline-at-90-180-365-days">5.16b Delta eGFR (creatinine) vs baseline at 90 / 180 / 365 days</a></li>
   <li><a href="#aki-from-serial-creatinine-kdigo-style" id="toc-aki-from-serial-creatinine-kdigo-style" class="nav-link" data-scroll-target="#aki-from-serial-creatinine-kdigo-style">5.17 AKI from serial creatinine (KDIGO-style)</a></li>
   <li><a href="#esrd-kidney-transplant-from-rpdr-diagnoses" id="toc-esrd-kidney-transplant-from-rpdr-diagnoses" class="nav-link" data-scroll-target="#esrd-kidney-transplant-from-rpdr-diagnoses">5.18 ESRD / kidney transplant from RPDR diagnoses</a></li>
   <li><a href="#ckd-eskd-composites-time-variables" id="toc-ckd-eskd-composites-time-variables" class="nav-link" data-scroll-target="#ckd-eskd-composites-time-variables">5.19 CKD / ESKD composites &amp; time variables</a></li>
@@ -899,6 +900,22 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="odd">
 <td><code>aki_before_ckd</code></td>
 <td>1 if <code>aki_days &lt;= time_to_ckd_composite</code></td>
+</tr>
+<tr class="even">
+<td><code>eGFR_CRE_d90</code> / <code>_d180</code> / <code>_d365</code></td>
+<td>CKD-EPI creatinine eGFR from the creatinine closest to that day, within +/- 45 days (Section 5.16b)</td>
+</tr>
+<tr class="odd">
+<td><code>cre_day_d90</code> / <code>_d180</code> / <code>_d365</code></td>
+<td>The actual day of the creatinine used, so the gap from the nominal mark is auditable</td>
+</tr>
+<tr class="even">
+<td><code>delta_egfr_d90</code> / <code>_d180</code> / <code>_d365</code></td>
+<td><code>eGFR at the mark - eGFR_CRE_baseline</code>, mL/min/1.73m². <strong>Negative = decline</strong></td>
+</tr>
+<tr class="odd">
+<td><code>delta_egfr_pct_d90</code> / <code>_d180</code> / <code>_d365</code></td>
+<td>The same change as a percentage of baseline. <strong>Negative = decline</strong></td>
 </tr>
 <tr class="even">
 <td><code>death_lt</code> / <code>death_days_lt</code></td>
@@ -2970,6 +2987,121 @@ Thoracic   Breast       GI       GU      GYN    HEENT    Other
 </details>
 </div>
 </section>
+<section id="b-delta-egfr-creatinine-vs-baseline-at-90-180-365-days" class="level2">
+<h2 class="anchored" data-anchor-id="b-delta-egfr-creatinine-vs-baseline-at-90-180-365-days">5.16b Delta eGFR (creatinine) vs baseline at 90 / 180 / 365 days</h2>
+<p>Change in creatinine-based eGFR from baseline at three fixed post-baseline marks. For each mark the creatinine <strong>closest to that day</strong> is used, provided it falls within <code>DGFR_WINDOW</code> days of it.</p>
+<p><code>DGFR_WINDOW</code> is 45 days: it matches the window this pipeline already uses for baseline labs (<code>pre_CRE_45days</code>), and it is the widest window that keeps the 90-day and 180-day marks from drawing on the same measurement (at +/- 90 days their intervals would be 0-180 and 90-270). Taken without a window the closest creatinine to day 365 is more than 276 days away for a tenth of the cohort, so an unwindowed value would not be a 365-day measurement.</p>
+<p>Days are counted from <code>baseline_sample_date</code> (first platinum dose), the index date used by every other time variable here. The baseline eGFR is <code>eGFR_CRE_baseline</code>, the same baseline the CKD outcomes are referenced to.</p>
+<p><strong>Sign convention: negative means decline.</strong> <code>delta_egfr_d90</code> is <code>eGFR at day 90 - eGFR at baseline</code>, so a fall in kidney function is a negative number. This is the opposite sign to <code>pct_drop</code> in Section 5.16, which is positive for a drop.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb77"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb77-1"><a href="#cb77-1" aria-hidden="true" tabindex="-1"></a>DGFR_WINDOW <span class="ot">&lt;-</span> <span class="dv">45</span></span>
+<span id="cb77-2"><a href="#cb77-2" aria-hidden="true" tabindex="-1"></a>DGFR_MARKS  <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">90</span>, <span class="dv">180</span>, <span class="dv">365</span>)</span>
+<span id="cb77-3"><a href="#cb77-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb77-4"><a href="#cb77-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Day offsets for the trajectory, measured from baseline_sample_date rather than</span></span>
+<span id="cb77-5"><a href="#cb77-5" aria-hidden="true" tabindex="-1"></a><span class="co"># from the pre-baseline creatinine draw that anchors egfr_traj.</span></span>
+<span id="cb77-6"><a href="#cb77-6" aria-hidden="true" tabindex="-1"></a>dgfr_traj <span class="ot">&lt;-</span> egfr_traj <span class="sc">%&gt;%</span></span>
+<span id="cb77-7"><a href="#cb77-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(final_master <span class="sc">%&gt;%</span> <span class="fu">select</span>(EMPI, baseline_sample_date), <span class="at">by =</span> <span class="st">"EMPI"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb77-8"><a href="#cb77-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">cre_day =</span> <span class="fu">as.numeric</span>(eGFR_CRE_date <span class="sc">-</span> baseline_sample_date)) <span class="sc">%&gt;%</span></span>
+<span id="cb77-9"><a href="#cb77-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(cre_day), cre_day <span class="sc">&gt;</span> <span class="dv">0</span>)</span>
+<span id="cb77-10"><a href="#cb77-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb77-11"><a href="#cb77-11" aria-hidden="true" tabindex="-1"></a>dgfr_at_mark <span class="ot">&lt;-</span> <span class="cf">function</span>(traj, mark, <span class="at">window =</span> DGFR_WINDOW) {</span>
+<span id="cb77-12"><a href="#cb77-12" aria-hidden="true" tabindex="-1"></a>  traj <span class="sc">%&gt;%</span></span>
+<span id="cb77-13"><a href="#cb77-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">.gap =</span> <span class="fu">abs</span>(cre_day <span class="sc">-</span> mark)) <span class="sc">%&gt;%</span></span>
+<span id="cb77-14"><a href="#cb77-14" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(.gap <span class="sc">&lt;=</span> window) <span class="sc">%&gt;%</span></span>
+<span id="cb77-15"><a href="#cb77-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">group_by</span>(EMPI) <span class="sc">%&gt;%</span></span>
+<span id="cb77-16"><a href="#cb77-16" aria-hidden="true" tabindex="-1"></a>    <span class="fu">slice_min</span>(.gap, <span class="at">n =</span> <span class="dv">1</span>, <span class="at">with_ties =</span> <span class="cn">FALSE</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb77-17"><a href="#cb77-17" aria-hidden="true" tabindex="-1"></a>    <span class="fu">ungroup</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb77-18"><a href="#cb77-18" aria-hidden="true" tabindex="-1"></a>    <span class="fu">transmute</span>(</span>
+<span id="cb77-19"><a href="#cb77-19" aria-hidden="true" tabindex="-1"></a>      EMPI,</span>
+<span id="cb77-20"><a href="#cb77-20" aria-hidden="true" tabindex="-1"></a>      <span class="sc">!!</span><span class="fu">paste0</span>(<span class="st">"eGFR_CRE_d"</span>, mark)       <span class="sc">:</span><span class="er">=</span> <span class="fu">round</span>(eGFR_CRE, <span class="dv">1</span>),</span>
+<span id="cb77-21"><a href="#cb77-21" aria-hidden="true" tabindex="-1"></a>      <span class="sc">!!</span><span class="fu">paste0</span>(<span class="st">"cre_day_d"</span>, mark)        <span class="sc">:</span><span class="er">=</span> cre_day,</span>
+<span id="cb77-22"><a href="#cb77-22" aria-hidden="true" tabindex="-1"></a>      <span class="sc">!!</span><span class="fu">paste0</span>(<span class="st">"delta_egfr_d"</span>, mark)     <span class="sc">:</span><span class="er">=</span> <span class="fu">round</span>(eGFR_CRE <span class="sc">-</span> eGFR_CRE_baseline, <span class="dv">1</span>),</span>
+<span id="cb77-23"><a href="#cb77-23" aria-hidden="true" tabindex="-1"></a>      <span class="sc">!!</span><span class="fu">paste0</span>(<span class="st">"delta_egfr_pct_d"</span>, mark) <span class="sc">:</span><span class="er">=</span> <span class="fu">round</span>(</span>
+<span id="cb77-24"><a href="#cb77-24" aria-hidden="true" tabindex="-1"></a>        <span class="dv">100</span> <span class="sc">*</span> (eGFR_CRE <span class="sc">-</span> eGFR_CRE_baseline) <span class="sc">/</span> eGFR_CRE_baseline, <span class="dv">1</span>)</span>
+<span id="cb77-25"><a href="#cb77-25" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb77-26"><a href="#cb77-26" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb77-27"><a href="#cb77-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb77-28"><a href="#cb77-28" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (mk <span class="cf">in</span> DGFR_MARKS) {</span>
+<span id="cb77-29"><a href="#cb77-29" aria-hidden="true" tabindex="-1"></a>  final_master <span class="ot">&lt;-</span> final_master <span class="sc">%&gt;%</span></span>
+<span id="cb77-30"><a href="#cb77-30" aria-hidden="true" tabindex="-1"></a>    <span class="fu">left_join</span>(<span class="fu">dgfr_at_mark</span>(dgfr_traj, mk), <span class="at">by =</span> <span class="st">"EMPI"</span>)</span>
+<span id="cb77-31"><a href="#cb77-31" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb77-32"><a href="#cb77-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb77-33"><a href="#cb77-33" aria-hidden="true" tabindex="-1"></a>dgfr_summary <span class="ot">&lt;-</span> purrr<span class="sc">::</span><span class="fu">map_dfr</span>(DGFR_MARKS, <span class="cf">function</span>(mk) {</span>
+<span id="cb77-34"><a href="#cb77-34" aria-hidden="true" tabindex="-1"></a>  d  <span class="ot">&lt;-</span> final_master[[<span class="fu">paste0</span>(<span class="st">"delta_egfr_d"</span>, mk)]]</span>
+<span id="cb77-35"><a href="#cb77-35" aria-hidden="true" tabindex="-1"></a>  dp <span class="ot">&lt;-</span> final_master[[<span class="fu">paste0</span>(<span class="st">"delta_egfr_pct_d"</span>, mk)]]</span>
+<span id="cb77-36"><a href="#cb77-36" aria-hidden="true" tabindex="-1"></a>  dy <span class="ot">&lt;-</span> final_master[[<span class="fu">paste0</span>(<span class="st">"cre_day_d"</span>, mk)]]</span>
+<span id="cb77-37"><a href="#cb77-37" aria-hidden="true" tabindex="-1"></a>  ok <span class="ot">&lt;-</span> <span class="sc">!</span><span class="fu">is.na</span>(d)</span>
+<span id="cb77-38"><a href="#cb77-38" aria-hidden="true" tabindex="-1"></a>  tibble<span class="sc">::</span><span class="fu">tibble</span>(</span>
+<span id="cb77-39"><a href="#cb77-39" aria-hidden="true" tabindex="-1"></a>    <span class="at">Mark =</span> <span class="fu">paste0</span>(<span class="st">"Day "</span>, mk),</span>
+<span id="cb77-40"><a href="#cb77-40" aria-hidden="true" tabindex="-1"></a>    <span class="st">`</span><span class="at">n with a value</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">sum</span>(ok),</span>
+<span id="cb77-41"><a href="#cb77-41" aria-hidden="true" tabindex="-1"></a>    <span class="st">`</span><span class="at">% of cohort</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">round</span>(<span class="dv">100</span> <span class="sc">*</span> <span class="fu">sum</span>(ok) <span class="sc">/</span> <span class="fu">nrow</span>(final_master), <span class="dv">1</span>),</span>
+<span id="cb77-42"><a href="#cb77-42" aria-hidden="true" tabindex="-1"></a>    <span class="st">`</span><span class="at">Actual day, median [IQR]</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">sprintf</span>(<span class="st">"%.0f [%.0f, %.0f]"</span>,</span>
+<span id="cb77-43"><a href="#cb77-43" aria-hidden="true" tabindex="-1"></a>      <span class="fu">median</span>(dy[ok]), <span class="fu">quantile</span>(dy[ok], .<span class="dv">25</span>), <span class="fu">quantile</span>(dy[ok], .<span class="dv">75</span>)),</span>
+<span id="cb77-44"><a href="#cb77-44" aria-hidden="true" tabindex="-1"></a>    <span class="st">`</span><span class="at">Delta eGFR, median [IQR]</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">sprintf</span>(<span class="st">"%.1f [%.1f, %.1f]"</span>,</span>
+<span id="cb77-45"><a href="#cb77-45" aria-hidden="true" tabindex="-1"></a>      <span class="fu">median</span>(d[ok]), <span class="fu">quantile</span>(d[ok], .<span class="dv">25</span>), <span class="fu">quantile</span>(d[ok], .<span class="dv">75</span>)),</span>
+<span id="cb77-46"><a href="#cb77-46" aria-hidden="true" tabindex="-1"></a>    <span class="st">`</span><span class="at">Delta eGFR %, median [IQR]</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">sprintf</span>(<span class="st">"%.1f [%.1f, %.1f]"</span>,</span>
+<span id="cb77-47"><a href="#cb77-47" aria-hidden="true" tabindex="-1"></a>      <span class="fu">median</span>(dp[ok]), <span class="fu">quantile</span>(dp[ok], .<span class="dv">25</span>), <span class="fu">quantile</span>(dp[ok], .<span class="dv">75</span>))</span>
+<span id="cb77-48"><a href="#cb77-48" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb77-49"><a href="#cb77-49" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb77-50"><a href="#cb77-50" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb77-51"><a href="#cb77-51" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(dgfr_summary, <span class="at">caption =</span> <span class="fu">paste0</span>(</span>
+<span id="cb77-52"><a href="#cb77-52" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Delta eGFR (creatinine) vs baseline, full pipeline cohort (N = "</span>,</span>
+<span id="cb77-53"><a href="#cb77-53" aria-hidden="true" tabindex="-1"></a>  <span class="fu">nrow</span>(final_master), <span class="st">"), closest creatinine within +/- "</span>, DGFR_WINDOW,</span>
+<span id="cb77-54"><a href="#cb77-54" aria-hidden="true" tabindex="-1"></a>  <span class="st">" days of each mark. Negative = decline from baseline."</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output-display">
+<table class="caption-top table table-sm table-striped small">
+<caption>Delta eGFR (creatinine) vs baseline, full pipeline cohort (N = 943), closest creatinine within +/- 45 days of each mark. Negative = decline from baseline.</caption>
+<colgroup>
+<col style="width: 7%">
+<col style="width: 13%">
+<col style="width: 10%">
+<col style="width: 22%">
+<col style="width: 22%">
+<col style="width: 24%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Mark</th>
+<th style="text-align: right;">n with a value</th>
+<th style="text-align: right;">% of cohort</th>
+<th style="text-align: left;">Actual day, median [IQR]</th>
+<th style="text-align: left;">Delta eGFR, median [IQR]</th>
+<th style="text-align: left;">Delta eGFR %, median [IQR]</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Day 90</td>
+<td style="text-align: right;">876</td>
+<td style="text-align: right;">92.9</td>
+<td style="text-align: left;">86 [82, 91]</td>
+<td style="text-align: left;">1.0 [-6.4, 7.8]</td>
+<td style="text-align: left;">1.1 [-7.5, 10.0]</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Day 180</td>
+<td style="text-align: right;">710</td>
+<td style="text-align: right;">75.3</td>
+<td style="text-align: left;">179 [168, 188]</td>
+<td style="text-align: left;">-2.6 [-12.0, 4.2]</td>
+<td style="text-align: left;">-2.8 [-14.6, 5.5]</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Day 365</td>
+<td style="text-align: right;">489</td>
+<td style="text-align: right;">51.9</td>
+<td style="text-align: left;">363 [353, 371]</td>
+<td style="text-align: left;">-6.7 [-15.4, 1.6]</td>
+<td style="text-align: left;">-7.8 [-18.5, 1.5]</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
 <section id="aki-from-serial-creatinine-kdigo-style" class="level2">
 <h2 class="anchored" data-anchor-id="aki-from-serial-creatinine-kdigo-style">5.17 AKI from serial creatinine (KDIGO-style)</h2>
 <p>Ported from ICI-CKD §5.11 / §3.8, anchored at <code>baseline_sample_date</code>.</p>
@@ -2979,31 +3111,31 @@ Thoracic   Breast       GI       GU      GYN    HEENT    Other
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb77"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb77-1"><a href="#cb77-1" aria-hidden="true" tabindex="-1"></a>aki_df <span class="ot">&lt;-</span> <span class="fu">create_aki</span>(master_lab,</span>
-<span id="cb77-2"><a href="#cb77-2" aria-hidden="true" tabindex="-1"></a>                     <span class="at">index_date =</span> baseline_sample_date,</span>
-<span id="cb77-3"><a href="#cb77-3" aria-hidden="true" tabindex="-1"></a>                     <span class="at">Group_Id   =</span> EMPI,</span>
-<span id="cb77-4"><a href="#cb77-4" aria-hidden="true" tabindex="-1"></a>                     <span class="at">median_window_days =</span> <span class="dv">90</span>,</span>
-<span id="cb77-5"><a href="#cb77-5" aria-hidden="true" tabindex="-1"></a>                     <span class="at">lowest_window_days =</span> <span class="dv">2</span>)</span>
-<span id="cb77-6"><a href="#cb77-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb77-7"><a href="#cb77-7" aria-hidden="true" tabindex="-1"></a><span class="co"># create_aki() returns the FIRST qualifying creatinine at any time post-baseline.</span></span>
-<span id="cb77-8"><a href="#cb77-8" aria-hidden="true" tabindex="-1"></a><span class="co"># AKI is then restricted to within 1 year of baseline, as specified. aki_date /</span></span>
-<span id="cb77-9"><a href="#cb77-9" aria-hidden="true" tabindex="-1"></a><span class="co"># aki_days describe the qualifying (&lt;=365 d) event and are NA when the patient's</span></span>
-<span id="cb77-10"><a href="#cb77-10" aria-hidden="true" tabindex="-1"></a><span class="co"># first AKI falls outside the window, so the flag, the date and the time variable</span></span>
-<span id="cb77-11"><a href="#cb77-11" aria-hidden="true" tabindex="-1"></a><span class="co"># always agree. aki_any / aki_days_any keep the unrestricted version for</span></span>
-<span id="cb77-12"><a href="#cb77-12" aria-hidden="true" tabindex="-1"></a><span class="co"># reference and are not used by any model.</span></span>
-<span id="cb77-13"><a href="#cb77-13" aria-hidden="true" tabindex="-1"></a>final_master <span class="ot">&lt;-</span> final_master <span class="sc">%&gt;%</span></span>
-<span id="cb77-14"><a href="#cb77-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(aki_df, <span class="at">by =</span> <span class="st">"EMPI"</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb77-15"><a href="#cb77-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
-<span id="cb77-16"><a href="#cb77-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">aki_any      =</span> <span class="fu">ifelse</span>(<span class="fu">is.na</span>(aki), <span class="dv">0</span>L, <span class="fu">as.integer</span>(aki)),</span>
-<span id="cb77-17"><a href="#cb77-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">aki_date_any =</span> aki_date,</span>
-<span id="cb77-18"><a href="#cb77-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">aki_days_any =</span> <span class="fu">as.numeric</span>(aki_date <span class="sc">-</span> baseline_sample_date),</span>
-<span id="cb77-19"><a href="#cb77-19" aria-hidden="true" tabindex="-1"></a>    <span class="at">aki          =</span> <span class="fu">ifelse</span>(<span class="sc">!</span><span class="fu">is.na</span>(aki_days_any) <span class="sc">&amp;</span> aki_days_any <span class="sc">&lt;=</span> <span class="dv">365</span>, <span class="dv">1</span>L, <span class="dv">0</span>L),</span>
-<span id="cb77-20"><a href="#cb77-20" aria-hidden="true" tabindex="-1"></a>    <span class="at">aki_date     =</span> <span class="fu">as.Date</span>(<span class="fu">ifelse</span>(aki <span class="sc">==</span> <span class="dv">1</span>, aki_date_any, <span class="cn">NA</span>), <span class="at">origin =</span> <span class="st">"1970-01-01"</span>),</span>
-<span id="cb77-21"><a href="#cb77-21" aria-hidden="true" tabindex="-1"></a>    <span class="at">aki_days     =</span> <span class="fu">ifelse</span>(aki <span class="sc">==</span> <span class="dv">1</span>, aki_days_any, <span class="cn">NA_real_</span>)</span>
-<span id="cb77-22"><a href="#cb77-22" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb77-23"><a href="#cb77-23" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb77-24"><a href="#cb77-24" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"AKI within 1 year:"</span>, <span class="fu">sum</span>(final_master<span class="sc">$</span>aki <span class="sc">==</span> <span class="dv">1</span>), <span class="st">"of"</span>, <span class="fu">nrow</span>(final_master),</span>
-<span id="cb77-25"><a href="#cb77-25" aria-hidden="true" tabindex="-1"></a>    <span class="st">" | AKI at any time (reference):"</span>, <span class="fu">sum</span>(final_master<span class="sc">$</span>aki_any <span class="sc">==</span> <span class="dv">1</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb78"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb78-1"><a href="#cb78-1" aria-hidden="true" tabindex="-1"></a>aki_df <span class="ot">&lt;-</span> <span class="fu">create_aki</span>(master_lab,</span>
+<span id="cb78-2"><a href="#cb78-2" aria-hidden="true" tabindex="-1"></a>                     <span class="at">index_date =</span> baseline_sample_date,</span>
+<span id="cb78-3"><a href="#cb78-3" aria-hidden="true" tabindex="-1"></a>                     <span class="at">Group_Id   =</span> EMPI,</span>
+<span id="cb78-4"><a href="#cb78-4" aria-hidden="true" tabindex="-1"></a>                     <span class="at">median_window_days =</span> <span class="dv">90</span>,</span>
+<span id="cb78-5"><a href="#cb78-5" aria-hidden="true" tabindex="-1"></a>                     <span class="at">lowest_window_days =</span> <span class="dv">2</span>)</span>
+<span id="cb78-6"><a href="#cb78-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb78-7"><a href="#cb78-7" aria-hidden="true" tabindex="-1"></a><span class="co"># create_aki() returns the FIRST qualifying creatinine at any time post-baseline.</span></span>
+<span id="cb78-8"><a href="#cb78-8" aria-hidden="true" tabindex="-1"></a><span class="co"># AKI is then restricted to within 1 year of baseline, as specified. aki_date /</span></span>
+<span id="cb78-9"><a href="#cb78-9" aria-hidden="true" tabindex="-1"></a><span class="co"># aki_days describe the qualifying (&lt;=365 d) event and are NA when the patient's</span></span>
+<span id="cb78-10"><a href="#cb78-10" aria-hidden="true" tabindex="-1"></a><span class="co"># first AKI falls outside the window, so the flag, the date and the time variable</span></span>
+<span id="cb78-11"><a href="#cb78-11" aria-hidden="true" tabindex="-1"></a><span class="co"># always agree. aki_any / aki_days_any keep the unrestricted version for</span></span>
+<span id="cb78-12"><a href="#cb78-12" aria-hidden="true" tabindex="-1"></a><span class="co"># reference and are not used by any model.</span></span>
+<span id="cb78-13"><a href="#cb78-13" aria-hidden="true" tabindex="-1"></a>final_master <span class="ot">&lt;-</span> final_master <span class="sc">%&gt;%</span></span>
+<span id="cb78-14"><a href="#cb78-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(aki_df, <span class="at">by =</span> <span class="st">"EMPI"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb78-15"><a href="#cb78-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb78-16"><a href="#cb78-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">aki_any      =</span> <span class="fu">ifelse</span>(<span class="fu">is.na</span>(aki), <span class="dv">0</span>L, <span class="fu">as.integer</span>(aki)),</span>
+<span id="cb78-17"><a href="#cb78-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">aki_date_any =</span> aki_date,</span>
+<span id="cb78-18"><a href="#cb78-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">aki_days_any =</span> <span class="fu">as.numeric</span>(aki_date <span class="sc">-</span> baseline_sample_date),</span>
+<span id="cb78-19"><a href="#cb78-19" aria-hidden="true" tabindex="-1"></a>    <span class="at">aki          =</span> <span class="fu">ifelse</span>(<span class="sc">!</span><span class="fu">is.na</span>(aki_days_any) <span class="sc">&amp;</span> aki_days_any <span class="sc">&lt;=</span> <span class="dv">365</span>, <span class="dv">1</span>L, <span class="dv">0</span>L),</span>
+<span id="cb78-20"><a href="#cb78-20" aria-hidden="true" tabindex="-1"></a>    <span class="at">aki_date     =</span> <span class="fu">as.Date</span>(<span class="fu">ifelse</span>(aki <span class="sc">==</span> <span class="dv">1</span>, aki_date_any, <span class="cn">NA</span>), <span class="at">origin =</span> <span class="st">"1970-01-01"</span>),</span>
+<span id="cb78-21"><a href="#cb78-21" aria-hidden="true" tabindex="-1"></a>    <span class="at">aki_days     =</span> <span class="fu">ifelse</span>(aki <span class="sc">==</span> <span class="dv">1</span>, aki_days_any, <span class="cn">NA_real_</span>)</span>
+<span id="cb78-22"><a href="#cb78-22" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb78-23"><a href="#cb78-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb78-24"><a href="#cb78-24" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"AKI within 1 year:"</span>, <span class="fu">sum</span>(final_master<span class="sc">$</span>aki <span class="sc">==</span> <span class="dv">1</span>), <span class="st">"of"</span>, <span class="fu">nrow</span>(final_master),</span>
+<span id="cb78-25"><a href="#cb78-25" aria-hidden="true" tabindex="-1"></a>    <span class="st">" | AKI at any time (reference):"</span>, <span class="fu">sum</span>(final_master<span class="sc">$</span>aki_any <span class="sc">==</span> <span class="dv">1</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>AKI within 1 year: 197 of 943  | AKI at any time (reference): 240 </code></pre>
@@ -3020,29 +3152,29 @@ Thoracic   Breast       GI       GU      GYN    HEENT    Other
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb79"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb79-1"><a href="#cb79-1" aria-hidden="true" tabindex="-1"></a>esrd_kt_codes <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"585.6"</span>,<span class="st">"N18.6"</span>,<span class="st">"V45.1"</span>,<span class="st">"Z94.0"</span>,<span class="st">"Z99.2"</span>,<span class="st">"996.81"</span>,<span class="st">"T86.1"</span>,<span class="st">"T86.10"</span>,</span>
-<span id="cb79-2"><a href="#cb79-2" aria-hidden="true" tabindex="-1"></a>                   <span class="st">"T86.11"</span>,<span class="st">"T86.12"</span>,<span class="st">"T86.13"</span>,<span class="st">"T86.19"</span>,<span class="st">"N18.0"</span>,<span class="st">"V56.1"</span>,<span class="st">"Z49.0"</span>,<span class="st">"Z49.1"</span>,<span class="st">"Z49.2"</span>)</span>
-<span id="cb79-3"><a href="#cb79-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb79-4"><a href="#cb79-4" aria-hidden="true" tabindex="-1"></a>esrd_kt_list <span class="ot">&lt;-</span> <span class="fu">dia_list_icd</span>(master_dia, <span class="at">icd_code =</span> esrd_kt_codes,</span>
-<span id="cb79-5"><a href="#cb79-5" aria-hidden="true" tabindex="-1"></a>                             <span class="at">index_date =</span> baseline_sample_date)</span>
-<span id="cb79-6"><a href="#cb79-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb79-7"><a href="#cb79-7" aria-hidden="true" tabindex="-1"></a>esrd_kt_after <span class="ot">&lt;-</span> <span class="fu">dia_list_icd_after_index</span>(master_dia, <span class="at">icd_code =</span> esrd_kt_codes,</span>
-<span id="cb79-8"><a href="#cb79-8" aria-hidden="true" tabindex="-1"></a>                                          <span class="at">index_date =</span> baseline_sample_date) <span class="sc">%&gt;%</span></span>
-<span id="cb79-9"><a href="#cb79-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span>(<span class="at">esrd_kt_after_ici_date =</span> first_event_date)</span>
-<span id="cb79-10"><a href="#cb79-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb79-11"><a href="#cb79-11" aria-hidden="true" tabindex="-1"></a>final_master <span class="ot">&lt;-</span> final_master <span class="sc">%&gt;%</span></span>
-<span id="cb79-12"><a href="#cb79-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">esrd_kt =</span> <span class="fu">ifelse</span>(EMPI <span class="sc">%in%</span> esrd_kt_list<span class="sc">$</span>EMPI, <span class="dv">1</span>L, <span class="dv">0</span>L)) <span class="sc">%&gt;%</span></span>
-<span id="cb79-13"><a href="#cb79-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(esrd_kt_after, <span class="at">by =</span> <span class="st">"EMPI"</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb79-14"><a href="#cb79-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">esrd_kt_after_ici =</span> <span class="fu">ifelse</span>(<span class="sc">!</span><span class="fu">is.na</span>(esrd_kt_after_ici_date), <span class="dv">1</span>L, <span class="dv">0</span>L))</span>
-<span id="cb79-15"><a href="#cb79-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb79-16"><a href="#cb79-16" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"esrd_kt (at/before baseline):"</span>, <span class="fu">sum</span>(final_master<span class="sc">$</span>esrd_kt <span class="sc">==</span> <span class="dv">1</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb80"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb80-1"><a href="#cb80-1" aria-hidden="true" tabindex="-1"></a>esrd_kt_codes <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"585.6"</span>,<span class="st">"N18.6"</span>,<span class="st">"V45.1"</span>,<span class="st">"Z94.0"</span>,<span class="st">"Z99.2"</span>,<span class="st">"996.81"</span>,<span class="st">"T86.1"</span>,<span class="st">"T86.10"</span>,</span>
+<span id="cb80-2"><a href="#cb80-2" aria-hidden="true" tabindex="-1"></a>                   <span class="st">"T86.11"</span>,<span class="st">"T86.12"</span>,<span class="st">"T86.13"</span>,<span class="st">"T86.19"</span>,<span class="st">"N18.0"</span>,<span class="st">"V56.1"</span>,<span class="st">"Z49.0"</span>,<span class="st">"Z49.1"</span>,<span class="st">"Z49.2"</span>)</span>
+<span id="cb80-3"><a href="#cb80-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb80-4"><a href="#cb80-4" aria-hidden="true" tabindex="-1"></a>esrd_kt_list <span class="ot">&lt;-</span> <span class="fu">dia_list_icd</span>(master_dia, <span class="at">icd_code =</span> esrd_kt_codes,</span>
+<span id="cb80-5"><a href="#cb80-5" aria-hidden="true" tabindex="-1"></a>                             <span class="at">index_date =</span> baseline_sample_date)</span>
+<span id="cb80-6"><a href="#cb80-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb80-7"><a href="#cb80-7" aria-hidden="true" tabindex="-1"></a>esrd_kt_after <span class="ot">&lt;-</span> <span class="fu">dia_list_icd_after_index</span>(master_dia, <span class="at">icd_code =</span> esrd_kt_codes,</span>
+<span id="cb80-8"><a href="#cb80-8" aria-hidden="true" tabindex="-1"></a>                                          <span class="at">index_date =</span> baseline_sample_date) <span class="sc">%&gt;%</span></span>
+<span id="cb80-9"><a href="#cb80-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span>(<span class="at">esrd_kt_after_ici_date =</span> first_event_date)</span>
+<span id="cb80-10"><a href="#cb80-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb80-11"><a href="#cb80-11" aria-hidden="true" tabindex="-1"></a>final_master <span class="ot">&lt;-</span> final_master <span class="sc">%&gt;%</span></span>
+<span id="cb80-12"><a href="#cb80-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">esrd_kt =</span> <span class="fu">ifelse</span>(EMPI <span class="sc">%in%</span> esrd_kt_list<span class="sc">$</span>EMPI, <span class="dv">1</span>L, <span class="dv">0</span>L)) <span class="sc">%&gt;%</span></span>
+<span id="cb80-13"><a href="#cb80-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(esrd_kt_after, <span class="at">by =</span> <span class="st">"EMPI"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb80-14"><a href="#cb80-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">esrd_kt_after_ici =</span> <span class="fu">ifelse</span>(<span class="sc">!</span><span class="fu">is.na</span>(esrd_kt_after_ici_date), <span class="dv">1</span>L, <span class="dv">0</span>L))</span>
+<span id="cb80-15"><a href="#cb80-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb80-16"><a href="#cb80-16" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"esrd_kt (at/before baseline):"</span>, <span class="fu">sum</span>(final_master<span class="sc">$</span>esrd_kt <span class="sc">==</span> <span class="dv">1</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>esrd_kt (at/before baseline): 5 </code></pre>
 </div>
 <details class="code-fold">
 <summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb81"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb81-1"><a href="#cb81-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"esrd_kt_after_ici (after baseline):"</span>, <span class="fu">sum</span>(final_master<span class="sc">$</span>esrd_kt_after_ici <span class="sc">==</span> <span class="dv">1</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb82"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb82-1"><a href="#cb82-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"esrd_kt_after_ici (after baseline):"</span>, <span class="fu">sum</span>(final_master<span class="sc">$</span>esrd_kt_after_ici <span class="sc">==</span> <span class="dv">1</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>esrd_kt_after_ici (after baseline): 2 </code></pre>
@@ -3055,118 +3187,118 @@ Thoracic   Breast       GI       GU      GYN    HEENT    Other
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb83"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb83-1"><a href="#cb83-1" aria-hidden="true" tabindex="-1"></a>final_master <span class="ot">&lt;-</span> final_master <span class="sc">%&gt;%</span></span>
-<span id="cb83-2"><a href="#cb83-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
-<span id="cb83-3"><a href="#cb83-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">eskd_composite =</span> <span class="fu">ifelse</span>(esrd_kt_after_ici <span class="sc">==</span> <span class="dv">1</span> <span class="sc">|</span> eskd_defination_1 <span class="sc">==</span> <span class="dv">1</span>, <span class="dv">1</span>L, <span class="dv">0</span>L),</span>
-<span id="cb83-4"><a href="#cb83-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">eskd_composite =</span> <span class="fu">ifelse</span>(<span class="fu">is.na</span>(eskd_composite), <span class="dv">0</span>L, eskd_composite),</span>
-<span id="cb83-5"><a href="#cb83-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">eskd_composite_date =</span> <span class="fu">pmin</span>(esrd_kt_after_ici_date, eskd_defination_1_date,</span>
-<span id="cb83-6"><a href="#cb83-6" aria-hidden="true" tabindex="-1"></a>                               <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb83-7"><a href="#cb83-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb83-8"><a href="#cb83-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">time_to_eskd_composite  =</span> <span class="fu">as.numeric</span>(eskd_composite_date  <span class="sc">-</span> baseline_sample_date),</span>
-<span id="cb83-9"><a href="#cb83-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">time_to_ckd_incidence   =</span> <span class="fu">as.numeric</span>(ckd_incidence_date   <span class="sc">-</span> baseline_sample_date),</span>
-<span id="cb83-10"><a href="#cb83-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">time_to_ckd_progression =</span> <span class="fu">as.numeric</span>(ckd_progression_date <span class="sc">-</span> baseline_sample_date),</span>
-<span id="cb83-11"><a href="#cb83-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb83-12"><a href="#cb83-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">time_to_ckd_incidence_any =</span> <span class="fu">as.numeric</span>(ckd_incidence_any_date <span class="sc">-</span> baseline_sample_date),</span>
-<span id="cb83-13"><a href="#cb83-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb83-14"><a href="#cb83-14" aria-hidden="true" tabindex="-1"></a>    <span class="co"># CKD composite = CKD incidence + CKD progression + ESKD composite.</span></span>
-<span id="cb83-15"><a href="#cb83-15" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Uses ckd_incidence (the &gt;25 % definition), not ckd_incidence_any.</span></span>
-<span id="cb83-16"><a href="#cb83-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">ckd_composite =</span> <span class="fu">ifelse</span>(eskd_composite <span class="sc">==</span> <span class="dv">1</span> <span class="sc">|</span> ckd_incidence <span class="sc">==</span> <span class="dv">1</span> <span class="sc">|</span></span>
-<span id="cb83-17"><a href="#cb83-17" aria-hidden="true" tabindex="-1"></a>                           ckd_progression <span class="sc">==</span> <span class="dv">1</span>, <span class="dv">1</span>L, <span class="dv">0</span>L),</span>
-<span id="cb83-18"><a href="#cb83-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">ckd_composite =</span> <span class="fu">ifelse</span>(<span class="fu">is.na</span>(ckd_composite), <span class="dv">0</span>L, ckd_composite),</span>
-<span id="cb83-19"><a href="#cb83-19" aria-hidden="true" tabindex="-1"></a>    <span class="at">time_to_ckd_composite =</span> <span class="fu">pmin</span>(time_to_eskd_composite,</span>
-<span id="cb83-20"><a href="#cb83-20" aria-hidden="true" tabindex="-1"></a>                                 time_to_ckd_incidence,</span>
-<span id="cb83-21"><a href="#cb83-21" aria-hidden="true" tabindex="-1"></a>                                 time_to_ckd_progression, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb83-22"><a href="#cb83-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb83-23"><a href="#cb83-23" aria-hidden="true" tabindex="-1"></a>    <span class="at">last_cre_days  =</span> <span class="fu">as.numeric</span>(last_cre_date <span class="sc">-</span> baseline_sample_date),</span>
-<span id="cb83-24"><a href="#cb83-24" aria-hidden="true" tabindex="-1"></a>    <span class="at">aki_before_ckd =</span> <span class="fu">ifelse</span>(<span class="sc">!</span><span class="fu">is.na</span>(aki_days) <span class="sc">&amp;</span> <span class="sc">!</span><span class="fu">is.na</span>(time_to_ckd_composite) <span class="sc">&amp;</span></span>
-<span id="cb83-25"><a href="#cb83-25" aria-hidden="true" tabindex="-1"></a>                            aki_days <span class="sc">&lt;=</span> time_to_ckd_composite, <span class="dv">1</span>L, <span class="dv">0</span>L)</span>
-<span id="cb83-26"><a href="#cb83-26" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb83-27"><a href="#cb83-27" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb83-28"><a href="#cb83-28" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Long-horizon death, from the RPDR Dem file -------------------------------</span></span>
-<span id="cb83-29"><a href="#cb83-29" aria-hidden="true" tabindex="-1"></a><span class="co"># The existing death_90 / time_to_death_90 come from REDCap pt_status and are</span></span>
-<span id="cb83-30"><a href="#cb83-30" aria-hidden="true" tabindex="-1"></a><span class="co"># capped at 90 days, so they cannot serve as the competing event for outcomes</span></span>
-<span id="cb83-31"><a href="#cb83-31" aria-hidden="true" tabindex="-1"></a><span class="co"># that run to the end of creatinine follow-up. Two sources carry death at its</span></span>
-<span id="cb83-32"><a href="#cb83-32" aria-hidden="true" tabindex="-1"></a><span class="co"># actual time and they do not nest: RPDR Date_Of_Death gives a date, and REDCap</span></span>
-<span id="cb83-33"><a href="#cb83-33" aria-hidden="true" tabindex="-1"></a><span class="co"># pt_status == "Dead" means the last-follow-up date IS the death date. Some</span></span>
-<span id="cb83-34"><a href="#cb83-34" aria-hidden="true" tabindex="-1"></a><span class="co"># deaths appear in only one of the two, so death_days_any below takes the union.</span></span>
-<span id="cb83-35"><a href="#cb83-35" aria-hidden="true" tabindex="-1"></a>final_master <span class="ot">&lt;-</span> final_master <span class="sc">%&gt;%</span></span>
-<span id="cb83-36"><a href="#cb83-36" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(dem, <span class="at">by =</span> <span class="st">"EMPI"</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb83-37"><a href="#cb83-37" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
-<span id="cb83-38"><a href="#cb83-38" aria-hidden="true" tabindex="-1"></a>    <span class="at">rpdr_deceased  =</span> <span class="fu">ifelse</span>(<span class="fu">is.na</span>(rpdr_deceased), <span class="dv">0</span>L, rpdr_deceased),</span>
-<span id="cb83-39"><a href="#cb83-39" aria-hidden="true" tabindex="-1"></a>    <span class="at">death_days_lt  =</span> <span class="fu">as.numeric</span>(death_date <span class="sc">-</span> baseline_sample_date),</span>
-<span id="cb83-40"><a href="#cb83-40" aria-hidden="true" tabindex="-1"></a>    <span class="co"># A death recorded before baseline is a data error; treat as unknown.</span></span>
-<span id="cb83-41"><a href="#cb83-41" aria-hidden="true" tabindex="-1"></a>    <span class="at">death_days_lt  =</span> <span class="fu">ifelse</span>(<span class="sc">!</span><span class="fu">is.na</span>(death_days_lt) <span class="sc">&amp;</span> death_days_lt <span class="sc">&lt;</span> <span class="dv">0</span>,</span>
-<span id="cb83-42"><a href="#cb83-42" aria-hidden="true" tabindex="-1"></a>                            <span class="cn">NA_real_</span>, death_days_lt),</span>
-<span id="cb83-43"><a href="#cb83-43" aria-hidden="true" tabindex="-1"></a>    <span class="at">death_lt       =</span> <span class="fu">ifelse</span>(<span class="sc">!</span><span class="fu">is.na</span>(death_days_lt), <span class="dv">1</span>L, <span class="dv">0</span>L)</span>
-<span id="cb83-44"><a href="#cb83-44" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb83-45"><a href="#cb83-45" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb83-46"><a href="#cb83-46" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"RPDR deceased:"</span>, <span class="fu">sum</span>(final_master<span class="sc">$</span>rpdr_deceased <span class="sc">==</span> <span class="dv">1</span>),</span>
-<span id="cb83-47"><a href="#cb83-47" aria-hidden="true" tabindex="-1"></a>    <span class="st">" with a usable death date:"</span>, <span class="fu">sum</span>(final_master<span class="sc">$</span>death_lt <span class="sc">==</span> <span class="dv">1</span>),</span>
-<span id="cb83-48"><a href="#cb83-48" aria-hidden="true" tabindex="-1"></a>    <span class="st">" (deceased but undated, censored instead:"</span>,</span>
-<span id="cb83-49"><a href="#cb83-49" aria-hidden="true" tabindex="-1"></a>    <span class="fu">sum</span>(final_master<span class="sc">$</span>rpdr_deceased <span class="sc">==</span> <span class="dv">1</span> <span class="sc">&amp;</span> final_master<span class="sc">$</span>death_lt <span class="sc">==</span> <span class="dv">0</span>), <span class="st">")</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb84"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb84-1"><a href="#cb84-1" aria-hidden="true" tabindex="-1"></a>final_master <span class="ot">&lt;-</span> final_master <span class="sc">%&gt;%</span></span>
+<span id="cb84-2"><a href="#cb84-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb84-3"><a href="#cb84-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">eskd_composite =</span> <span class="fu">ifelse</span>(esrd_kt_after_ici <span class="sc">==</span> <span class="dv">1</span> <span class="sc">|</span> eskd_defination_1 <span class="sc">==</span> <span class="dv">1</span>, <span class="dv">1</span>L, <span class="dv">0</span>L),</span>
+<span id="cb84-4"><a href="#cb84-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">eskd_composite =</span> <span class="fu">ifelse</span>(<span class="fu">is.na</span>(eskd_composite), <span class="dv">0</span>L, eskd_composite),</span>
+<span id="cb84-5"><a href="#cb84-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">eskd_composite_date =</span> <span class="fu">pmin</span>(esrd_kt_after_ici_date, eskd_defination_1_date,</span>
+<span id="cb84-6"><a href="#cb84-6" aria-hidden="true" tabindex="-1"></a>                               <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb84-7"><a href="#cb84-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb84-8"><a href="#cb84-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">time_to_eskd_composite  =</span> <span class="fu">as.numeric</span>(eskd_composite_date  <span class="sc">-</span> baseline_sample_date),</span>
+<span id="cb84-9"><a href="#cb84-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">time_to_ckd_incidence   =</span> <span class="fu">as.numeric</span>(ckd_incidence_date   <span class="sc">-</span> baseline_sample_date),</span>
+<span id="cb84-10"><a href="#cb84-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">time_to_ckd_progression =</span> <span class="fu">as.numeric</span>(ckd_progression_date <span class="sc">-</span> baseline_sample_date),</span>
+<span id="cb84-11"><a href="#cb84-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb84-12"><a href="#cb84-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">time_to_ckd_incidence_any =</span> <span class="fu">as.numeric</span>(ckd_incidence_any_date <span class="sc">-</span> baseline_sample_date),</span>
+<span id="cb84-13"><a href="#cb84-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb84-14"><a href="#cb84-14" aria-hidden="true" tabindex="-1"></a>    <span class="co"># CKD composite = CKD incidence + CKD progression + ESKD composite.</span></span>
+<span id="cb84-15"><a href="#cb84-15" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Uses ckd_incidence (the &gt;25 % definition), not ckd_incidence_any.</span></span>
+<span id="cb84-16"><a href="#cb84-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">ckd_composite =</span> <span class="fu">ifelse</span>(eskd_composite <span class="sc">==</span> <span class="dv">1</span> <span class="sc">|</span> ckd_incidence <span class="sc">==</span> <span class="dv">1</span> <span class="sc">|</span></span>
+<span id="cb84-17"><a href="#cb84-17" aria-hidden="true" tabindex="-1"></a>                           ckd_progression <span class="sc">==</span> <span class="dv">1</span>, <span class="dv">1</span>L, <span class="dv">0</span>L),</span>
+<span id="cb84-18"><a href="#cb84-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">ckd_composite =</span> <span class="fu">ifelse</span>(<span class="fu">is.na</span>(ckd_composite), <span class="dv">0</span>L, ckd_composite),</span>
+<span id="cb84-19"><a href="#cb84-19" aria-hidden="true" tabindex="-1"></a>    <span class="at">time_to_ckd_composite =</span> <span class="fu">pmin</span>(time_to_eskd_composite,</span>
+<span id="cb84-20"><a href="#cb84-20" aria-hidden="true" tabindex="-1"></a>                                 time_to_ckd_incidence,</span>
+<span id="cb84-21"><a href="#cb84-21" aria-hidden="true" tabindex="-1"></a>                                 time_to_ckd_progression, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb84-22"><a href="#cb84-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb84-23"><a href="#cb84-23" aria-hidden="true" tabindex="-1"></a>    <span class="at">last_cre_days  =</span> <span class="fu">as.numeric</span>(last_cre_date <span class="sc">-</span> baseline_sample_date),</span>
+<span id="cb84-24"><a href="#cb84-24" aria-hidden="true" tabindex="-1"></a>    <span class="at">aki_before_ckd =</span> <span class="fu">ifelse</span>(<span class="sc">!</span><span class="fu">is.na</span>(aki_days) <span class="sc">&amp;</span> <span class="sc">!</span><span class="fu">is.na</span>(time_to_ckd_composite) <span class="sc">&amp;</span></span>
+<span id="cb84-25"><a href="#cb84-25" aria-hidden="true" tabindex="-1"></a>                            aki_days <span class="sc">&lt;=</span> time_to_ckd_composite, <span class="dv">1</span>L, <span class="dv">0</span>L)</span>
+<span id="cb84-26"><a href="#cb84-26" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb84-27"><a href="#cb84-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb84-28"><a href="#cb84-28" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Long-horizon death, from the RPDR Dem file -------------------------------</span></span>
+<span id="cb84-29"><a href="#cb84-29" aria-hidden="true" tabindex="-1"></a><span class="co"># The existing death_90 / time_to_death_90 come from REDCap pt_status and are</span></span>
+<span id="cb84-30"><a href="#cb84-30" aria-hidden="true" tabindex="-1"></a><span class="co"># capped at 90 days, so they cannot serve as the competing event for outcomes</span></span>
+<span id="cb84-31"><a href="#cb84-31" aria-hidden="true" tabindex="-1"></a><span class="co"># that run to the end of creatinine follow-up. Two sources carry death at its</span></span>
+<span id="cb84-32"><a href="#cb84-32" aria-hidden="true" tabindex="-1"></a><span class="co"># actual time and they do not nest: RPDR Date_Of_Death gives a date, and REDCap</span></span>
+<span id="cb84-33"><a href="#cb84-33" aria-hidden="true" tabindex="-1"></a><span class="co"># pt_status == "Dead" means the last-follow-up date IS the death date. Some</span></span>
+<span id="cb84-34"><a href="#cb84-34" aria-hidden="true" tabindex="-1"></a><span class="co"># deaths appear in only one of the two, so death_days_any below takes the union.</span></span>
+<span id="cb84-35"><a href="#cb84-35" aria-hidden="true" tabindex="-1"></a>final_master <span class="ot">&lt;-</span> final_master <span class="sc">%&gt;%</span></span>
+<span id="cb84-36"><a href="#cb84-36" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(dem, <span class="at">by =</span> <span class="st">"EMPI"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb84-37"><a href="#cb84-37" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb84-38"><a href="#cb84-38" aria-hidden="true" tabindex="-1"></a>    <span class="at">rpdr_deceased  =</span> <span class="fu">ifelse</span>(<span class="fu">is.na</span>(rpdr_deceased), <span class="dv">0</span>L, rpdr_deceased),</span>
+<span id="cb84-39"><a href="#cb84-39" aria-hidden="true" tabindex="-1"></a>    <span class="at">death_days_lt  =</span> <span class="fu">as.numeric</span>(death_date <span class="sc">-</span> baseline_sample_date),</span>
+<span id="cb84-40"><a href="#cb84-40" aria-hidden="true" tabindex="-1"></a>    <span class="co"># A death recorded before baseline is a data error; treat as unknown.</span></span>
+<span id="cb84-41"><a href="#cb84-41" aria-hidden="true" tabindex="-1"></a>    <span class="at">death_days_lt  =</span> <span class="fu">ifelse</span>(<span class="sc">!</span><span class="fu">is.na</span>(death_days_lt) <span class="sc">&amp;</span> death_days_lt <span class="sc">&lt;</span> <span class="dv">0</span>,</span>
+<span id="cb84-42"><a href="#cb84-42" aria-hidden="true" tabindex="-1"></a>                            <span class="cn">NA_real_</span>, death_days_lt),</span>
+<span id="cb84-43"><a href="#cb84-43" aria-hidden="true" tabindex="-1"></a>    <span class="at">death_lt       =</span> <span class="fu">ifelse</span>(<span class="sc">!</span><span class="fu">is.na</span>(death_days_lt), <span class="dv">1</span>L, <span class="dv">0</span>L)</span>
+<span id="cb84-44"><a href="#cb84-44" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb84-45"><a href="#cb84-45" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb84-46"><a href="#cb84-46" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"RPDR deceased:"</span>, <span class="fu">sum</span>(final_master<span class="sc">$</span>rpdr_deceased <span class="sc">==</span> <span class="dv">1</span>),</span>
+<span id="cb84-47"><a href="#cb84-47" aria-hidden="true" tabindex="-1"></a>    <span class="st">" with a usable death date:"</span>, <span class="fu">sum</span>(final_master<span class="sc">$</span>death_lt <span class="sc">==</span> <span class="dv">1</span>),</span>
+<span id="cb84-48"><a href="#cb84-48" aria-hidden="true" tabindex="-1"></a>    <span class="st">" (deceased but undated, censored instead:"</span>,</span>
+<span id="cb84-49"><a href="#cb84-49" aria-hidden="true" tabindex="-1"></a>    <span class="fu">sum</span>(final_master<span class="sc">$</span>rpdr_deceased <span class="sc">==</span> <span class="dv">1</span> <span class="sc">&amp;</span> final_master<span class="sc">$</span>death_lt <span class="sc">==</span> <span class="dv">0</span>), <span class="st">")</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>RPDR deceased: 269  with a usable death date: 252  (deceased but undated, censored instead: 17 )</code></pre>
 </div>
 <details class="code-fold">
 <summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb85"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb85-1"><a href="#cb85-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"REDCap death_90 == 1:"</span>, <span class="fu">sum</span>(final_master<span class="sc">$</span>death_90 <span class="sc">==</span> <span class="dv">1</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb85-2"><a href="#cb85-2" aria-hidden="true" tabindex="-1"></a>    <span class="st">" | RPDR deaths within 90 days:"</span>,</span>
-<span id="cb85-3"><a href="#cb85-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">sum</span>(final_master<span class="sc">$</span>death_days_lt <span class="sc">&lt;=</span> <span class="dv">90</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb86"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb86-1"><a href="#cb86-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"REDCap death_90 == 1:"</span>, <span class="fu">sum</span>(final_master<span class="sc">$</span>death_90 <span class="sc">==</span> <span class="dv">1</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb86-2"><a href="#cb86-2" aria-hidden="true" tabindex="-1"></a>    <span class="st">" | RPDR deaths within 90 days:"</span>,</span>
+<span id="cb86-3"><a href="#cb86-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">sum</span>(final_master<span class="sc">$</span>death_days_lt <span class="sc">&lt;=</span> <span class="dv">90</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>REDCap death_90 == 1: 41  | RPDR deaths within 90 days: 37 </code></pre>
 </div>
 <details class="code-fold">
 <summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb87"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb87-1"><a href="#cb87-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"RPDR deaths within 365 days:"</span>,</span>
-<span id="cb87-2"><a href="#cb87-2" aria-hidden="true" tabindex="-1"></a>    <span class="fu">sum</span>(final_master<span class="sc">$</span>death_days_lt <span class="sc">&lt;=</span> <span class="dv">365</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb88"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb88-1"><a href="#cb88-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"RPDR deaths within 365 days:"</span>,</span>
+<span id="cb88-2"><a href="#cb88-2" aria-hidden="true" tabindex="-1"></a>    <span class="fu">sum</span>(final_master<span class="sc">$</span>death_days_lt <span class="sc">&lt;=</span> <span class="dv">365</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>RPDR deaths within 365 days: 159 </code></pre>
 </div>
 <details class="code-fold">
 <summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb89"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb89-1"><a href="#cb89-1" aria-hidden="true" tabindex="-1"></a><span class="co"># death_days_any: the union of the two sources. RPDR Date_Of_Death when there is</span></span>
-<span id="cb89-2"><a href="#cb89-2" aria-hidden="true" tabindex="-1"></a><span class="co"># one, otherwise the REDCap last-follow-up date for a patient REDCap records as</span></span>
-<span id="cb89-3"><a href="#cb89-3" aria-hidden="true" tabindex="-1"></a><span class="co"># dead. Someone flagged deceased in RPDR with no date who is alive in REDCap</span></span>
-<span id="cb89-4"><a href="#cb89-4" aria-hidden="true" tabindex="-1"></a><span class="co"># stays censored. This is the competing event for both models below.</span></span>
-<span id="cb89-5"><a href="#cb89-5" aria-hidden="true" tabindex="-1"></a>final_master <span class="ot">&lt;-</span> final_master <span class="sc">%&gt;%</span></span>
-<span id="cb89-6"><a href="#cb89-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
-<span id="cb89-7"><a href="#cb89-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">death_days_any =</span> <span class="fu">case_when</span>(</span>
-<span id="cb89-8"><a href="#cb89-8" aria-hidden="true" tabindex="-1"></a>      <span class="sc">!</span><span class="fu">is.na</span>(death_days_lt)                                   <span class="sc">~</span> death_days_lt,</span>
-<span id="cb89-9"><a href="#cb89-9" aria-hidden="true" tabindex="-1"></a>      <span class="sc">!</span><span class="fu">is.na</span>(pt_status) <span class="sc">&amp;</span> pt_status <span class="sc">==</span> <span class="st">"Dead"</span> <span class="sc">&amp;</span></span>
-<span id="cb89-10"><a href="#cb89-10" aria-hidden="true" tabindex="-1"></a>        <span class="sc">!</span><span class="fu">is.na</span>(days_last_follow_up)                           <span class="sc">~</span> <span class="fu">pmax</span>(days_last_follow_up, <span class="dv">0</span>),</span>
-<span id="cb89-11"><a href="#cb89-11" aria-hidden="true" tabindex="-1"></a>      <span class="cn">TRUE</span>                                                    <span class="sc">~</span> <span class="cn">NA_real_</span></span>
-<span id="cb89-12"><a href="#cb89-12" aria-hidden="true" tabindex="-1"></a>    ),</span>
-<span id="cb89-13"><a href="#cb89-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">death_any =</span> <span class="fu">ifelse</span>(<span class="sc">!</span><span class="fu">is.na</span>(death_days_any), <span class="dv">1</span>L, <span class="dv">0</span>L)</span>
-<span id="cb89-14"><a href="#cb89-14" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb89-15"><a href="#cb89-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb89-16"><a href="#cb89-16" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"death_days_any (union):"</span>, <span class="fu">sum</span>(final_master<span class="sc">$</span>death_any <span class="sc">==</span> <span class="dv">1</span>),</span>
-<span id="cb89-17"><a href="#cb89-17" aria-hidden="true" tabindex="-1"></a>    <span class="st">" = RPDR-dated"</span>, <span class="fu">sum</span>(final_master<span class="sc">$</span>death_lt <span class="sc">==</span> <span class="dv">1</span>),</span>
-<span id="cb89-18"><a href="#cb89-18" aria-hidden="true" tabindex="-1"></a>    <span class="st">"+ REDCap-only"</span>, <span class="fu">sum</span>(final_master<span class="sc">$</span>death_any <span class="sc">==</span> <span class="dv">1</span> <span class="sc">&amp;</span> final_master<span class="sc">$</span>death_lt <span class="sc">==</span> <span class="dv">0</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb90"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb90-1"><a href="#cb90-1" aria-hidden="true" tabindex="-1"></a><span class="co"># death_days_any: the union of the two sources. RPDR Date_Of_Death when there is</span></span>
+<span id="cb90-2"><a href="#cb90-2" aria-hidden="true" tabindex="-1"></a><span class="co"># one, otherwise the REDCap last-follow-up date for a patient REDCap records as</span></span>
+<span id="cb90-3"><a href="#cb90-3" aria-hidden="true" tabindex="-1"></a><span class="co"># dead. Someone flagged deceased in RPDR with no date who is alive in REDCap</span></span>
+<span id="cb90-4"><a href="#cb90-4" aria-hidden="true" tabindex="-1"></a><span class="co"># stays censored. This is the competing event for both models below.</span></span>
+<span id="cb90-5"><a href="#cb90-5" aria-hidden="true" tabindex="-1"></a>final_master <span class="ot">&lt;-</span> final_master <span class="sc">%&gt;%</span></span>
+<span id="cb90-6"><a href="#cb90-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb90-7"><a href="#cb90-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">death_days_any =</span> <span class="fu">case_when</span>(</span>
+<span id="cb90-8"><a href="#cb90-8" aria-hidden="true" tabindex="-1"></a>      <span class="sc">!</span><span class="fu">is.na</span>(death_days_lt)                                   <span class="sc">~</span> death_days_lt,</span>
+<span id="cb90-9"><a href="#cb90-9" aria-hidden="true" tabindex="-1"></a>      <span class="sc">!</span><span class="fu">is.na</span>(pt_status) <span class="sc">&amp;</span> pt_status <span class="sc">==</span> <span class="st">"Dead"</span> <span class="sc">&amp;</span></span>
+<span id="cb90-10"><a href="#cb90-10" aria-hidden="true" tabindex="-1"></a>        <span class="sc">!</span><span class="fu">is.na</span>(days_last_follow_up)                           <span class="sc">~</span> <span class="fu">pmax</span>(days_last_follow_up, <span class="dv">0</span>),</span>
+<span id="cb90-11"><a href="#cb90-11" aria-hidden="true" tabindex="-1"></a>      <span class="cn">TRUE</span>                                                    <span class="sc">~</span> <span class="cn">NA_real_</span></span>
+<span id="cb90-12"><a href="#cb90-12" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb90-13"><a href="#cb90-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">death_any =</span> <span class="fu">ifelse</span>(<span class="sc">!</span><span class="fu">is.na</span>(death_days_any), <span class="dv">1</span>L, <span class="dv">0</span>L)</span>
+<span id="cb90-14"><a href="#cb90-14" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb90-15"><a href="#cb90-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb90-16"><a href="#cb90-16" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"death_days_any (union):"</span>, <span class="fu">sum</span>(final_master<span class="sc">$</span>death_any <span class="sc">==</span> <span class="dv">1</span>),</span>
+<span id="cb90-17"><a href="#cb90-17" aria-hidden="true" tabindex="-1"></a>    <span class="st">" = RPDR-dated"</span>, <span class="fu">sum</span>(final_master<span class="sc">$</span>death_lt <span class="sc">==</span> <span class="dv">1</span>),</span>
+<span id="cb90-18"><a href="#cb90-18" aria-hidden="true" tabindex="-1"></a>    <span class="st">"+ REDCap-only"</span>, <span class="fu">sum</span>(final_master<span class="sc">$</span>death_any <span class="sc">==</span> <span class="dv">1</span> <span class="sc">&amp;</span> final_master<span class="sc">$</span>death_lt <span class="sc">==</span> <span class="dv">0</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>death_days_any (union): 279  = RPDR-dated 252 + REDCap-only 27 </code></pre>
 </div>
 <details class="code-fold">
 <summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb91"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb91-1"><a href="#cb91-1" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Competing-risk variables for the two long-horizon models ----------------</span></span>
-<span id="cb91-2"><a href="#cb91-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Death at any time (death_days_any, both sources) is the competing event in</span></span>
-<span id="cb91-3"><a href="#cb91-3" aria-hidden="true" tabindex="-1"></a><span class="co"># both. Censoring is at the last creatinine, i.e. day 0 -&gt; last follow-up.</span></span>
-<span id="cb91-4"><a href="#cb91-4" aria-hidden="true" tabindex="-1"></a>final_master <span class="ot">&lt;-</span> final_master <span class="sc">%&gt;%</span></span>
-<span id="cb91-5"><a href="#cb91-5" aria-hidden="true" tabindex="-1"></a>  <span class="co"># AKI, administratively censored at 1 year</span></span>
-<span id="cb91-6"><a href="#cb91-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cmp_variable_lt</span>(<span class="at">event_days  =</span> aki_days,</span>
-<span id="cb91-7"><a href="#cb91-7" aria-hidden="true" tabindex="-1"></a>                  <span class="at">death_days  =</span> death_days_any,</span>
-<span id="cb91-8"><a href="#cb91-8" aria-hidden="true" tabindex="-1"></a>                  <span class="at">censor_days =</span> last_cre_days,</span>
-<span id="cb91-9"><a href="#cb91-9" aria-hidden="true" tabindex="-1"></a>                  <span class="at">name =</span> <span class="st">"aki_365"</span>, <span class="at">horizon =</span> <span class="dv">365</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb91-10"><a href="#cb91-10" aria-hidden="true" tabindex="-1"></a>  <span class="co"># CKD composite, any time post-baseline</span></span>
-<span id="cb91-11"><a href="#cb91-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cmp_variable_lt</span>(<span class="at">event_days  =</span> time_to_ckd_composite,</span>
-<span id="cb91-12"><a href="#cb91-12" aria-hidden="true" tabindex="-1"></a>                  <span class="at">death_days  =</span> death_days_any,</span>
-<span id="cb91-13"><a href="#cb91-13" aria-hidden="true" tabindex="-1"></a>                  <span class="at">censor_days =</span> last_cre_days,</span>
-<span id="cb91-14"><a href="#cb91-14" aria-hidden="true" tabindex="-1"></a>                  <span class="at">name =</span> <span class="st">"ckd_composite"</span>)</span>
-<span id="cb91-15"><a href="#cb91-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb91-16"><a href="#cb91-16" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">cmp_status_aki_365:</span><span class="sc">\n</span><span class="st">"</span>);       <span class="fu">print</span>(<span class="fu">table</span>(final_master<span class="sc">$</span>cmp_status_aki_365))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb92"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb92-1"><a href="#cb92-1" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Competing-risk variables for the two long-horizon models ----------------</span></span>
+<span id="cb92-2"><a href="#cb92-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Death at any time (death_days_any, both sources) is the competing event in</span></span>
+<span id="cb92-3"><a href="#cb92-3" aria-hidden="true" tabindex="-1"></a><span class="co"># both. Censoring is at the last creatinine, i.e. day 0 -&gt; last follow-up.</span></span>
+<span id="cb92-4"><a href="#cb92-4" aria-hidden="true" tabindex="-1"></a>final_master <span class="ot">&lt;-</span> final_master <span class="sc">%&gt;%</span></span>
+<span id="cb92-5"><a href="#cb92-5" aria-hidden="true" tabindex="-1"></a>  <span class="co"># AKI, administratively censored at 1 year</span></span>
+<span id="cb92-6"><a href="#cb92-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cmp_variable_lt</span>(<span class="at">event_days  =</span> aki_days,</span>
+<span id="cb92-7"><a href="#cb92-7" aria-hidden="true" tabindex="-1"></a>                  <span class="at">death_days  =</span> death_days_any,</span>
+<span id="cb92-8"><a href="#cb92-8" aria-hidden="true" tabindex="-1"></a>                  <span class="at">censor_days =</span> last_cre_days,</span>
+<span id="cb92-9"><a href="#cb92-9" aria-hidden="true" tabindex="-1"></a>                  <span class="at">name =</span> <span class="st">"aki_365"</span>, <span class="at">horizon =</span> <span class="dv">365</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb92-10"><a href="#cb92-10" aria-hidden="true" tabindex="-1"></a>  <span class="co"># CKD composite, any time post-baseline</span></span>
+<span id="cb92-11"><a href="#cb92-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cmp_variable_lt</span>(<span class="at">event_days  =</span> time_to_ckd_composite,</span>
+<span id="cb92-12"><a href="#cb92-12" aria-hidden="true" tabindex="-1"></a>                  <span class="at">death_days  =</span> death_days_any,</span>
+<span id="cb92-13"><a href="#cb92-13" aria-hidden="true" tabindex="-1"></a>                  <span class="at">censor_days =</span> last_cre_days,</span>
+<span id="cb92-14"><a href="#cb92-14" aria-hidden="true" tabindex="-1"></a>                  <span class="at">name =</span> <span class="st">"ckd_composite"</span>)</span>
+<span id="cb92-15"><a href="#cb92-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb92-16"><a href="#cb92-16" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">cmp_status_aki_365:</span><span class="sc">\n</span><span class="st">"</span>);       <span class="fu">print</span>(<span class="fu">table</span>(final_master<span class="sc">$</span>cmp_status_aki_365))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>
@@ -3179,7 +3311,7 @@ cmp_status_aki_365:</code></pre>
 </div>
 <details class="code-fold">
 <summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb94"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb94-1"><a href="#cb94-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"cmp_status_ckd_composite:</span><span class="sc">\n</span><span class="st">"</span>); <span class="fu">print</span>(<span class="fu">table</span>(final_master<span class="sc">$</span>cmp_status_ckd_composite))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb95"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb95-1"><a href="#cb95-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"cmp_status_ckd_composite:</span><span class="sc">\n</span><span class="st">"</span>); <span class="fu">print</span>(<span class="fu">table</span>(final_master<span class="sc">$</span>cmp_status_ckd_composite))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>cmp_status_ckd_composite:</code></pre>
@@ -3191,23 +3323,23 @@ cmp_status_aki_365:</code></pre>
 </div>
 <details class="code-fold">
 <summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb97"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb97-1"><a href="#cb97-1" aria-hidden="true" tabindex="-1"></a>ckd_summary <span class="ot">&lt;-</span> tibble<span class="sc">::</span><span class="fu">tibble</span>(</span>
-<span id="cb97-2"><a href="#cb97-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">Outcome =</span> <span class="fu">c</span>(<span class="st">"AKI (serial creatinine)"</span>, <span class="st">"CKD incidence"</span>, <span class="st">"CKD progression"</span>,</span>
-<span id="cb97-3"><a href="#cb97-3" aria-hidden="true" tabindex="-1"></a>              <span class="st">"ESKD (eGFR &lt; 10, sustained)"</span>, <span class="st">"ESRD/KT after baseline"</span>,</span>
-<span id="cb97-4"><a href="#cb97-4" aria-hidden="true" tabindex="-1"></a>              <span class="st">"ESKD composite"</span>, <span class="st">"CKD composite"</span>),</span>
-<span id="cb97-5"><a href="#cb97-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">n =</span> <span class="fu">c</span>(<span class="fu">sum</span>(final_master<span class="sc">$</span>aki <span class="sc">==</span> <span class="dv">1</span>),</span>
-<span id="cb97-6"><a href="#cb97-6" aria-hidden="true" tabindex="-1"></a>        <span class="fu">sum</span>(final_master<span class="sc">$</span>ckd_incidence <span class="sc">==</span> <span class="dv">1</span>),</span>
-<span id="cb97-7"><a href="#cb97-7" aria-hidden="true" tabindex="-1"></a>        <span class="fu">sum</span>(final_master<span class="sc">$</span>ckd_progression <span class="sc">==</span> <span class="dv">1</span>),</span>
-<span id="cb97-8"><a href="#cb97-8" aria-hidden="true" tabindex="-1"></a>        <span class="fu">sum</span>(final_master<span class="sc">$</span>eskd_defination_1 <span class="sc">==</span> <span class="dv">1</span>),</span>
-<span id="cb97-9"><a href="#cb97-9" aria-hidden="true" tabindex="-1"></a>        <span class="fu">sum</span>(final_master<span class="sc">$</span>esrd_kt_after_ici <span class="sc">==</span> <span class="dv">1</span>),</span>
-<span id="cb97-10"><a href="#cb97-10" aria-hidden="true" tabindex="-1"></a>        <span class="fu">sum</span>(final_master<span class="sc">$</span>eskd_composite <span class="sc">==</span> <span class="dv">1</span>),</span>
-<span id="cb97-11"><a href="#cb97-11" aria-hidden="true" tabindex="-1"></a>        <span class="fu">sum</span>(final_master<span class="sc">$</span>ckd_composite <span class="sc">==</span> <span class="dv">1</span>))</span>
-<span id="cb97-12"><a href="#cb97-12" aria-hidden="true" tabindex="-1"></a>) <span class="sc">%&gt;%</span></span>
-<span id="cb97-13"><a href="#cb97-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">pct =</span> <span class="fu">round</span>(<span class="dv">100</span> <span class="sc">*</span> n <span class="sc">/</span> <span class="fu">nrow</span>(final_master), <span class="dv">1</span>))</span>
-<span id="cb97-14"><a href="#cb97-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb97-15"><a href="#cb97-15" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(ckd_summary,</span>
-<span id="cb97-16"><a href="#cb97-16" aria-hidden="true" tabindex="-1"></a>  <span class="at">caption =</span> <span class="fu">paste0</span>(<span class="st">"Long-horizon kidney outcomes, full pipeline cohort (N = "</span>,</span>
-<span id="cb97-17"><a href="#cb97-17" aria-hidden="true" tabindex="-1"></a>                   <span class="fu">nrow</span>(final_master), <span class="st">") before the Local/Early restriction"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb98"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb98-1"><a href="#cb98-1" aria-hidden="true" tabindex="-1"></a>ckd_summary <span class="ot">&lt;-</span> tibble<span class="sc">::</span><span class="fu">tibble</span>(</span>
+<span id="cb98-2"><a href="#cb98-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">Outcome =</span> <span class="fu">c</span>(<span class="st">"AKI (serial creatinine)"</span>, <span class="st">"CKD incidence"</span>, <span class="st">"CKD progression"</span>,</span>
+<span id="cb98-3"><a href="#cb98-3" aria-hidden="true" tabindex="-1"></a>              <span class="st">"ESKD (eGFR &lt; 10, sustained)"</span>, <span class="st">"ESRD/KT after baseline"</span>,</span>
+<span id="cb98-4"><a href="#cb98-4" aria-hidden="true" tabindex="-1"></a>              <span class="st">"ESKD composite"</span>, <span class="st">"CKD composite"</span>),</span>
+<span id="cb98-5"><a href="#cb98-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">n =</span> <span class="fu">c</span>(<span class="fu">sum</span>(final_master<span class="sc">$</span>aki <span class="sc">==</span> <span class="dv">1</span>),</span>
+<span id="cb98-6"><a href="#cb98-6" aria-hidden="true" tabindex="-1"></a>        <span class="fu">sum</span>(final_master<span class="sc">$</span>ckd_incidence <span class="sc">==</span> <span class="dv">1</span>),</span>
+<span id="cb98-7"><a href="#cb98-7" aria-hidden="true" tabindex="-1"></a>        <span class="fu">sum</span>(final_master<span class="sc">$</span>ckd_progression <span class="sc">==</span> <span class="dv">1</span>),</span>
+<span id="cb98-8"><a href="#cb98-8" aria-hidden="true" tabindex="-1"></a>        <span class="fu">sum</span>(final_master<span class="sc">$</span>eskd_defination_1 <span class="sc">==</span> <span class="dv">1</span>),</span>
+<span id="cb98-9"><a href="#cb98-9" aria-hidden="true" tabindex="-1"></a>        <span class="fu">sum</span>(final_master<span class="sc">$</span>esrd_kt_after_ici <span class="sc">==</span> <span class="dv">1</span>),</span>
+<span id="cb98-10"><a href="#cb98-10" aria-hidden="true" tabindex="-1"></a>        <span class="fu">sum</span>(final_master<span class="sc">$</span>eskd_composite <span class="sc">==</span> <span class="dv">1</span>),</span>
+<span id="cb98-11"><a href="#cb98-11" aria-hidden="true" tabindex="-1"></a>        <span class="fu">sum</span>(final_master<span class="sc">$</span>ckd_composite <span class="sc">==</span> <span class="dv">1</span>))</span>
+<span id="cb98-12"><a href="#cb98-12" aria-hidden="true" tabindex="-1"></a>) <span class="sc">%&gt;%</span></span>
+<span id="cb98-13"><a href="#cb98-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">pct =</span> <span class="fu">round</span>(<span class="dv">100</span> <span class="sc">*</span> n <span class="sc">/</span> <span class="fu">nrow</span>(final_master), <span class="dv">1</span>))</span>
+<span id="cb98-14"><a href="#cb98-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb98-15"><a href="#cb98-15" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(ckd_summary,</span>
+<span id="cb98-16"><a href="#cb98-16" aria-hidden="true" tabindex="-1"></a>  <span class="at">caption =</span> <span class="fu">paste0</span>(<span class="st">"Long-horizon kidney outcomes, full pipeline cohort (N = "</span>,</span>
+<span id="cb98-17"><a href="#cb98-17" aria-hidden="true" tabindex="-1"></a>                   <span class="fu">nrow</span>(final_master), <span class="st">") before the Local/Early restriction"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output-display">
 <table class="caption-top table table-sm table-striped small">
@@ -3265,35 +3397,35 @@ cmp_status_aki_365:</code></pre>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb98"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb98-1"><a href="#cb98-1" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Entire cohort (all stages) ----------------------------------------------</span></span>
-<span id="cb98-2"><a href="#cb98-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Saved BEFORE the stage restriction so the entire-cohort page can use it. Same</span></span>
-<span id="cb98-3"><a href="#cb98-3" aria-hidden="true" tabindex="-1"></a><span class="co"># pipeline, same variables (including the CKD / ESKD / AKI family from 5.16-5.19</span></span>
-<span id="cb98-4"><a href="#cb98-4" aria-hidden="true" tabindex="-1"></a><span class="co"># and the new creatinine pull) -- the only difference is that no stage filter has</span></span>
-<span id="cb98-5"><a href="#cb98-5" aria-hidden="true" tabindex="-1"></a><span class="co"># been applied, so tumor_stage still varies and stays a valid covariate there.</span></span>
-<span id="cb98-6"><a href="#cb98-6" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(final_master, <span class="st">"ritu_full_master.rds"</span>)</span>
-<span id="cb98-7"><a href="#cb98-7" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Entire cohort saved to ritu_full_master.rds:"</span>, <span class="fu">nrow</span>(final_master), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb99"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb99-1"><a href="#cb99-1" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Entire cohort (all stages) ----------------------------------------------</span></span>
+<span id="cb99-2"><a href="#cb99-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Saved BEFORE the stage restriction so the entire-cohort page can use it. Same</span></span>
+<span id="cb99-3"><a href="#cb99-3" aria-hidden="true" tabindex="-1"></a><span class="co"># pipeline, same variables (including the CKD / ESKD / AKI family from 5.16-5.19</span></span>
+<span id="cb99-4"><a href="#cb99-4" aria-hidden="true" tabindex="-1"></a><span class="co"># and the new creatinine pull) -- the only difference is that no stage filter has</span></span>
+<span id="cb99-5"><a href="#cb99-5" aria-hidden="true" tabindex="-1"></a><span class="co"># been applied, so tumor_stage still varies and stays a valid covariate there.</span></span>
+<span id="cb99-6"><a href="#cb99-6" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(final_master, <span class="st">"ritu_full_master.rds"</span>)</span>
+<span id="cb99-7"><a href="#cb99-7" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Entire cohort saved to ritu_full_master.rds:"</span>, <span class="fu">nrow</span>(final_master), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>Entire cohort saved to ritu_full_master.rds: 943 </code></pre>
 </div>
 <details class="code-fold">
 <summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb100"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb100-1"><a href="#cb100-1" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Ritu cohort restriction: drop advanced/metastatic disease ---------------</span></span>
-<span id="cb100-2"><a href="#cb100-2" aria-hidden="true" tabindex="-1"></a><span class="co"># tumor_stage: 1 = Local/Early (stage I-II / local / neoadjuvant),</span></span>
-<span id="cb100-3"><a href="#cb100-3" aria-hidden="true" tabindex="-1"></a><span class="co">#              2 = Advanced/Metastatic (stage III-IV).</span></span>
-<span id="cb100-4"><a href="#cb100-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Applied here, at the end of the pipeline, rather than at import. No derived</span></span>
-<span id="cb100-5"><a href="#cb100-5" aria-hidden="true" tabindex="-1"></a><span class="co"># variable above is defined relative to the cohort (there are no median splits,</span></span>
-<span id="cb100-6"><a href="#cb100-6" aria-hidden="true" tabindex="-1"></a><span class="co"># quantile categories, z-scores or imputation models), so restricting after</span></span>
-<span id="cb100-7"><a href="#cb100-7" aria-hidden="true" tabindex="-1"></a><span class="co"># derivation is numerically identical to restricting before it -- and it keeps</span></span>
-<span id="cb100-8"><a href="#cb100-8" aria-hidden="true" tabindex="-1"></a><span class="co"># this file line-for-line comparable with jiaxuan_data.qmd.</span></span>
-<span id="cb100-9"><a href="#cb100-9" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Patients before stage restriction:"</span>, <span class="fu">nrow</span>(final_master), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb101"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb101-1"><a href="#cb101-1" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Ritu cohort restriction: drop advanced/metastatic disease ---------------</span></span>
+<span id="cb101-2"><a href="#cb101-2" aria-hidden="true" tabindex="-1"></a><span class="co"># tumor_stage: 1 = Local/Early (stage I-II / local / neoadjuvant),</span></span>
+<span id="cb101-3"><a href="#cb101-3" aria-hidden="true" tabindex="-1"></a><span class="co">#              2 = Advanced/Metastatic (stage III-IV).</span></span>
+<span id="cb101-4"><a href="#cb101-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Applied here, at the end of the pipeline, rather than at import. No derived</span></span>
+<span id="cb101-5"><a href="#cb101-5" aria-hidden="true" tabindex="-1"></a><span class="co"># variable above is defined relative to the cohort (there are no median splits,</span></span>
+<span id="cb101-6"><a href="#cb101-6" aria-hidden="true" tabindex="-1"></a><span class="co"># quantile categories, z-scores or imputation models), so restricting after</span></span>
+<span id="cb101-7"><a href="#cb101-7" aria-hidden="true" tabindex="-1"></a><span class="co"># derivation is numerically identical to restricting before it -- and it keeps</span></span>
+<span id="cb101-8"><a href="#cb101-8" aria-hidden="true" tabindex="-1"></a><span class="co"># this file line-for-line comparable with jiaxuan_data.qmd.</span></span>
+<span id="cb101-9"><a href="#cb101-9" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Patients before stage restriction:"</span>, <span class="fu">nrow</span>(final_master), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>Patients before stage restriction: 943 </code></pre>
 </div>
 <details class="code-fold">
 <summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb102"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb102-1"><a href="#cb102-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">table</span>(final_master<span class="sc">$</span>tumor_stage, <span class="at">useNA =</span> <span class="st">"ifany"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb103"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb103-1"><a href="#cb103-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">table</span>(final_master<span class="sc">$</span>tumor_stage, <span class="at">useNA =</span> <span class="st">"ifany"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>
@@ -3302,21 +3434,21 @@ cmp_status_aki_365:</code></pre>
 </div>
 <details class="code-fold">
 <summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb104"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb104-1"><a href="#cb104-1" aria-hidden="true" tabindex="-1"></a>final_master <span class="ot">&lt;-</span> final_master <span class="sc">%&gt;%</span></span>
-<span id="cb104-2"><a href="#cb104-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(tumor_stage <span class="sc">==</span> <span class="st">"Local/Early"</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb104-3"><a href="#cb104-3" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Clear the now-empty Advanced/Metastatic level (and any covariate level left</span></span>
-<span id="cb104-4"><a href="#cb104-4" aria-hidden="true" tabindex="-1"></a>  <span class="co"># with zero patients) so model matrices are not rank-deficient. cmp_status_*</span></span>
-<span id="cb104-5"><a href="#cb104-5" aria-hidden="true" tabindex="-1"></a>  <span class="co"># factors are excluded: their 0/1/2 coding is relied on downstream.</span></span>
-<span id="cb104-6"><a href="#cb104-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">where</span>(is.factor) <span class="sc">&amp;</span> <span class="sc">!</span><span class="fu">starts_with</span>(<span class="st">"cmp_status_"</span>), droplevels))</span>
-<span id="cb104-7"><a href="#cb104-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb104-8"><a href="#cb104-8" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Patients after stage restriction (Local/Early only):"</span>, <span class="fu">nrow</span>(final_master), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb105"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb105-1"><a href="#cb105-1" aria-hidden="true" tabindex="-1"></a>final_master <span class="ot">&lt;-</span> final_master <span class="sc">%&gt;%</span></span>
+<span id="cb105-2"><a href="#cb105-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(tumor_stage <span class="sc">==</span> <span class="st">"Local/Early"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb105-3"><a href="#cb105-3" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Clear the now-empty Advanced/Metastatic level (and any covariate level left</span></span>
+<span id="cb105-4"><a href="#cb105-4" aria-hidden="true" tabindex="-1"></a>  <span class="co"># with zero patients) so model matrices are not rank-deficient. cmp_status_*</span></span>
+<span id="cb105-5"><a href="#cb105-5" aria-hidden="true" tabindex="-1"></a>  <span class="co"># factors are excluded: their 0/1/2 coding is relied on downstream.</span></span>
+<span id="cb105-6"><a href="#cb105-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">where</span>(is.factor) <span class="sc">&amp;</span> <span class="sc">!</span><span class="fu">starts_with</span>(<span class="st">"cmp_status_"</span>), droplevels))</span>
+<span id="cb105-7"><a href="#cb105-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb105-8"><a href="#cb105-8" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Patients after stage restriction (Local/Early only):"</span>, <span class="fu">nrow</span>(final_master), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>Patients after stage restriction (Local/Early only): 322 </code></pre>
 </div>
 <details class="code-fold">
 <summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb106"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb106-1"><a href="#cb106-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">table</span>(final_master<span class="sc">$</span>platin_group, <span class="at">useNA =</span> <span class="st">"ifany"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb107"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb107-1"><a href="#cb107-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">table</span>(final_master<span class="sc">$</span>platin_group, <span class="at">useNA =</span> <span class="st">"ifany"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>
@@ -3325,8 +3457,8 @@ Carboplatin   Cisplatin
 </div>
 <details class="code-fold">
 <summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb108"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb108-1"><a href="#cb108-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Save final_master for use by ritu_whole.qmd / ritu_carbo.qmd / ritu_carbo_auc3.qmd</span></span>
-<span id="cb108-2"><a href="#cb108-2" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(final_master, <span class="st">"ritu_final_master.rds"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb109"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb109-1"><a href="#cb109-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Save final_master for use by ritu_whole.qmd / ritu_carbo.qmd / ritu_carbo_auc3.qmd</span></span>
+<span id="cb109-2"><a href="#cb109-2" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(final_master, <span class="st">"ritu_final_master.rds"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 </div>
 </section>
@@ -3337,52 +3469,52 @@ Carboplatin   Cisplatin
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb109"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb109-1"><a href="#cb109-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Variables shared by all patients (not platinum-type-specific)</span></span>
-<span id="cb109-2"><a href="#cb109-2" aria-hidden="true" tabindex="-1"></a>shared_vars <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
-<span id="cb109-3"><a href="#cb109-3" aria-hidden="true" tabindex="-1"></a>  <span class="st">"age"</span>, <span class="st">"age_cat"</span>, <span class="st">"sex"</span>, <span class="st">"race"</span>, <span class="st">"ethnicity"</span>, <span class="st">"cancer_type_cat_7"</span>,</span>
-<span id="cb109-4"><a href="#cb109-4" aria-hidden="true" tabindex="-1"></a>  <span class="st">"platin_group"</span>,</span>
-<span id="cb109-5"><a href="#cb109-5" aria-hidden="true" tabindex="-1"></a>  <span class="st">"ici"</span>, <span class="st">"Bevacizumab"</span>, <span class="st">"Paclitaxel"</span>, <span class="st">"Pemetrexed"</span>, <span class="st">"Doxorubicin"</span>, <span class="st">"Etoposide"</span>,</span>
-<span id="cb109-6"><a href="#cb109-6" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Gemcitabine"</span>, <span class="st">"Pertuzumab"</span>, <span class="st">"Trastuzumab"</span>, <span class="st">"Docetaxel"</span>, <span class="st">"Administered_alone"</span>,</span>
-<span id="cb109-7"><a href="#cb109-7" aria-hidden="true" tabindex="-1"></a>  <span class="st">"hiv_rpdr"</span>, <span class="st">"thyroid"</span>, <span class="st">"smoking"</span>, <span class="st">"steroids"</span>,</span>
-<span id="cb109-8"><a href="#cb109-8" aria-hidden="true" tabindex="-1"></a>  <span class="st">"cci"</span>, <span class="st">"ecog_score"</span>, <span class="st">"bmi"</span>, <span class="st">"bmi_cat"</span>,</span>
-<span id="cb109-9"><a href="#cb109-9" aria-hidden="true" tabindex="-1"></a>  <span class="st">"pre_HGB_45days"</span>, <span class="st">"pre_PLT_45days"</span>, <span class="st">"pre_ALB_45days"</span>, <span class="st">"pre_CRE_45days"</span>,</span>
-<span id="cb109-10"><a href="#cb109-10" aria-hidden="true" tabindex="-1"></a>  <span class="st">"baseline_cys_c"</span>, <span class="st">"baseline_cre"</span>, <span class="st">"cr_cys"</span>,</span>
-<span id="cb109-11"><a href="#cb109-11" aria-hidden="true" tabindex="-1"></a>  <span class="st">"baseline_cre_egfr"</span>, <span class="st">"baseline_cys_c_egfr"</span>,</span>
-<span id="cb109-12"><a href="#cb109-12" aria-hidden="true" tabindex="-1"></a>  <span class="st">"ckd_epi_gfr_cre_cys"</span>, <span class="st">"ckd_epi_gfr_cre_cys_unindex"</span>,</span>
-<span id="cb109-13"><a href="#cb109-13" aria-hidden="true" tabindex="-1"></a>  <span class="st">"ckd_stage_cre"</span>, <span class="st">"ckd_stage_cre_cys"</span>,</span>
-<span id="cb109-14"><a href="#cb109-14" aria-hidden="true" tabindex="-1"></a>  <span class="st">"cockcroft"</span></span>
-<span id="cb109-15"><a href="#cb109-15" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb109-16"><a href="#cb109-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb109-17"><a href="#cb109-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Shared variables: missing across all patients</span></span>
-<span id="cb109-18"><a href="#cb109-18" aria-hidden="true" tabindex="-1"></a>shared_missing <span class="ot">&lt;-</span> final_master <span class="sc">%&gt;%</span></span>
-<span id="cb109-19"><a href="#cb109-19" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(<span class="fu">any_of</span>(shared_vars)) <span class="sc">%&gt;%</span></span>
-<span id="cb109-20"><a href="#cb109-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="fu">across</span>(<span class="fu">everything</span>(), <span class="sc">~</span> <span class="fu">sum</span>(<span class="fu">is.na</span>(.)))) <span class="sc">%&gt;%</span></span>
-<span id="cb109-21"><a href="#cb109-21" aria-hidden="true" tabindex="-1"></a>  tidyr<span class="sc">::</span><span class="fu">pivot_longer</span>(<span class="fu">everything</span>(), <span class="at">names_to =</span> <span class="st">"variable"</span>, <span class="at">values_to =</span> <span class="st">"n_missing"</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb109-22"><a href="#cb109-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">pct_missing =</span> <span class="fu">round</span>(<span class="dv">100</span> <span class="sc">*</span> n_missing <span class="sc">/</span> <span class="fu">nrow</span>(final_master), <span class="dv">1</span>),</span>
-<span id="cb109-23"><a href="#cb109-23" aria-hidden="true" tabindex="-1"></a>         <span class="at">note =</span> <span class="st">""</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb109-24"><a href="#cb109-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(n_missing <span class="sc">&gt;</span> <span class="dv">0</span>)</span>
-<span id="cb109-25"><a href="#cb109-25" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb109-26"><a href="#cb109-26" aria-hidden="true" tabindex="-1"></a><span class="co"># Platinum-type-specific: check within their own subgroup</span></span>
-<span id="cb109-27"><a href="#cb109-27" aria-hidden="true" tabindex="-1"></a>carbo_pts <span class="ot">&lt;-</span> final_master <span class="sc">%&gt;%</span> <span class="fu">filter</span>(platin_group <span class="sc">==</span> <span class="st">"Carboplatin"</span>)</span>
-<span id="cb109-28"><a href="#cb109-28" aria-hidden="true" tabindex="-1"></a>cis_pts   <span class="ot">&lt;-</span> final_master <span class="sc">%&gt;%</span> <span class="fu">filter</span>(platin_group <span class="sc">==</span> <span class="st">"Cisplatin"</span>)</span>
-<span id="cb109-29"><a href="#cb109-29" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb109-30"><a href="#cb109-30" aria-hidden="true" tabindex="-1"></a>platin_missing <span class="ot">&lt;-</span> <span class="fu">tibble</span>(</span>
-<span id="cb109-31"><a href="#cb109-31" aria-hidden="true" tabindex="-1"></a>  <span class="at">variable   =</span> <span class="fu">c</span>(<span class="st">"carbo_AUC"</span>, <span class="st">"carbo_AUC_cat"</span>, <span class="st">"cis_dose"</span>, <span class="st">"cis_dose_cat"</span>),</span>
-<span id="cb109-32"><a href="#cb109-32" aria-hidden="true" tabindex="-1"></a>  <span class="at">n_missing  =</span> <span class="fu">c</span>(<span class="fu">sum</span>(<span class="fu">is.na</span>(carbo_pts<span class="sc">$</span>carbo_AUC)),</span>
-<span id="cb109-33"><a href="#cb109-33" aria-hidden="true" tabindex="-1"></a>                 <span class="fu">sum</span>(<span class="fu">is.na</span>(carbo_pts<span class="sc">$</span>carbo_AUC_cat)),</span>
-<span id="cb109-34"><a href="#cb109-34" aria-hidden="true" tabindex="-1"></a>                 <span class="fu">sum</span>(<span class="fu">is.na</span>(cis_pts<span class="sc">$</span>cis_dose)),</span>
-<span id="cb109-35"><a href="#cb109-35" aria-hidden="true" tabindex="-1"></a>                 <span class="fu">sum</span>(<span class="fu">is.na</span>(cis_pts<span class="sc">$</span>cis_dose_cat))),</span>
-<span id="cb109-36"><a href="#cb109-36" aria-hidden="true" tabindex="-1"></a>  <span class="at">pct_missing =</span> <span class="fu">round</span>(<span class="dv">100</span> <span class="sc">*</span> n_missing <span class="sc">/</span></span>
-<span id="cb109-37"><a href="#cb109-37" aria-hidden="true" tabindex="-1"></a>                 <span class="fu">c</span>(<span class="fu">nrow</span>(carbo_pts), <span class="fu">nrow</span>(carbo_pts), <span class="fu">nrow</span>(cis_pts), <span class="fu">nrow</span>(cis_pts)), <span class="dv">1</span>),</span>
-<span id="cb109-38"><a href="#cb109-38" aria-hidden="true" tabindex="-1"></a>  <span class="at">note =</span> <span class="fu">c</span>(<span class="fu">paste0</span>(<span class="st">"of "</span>, <span class="fu">nrow</span>(carbo_pts), <span class="st">" carbo pts"</span>),</span>
-<span id="cb109-39"><a href="#cb109-39" aria-hidden="true" tabindex="-1"></a>           <span class="fu">paste0</span>(<span class="st">"of "</span>, <span class="fu">nrow</span>(carbo_pts), <span class="st">" carbo pts"</span>),</span>
-<span id="cb109-40"><a href="#cb109-40" aria-hidden="true" tabindex="-1"></a>           <span class="fu">paste0</span>(<span class="st">"of "</span>, <span class="fu">nrow</span>(cis_pts), <span class="st">" cis pts"</span>),</span>
-<span id="cb109-41"><a href="#cb109-41" aria-hidden="true" tabindex="-1"></a>           <span class="fu">paste0</span>(<span class="st">"of "</span>, <span class="fu">nrow</span>(cis_pts), <span class="st">" cis pts"</span>))</span>
-<span id="cb109-42"><a href="#cb109-42" aria-hidden="true" tabindex="-1"></a>) <span class="sc">%&gt;%</span> <span class="fu">filter</span>(n_missing <span class="sc">&gt;</span> <span class="dv">0</span>)</span>
-<span id="cb109-43"><a href="#cb109-43" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb109-44"><a href="#cb109-44" aria-hidden="true" tabindex="-1"></a><span class="fu">bind_rows</span>(shared_missing, platin_missing) <span class="sc">%&gt;%</span></span>
-<span id="cb109-45"><a href="#cb109-45" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(n_missing)) <span class="sc">%&gt;%</span></span>
-<span id="cb109-46"><a href="#cb109-46" aria-hidden="true" tabindex="-1"></a>  knitr<span class="sc">::</span><span class="fu">kable</span>(<span class="at">caption =</span> <span class="st">"Missing data — Table 1 variables (non-zero only)"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb110"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb110-1"><a href="#cb110-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Variables shared by all patients (not platinum-type-specific)</span></span>
+<span id="cb110-2"><a href="#cb110-2" aria-hidden="true" tabindex="-1"></a>shared_vars <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
+<span id="cb110-3"><a href="#cb110-3" aria-hidden="true" tabindex="-1"></a>  <span class="st">"age"</span>, <span class="st">"age_cat"</span>, <span class="st">"sex"</span>, <span class="st">"race"</span>, <span class="st">"ethnicity"</span>, <span class="st">"cancer_type_cat_7"</span>,</span>
+<span id="cb110-4"><a href="#cb110-4" aria-hidden="true" tabindex="-1"></a>  <span class="st">"platin_group"</span>,</span>
+<span id="cb110-5"><a href="#cb110-5" aria-hidden="true" tabindex="-1"></a>  <span class="st">"ici"</span>, <span class="st">"Bevacizumab"</span>, <span class="st">"Paclitaxel"</span>, <span class="st">"Pemetrexed"</span>, <span class="st">"Doxorubicin"</span>, <span class="st">"Etoposide"</span>,</span>
+<span id="cb110-6"><a href="#cb110-6" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Gemcitabine"</span>, <span class="st">"Pertuzumab"</span>, <span class="st">"Trastuzumab"</span>, <span class="st">"Docetaxel"</span>, <span class="st">"Administered_alone"</span>,</span>
+<span id="cb110-7"><a href="#cb110-7" aria-hidden="true" tabindex="-1"></a>  <span class="st">"hiv_rpdr"</span>, <span class="st">"thyroid"</span>, <span class="st">"smoking"</span>, <span class="st">"steroids"</span>,</span>
+<span id="cb110-8"><a href="#cb110-8" aria-hidden="true" tabindex="-1"></a>  <span class="st">"cci"</span>, <span class="st">"ecog_score"</span>, <span class="st">"bmi"</span>, <span class="st">"bmi_cat"</span>,</span>
+<span id="cb110-9"><a href="#cb110-9" aria-hidden="true" tabindex="-1"></a>  <span class="st">"pre_HGB_45days"</span>, <span class="st">"pre_PLT_45days"</span>, <span class="st">"pre_ALB_45days"</span>, <span class="st">"pre_CRE_45days"</span>,</span>
+<span id="cb110-10"><a href="#cb110-10" aria-hidden="true" tabindex="-1"></a>  <span class="st">"baseline_cys_c"</span>, <span class="st">"baseline_cre"</span>, <span class="st">"cr_cys"</span>,</span>
+<span id="cb110-11"><a href="#cb110-11" aria-hidden="true" tabindex="-1"></a>  <span class="st">"baseline_cre_egfr"</span>, <span class="st">"baseline_cys_c_egfr"</span>,</span>
+<span id="cb110-12"><a href="#cb110-12" aria-hidden="true" tabindex="-1"></a>  <span class="st">"ckd_epi_gfr_cre_cys"</span>, <span class="st">"ckd_epi_gfr_cre_cys_unindex"</span>,</span>
+<span id="cb110-13"><a href="#cb110-13" aria-hidden="true" tabindex="-1"></a>  <span class="st">"ckd_stage_cre"</span>, <span class="st">"ckd_stage_cre_cys"</span>,</span>
+<span id="cb110-14"><a href="#cb110-14" aria-hidden="true" tabindex="-1"></a>  <span class="st">"cockcroft"</span></span>
+<span id="cb110-15"><a href="#cb110-15" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb110-16"><a href="#cb110-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb110-17"><a href="#cb110-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Shared variables: missing across all patients</span></span>
+<span id="cb110-18"><a href="#cb110-18" aria-hidden="true" tabindex="-1"></a>shared_missing <span class="ot">&lt;-</span> final_master <span class="sc">%&gt;%</span></span>
+<span id="cb110-19"><a href="#cb110-19" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(<span class="fu">any_of</span>(shared_vars)) <span class="sc">%&gt;%</span></span>
+<span id="cb110-20"><a href="#cb110-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="fu">across</span>(<span class="fu">everything</span>(), <span class="sc">~</span> <span class="fu">sum</span>(<span class="fu">is.na</span>(.)))) <span class="sc">%&gt;%</span></span>
+<span id="cb110-21"><a href="#cb110-21" aria-hidden="true" tabindex="-1"></a>  tidyr<span class="sc">::</span><span class="fu">pivot_longer</span>(<span class="fu">everything</span>(), <span class="at">names_to =</span> <span class="st">"variable"</span>, <span class="at">values_to =</span> <span class="st">"n_missing"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb110-22"><a href="#cb110-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">pct_missing =</span> <span class="fu">round</span>(<span class="dv">100</span> <span class="sc">*</span> n_missing <span class="sc">/</span> <span class="fu">nrow</span>(final_master), <span class="dv">1</span>),</span>
+<span id="cb110-23"><a href="#cb110-23" aria-hidden="true" tabindex="-1"></a>         <span class="at">note =</span> <span class="st">""</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb110-24"><a href="#cb110-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(n_missing <span class="sc">&gt;</span> <span class="dv">0</span>)</span>
+<span id="cb110-25"><a href="#cb110-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb110-26"><a href="#cb110-26" aria-hidden="true" tabindex="-1"></a><span class="co"># Platinum-type-specific: check within their own subgroup</span></span>
+<span id="cb110-27"><a href="#cb110-27" aria-hidden="true" tabindex="-1"></a>carbo_pts <span class="ot">&lt;-</span> final_master <span class="sc">%&gt;%</span> <span class="fu">filter</span>(platin_group <span class="sc">==</span> <span class="st">"Carboplatin"</span>)</span>
+<span id="cb110-28"><a href="#cb110-28" aria-hidden="true" tabindex="-1"></a>cis_pts   <span class="ot">&lt;-</span> final_master <span class="sc">%&gt;%</span> <span class="fu">filter</span>(platin_group <span class="sc">==</span> <span class="st">"Cisplatin"</span>)</span>
+<span id="cb110-29"><a href="#cb110-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb110-30"><a href="#cb110-30" aria-hidden="true" tabindex="-1"></a>platin_missing <span class="ot">&lt;-</span> <span class="fu">tibble</span>(</span>
+<span id="cb110-31"><a href="#cb110-31" aria-hidden="true" tabindex="-1"></a>  <span class="at">variable   =</span> <span class="fu">c</span>(<span class="st">"carbo_AUC"</span>, <span class="st">"carbo_AUC_cat"</span>, <span class="st">"cis_dose"</span>, <span class="st">"cis_dose_cat"</span>),</span>
+<span id="cb110-32"><a href="#cb110-32" aria-hidden="true" tabindex="-1"></a>  <span class="at">n_missing  =</span> <span class="fu">c</span>(<span class="fu">sum</span>(<span class="fu">is.na</span>(carbo_pts<span class="sc">$</span>carbo_AUC)),</span>
+<span id="cb110-33"><a href="#cb110-33" aria-hidden="true" tabindex="-1"></a>                 <span class="fu">sum</span>(<span class="fu">is.na</span>(carbo_pts<span class="sc">$</span>carbo_AUC_cat)),</span>
+<span id="cb110-34"><a href="#cb110-34" aria-hidden="true" tabindex="-1"></a>                 <span class="fu">sum</span>(<span class="fu">is.na</span>(cis_pts<span class="sc">$</span>cis_dose)),</span>
+<span id="cb110-35"><a href="#cb110-35" aria-hidden="true" tabindex="-1"></a>                 <span class="fu">sum</span>(<span class="fu">is.na</span>(cis_pts<span class="sc">$</span>cis_dose_cat))),</span>
+<span id="cb110-36"><a href="#cb110-36" aria-hidden="true" tabindex="-1"></a>  <span class="at">pct_missing =</span> <span class="fu">round</span>(<span class="dv">100</span> <span class="sc">*</span> n_missing <span class="sc">/</span></span>
+<span id="cb110-37"><a href="#cb110-37" aria-hidden="true" tabindex="-1"></a>                 <span class="fu">c</span>(<span class="fu">nrow</span>(carbo_pts), <span class="fu">nrow</span>(carbo_pts), <span class="fu">nrow</span>(cis_pts), <span class="fu">nrow</span>(cis_pts)), <span class="dv">1</span>),</span>
+<span id="cb110-38"><a href="#cb110-38" aria-hidden="true" tabindex="-1"></a>  <span class="at">note =</span> <span class="fu">c</span>(<span class="fu">paste0</span>(<span class="st">"of "</span>, <span class="fu">nrow</span>(carbo_pts), <span class="st">" carbo pts"</span>),</span>
+<span id="cb110-39"><a href="#cb110-39" aria-hidden="true" tabindex="-1"></a>           <span class="fu">paste0</span>(<span class="st">"of "</span>, <span class="fu">nrow</span>(carbo_pts), <span class="st">" carbo pts"</span>),</span>
+<span id="cb110-40"><a href="#cb110-40" aria-hidden="true" tabindex="-1"></a>           <span class="fu">paste0</span>(<span class="st">"of "</span>, <span class="fu">nrow</span>(cis_pts), <span class="st">" cis pts"</span>),</span>
+<span id="cb110-41"><a href="#cb110-41" aria-hidden="true" tabindex="-1"></a>           <span class="fu">paste0</span>(<span class="st">"of "</span>, <span class="fu">nrow</span>(cis_pts), <span class="st">" cis pts"</span>))</span>
+<span id="cb110-42"><a href="#cb110-42" aria-hidden="true" tabindex="-1"></a>) <span class="sc">%&gt;%</span> <span class="fu">filter</span>(n_missing <span class="sc">&gt;</span> <span class="dv">0</span>)</span>
+<span id="cb110-43"><a href="#cb110-43" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb110-44"><a href="#cb110-44" aria-hidden="true" tabindex="-1"></a><span class="fu">bind_rows</span>(shared_missing, platin_missing) <span class="sc">%&gt;%</span></span>
+<span id="cb110-45"><a href="#cb110-45" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(n_missing)) <span class="sc">%&gt;%</span></span>
+<span id="cb110-46"><a href="#cb110-46" aria-hidden="true" tabindex="-1"></a>  knitr<span class="sc">::</span><span class="fu">kable</span>(<span class="at">caption =</span> <span class="st">"Missing data — Table 1 variables (non-zero only)"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output-display">
 <table class="caption-top">

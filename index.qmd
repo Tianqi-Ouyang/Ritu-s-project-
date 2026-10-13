@@ -168,6 +168,42 @@ progression definition now requires a further > 30 % drop; previously it counted
 anyone below 60 before and after, i.e. stable CKD, which is why that count fell
 from 61 to 8.
 
+## Delta eGFR vs Baseline at 90 / 180 / 365 Days
+
+Change in creatinine eGFR from `eGFR_CRE_baseline`, using the creatinine
+**closest to each mark** and only when it falls within **± 45 days** of it. Days
+run from `baseline_sample_date`. Built in Section 5.16b of
+[Data Management](qmd/ritu_data.qmd) and reported per cohort in §2.3 (whole,
+entire) and §3.3 (carboplatin pages). Descriptive only — not modelled.
+
+**Negative means decline**, i.e. eGFR at the mark minus eGFR at baseline. This is
+the opposite sign to `pct_drop` in the pipeline.
+
+| Mark | n (of 943) | Δ eGFR, median [IQR] | Δ eGFR %, median [IQR] | Fell > 25 % |
+|---|---|---|---|---|
+| Day 90 | 876 (92.9 %) | 1.0 [−6.4, 7.8] | 1.1 [−7.5, 10.0] | 56 (6.4 %) |
+| Day 180 | 710 (75.3 %) | −2.6 [−12.0, 4.2] | −2.8 [−14.6, 5.5] | 94 (13.2 %) |
+| Day 365 | 489 (51.9 %) | −6.7 [−15.4, 1.6] | −7.8 [−18.5, 1.5] | 75 (15.3 %) |
+
+Local/Early (322): day 90 n = 301, Δ 0.9 [−5.9, 7.2]; day 180 n = 244,
+Δ −2.2 [−12.7, 3.3]; day 365 n = 176, Δ −7.5 [−14.9, −0.3].
+
+The two carboplatin cohorts decline less: carboplatin (189) Δ +2.0 at day 90 and
+−3.9 at day 365; AUC ≥ 3 (142) Δ +2.0 and −5.9.
+
+Two things to read with it. The **realized day is tight** — median 86, 179 and 364
+against nominal 90, 180 and 365 — so the window is doing its job rather than
+quietly shifting the timepoint. But **coverage falls with time**, from 93 % at day
+90 to 52 % at day 365, because creatinine is drawn less often once treatment
+ends. The day-365 figures therefore describe the half of the cohort still being
+monitored a year out, who are not a random half.
+
+The ± 45-day window matches the pipeline's existing baseline-lab window
+(`pre_CRE_45days`) and is the widest that keeps the 90- and 180-day marks from
+drawing on the same measurement. Without any window every patient gets a value
+at every mark, but the closest creatinine to day 365 would be over 276 days away
+for a tenth of the cohort.
+
 ## Competing-Risk Models (death competing)
 
 Fine-Gray models for `egfr_diff_pct_per10` are in §4.12–4.13 of the whole and
@@ -260,6 +296,10 @@ outcomes are built from.
 | `ckd_stage_cre_cys` | KDIGO G-stage from `ckd_epi_gfr_cre_cys` (G3a / G3b kept apart) |
 | `eGFR_CRE_baseline` | CKD-EPI creatinine eGFR at `pre_CRE_45days` — the baseline the CKD outcomes are referenced to |
 | `ckd_stage_baseline` | KDIGO stage from `eGFR_CRE_baseline`, ICI-CKD convention (G3a + G3b collapsed into one stage 3) |
+| `eGFR_CRE_d90` / `_d180` / `_d365` | Creatinine eGFR from the creatinine closest to that day, within ± 45 days of it |
+| `cre_day_d90` / `_d180` / `_d365` | The actual day of the creatinine used — lets the gap from the nominal mark be checked |
+| `delta_egfr_d90` / `_d180` / `_d365` | eGFR at the mark − `eGFR_CRE_baseline`, mL/min/1.73m². **Negative = decline** |
+| `delta_egfr_pct_d90` / `_d180` / `_d365` | The same change as a percentage of baseline. **Negative = decline** |
 
 Only `ckd_epi_gfr_cre_cys_unindex` is capped at 125 mL/min; the indexed value
 and `cockcroft` are uncapped. Uncapped values feed the eGFR difference; capped
