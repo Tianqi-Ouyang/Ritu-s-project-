@@ -522,20 +522,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Change in creatinine eGFR from <code>eGFR_CRE_baseline</code>, using the creatinine <strong>closest to each mark</strong> and only when it falls within <strong>± 45 days</strong> of it. Days run from <code>baseline_sample_date</code>. Built in Section 5.16b of <a href="./qmd/ritu_data.html">Data Management</a> and reported per cohort in §2.3 (whole, entire) and §3.3 (carboplatin pages). Descriptive only — not modelled.</p>
 <p><strong>Negative means decline</strong>, i.e.&nbsp;eGFR at the mark minus eGFR at baseline. This is the opposite sign to <code>pct_drop</code> in the pipeline.</p>
 <table class="caption-top table">
-<colgroup>
-<col style="width: 20%">
-<col style="width: 20%">
-<col style="width: 20%">
-<col style="width: 20%">
-<col style="width: 20%">
-</colgroup>
 <thead>
 <tr class="header">
 <th>Mark</th>
 <th>n (of 943)</th>
 <th>Δ eGFR, median [IQR]</th>
 <th>Δ eGFR %, median [IQR]</th>
-<th>Fell &gt; 25 %</th>
 </tr>
 </thead>
 <tbody>
@@ -544,21 +536,18 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>876 (92.9 %)</td>
 <td>1.0 [−6.4, 7.8]</td>
 <td>1.1 [−7.5, 10.0]</td>
-<td>56 (6.4 %)</td>
 </tr>
 <tr class="even">
 <td>Day 180</td>
 <td>710 (75.3 %)</td>
 <td>−2.6 [−12.0, 4.2]</td>
 <td>−2.8 [−14.6, 5.5]</td>
-<td>94 (13.2 %)</td>
 </tr>
 <tr class="odd">
 <td>Day 365</td>
 <td>489 (51.9 %)</td>
 <td>−6.7 [−15.4, 1.6]</td>
 <td>−7.8 [−18.5, 1.5]</td>
-<td>75 (15.3 %)</td>
 </tr>
 </tbody>
 </table>

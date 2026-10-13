@@ -617,11 +617,11 @@ Coverage by window, entire cohort (936 of 943 have any post-baseline creatinine)
 
 #### Results
 
-| Mark | n (of 943) | Actual day, median [IQR] | Δ eGFR | Δ eGFR % | Fell > 25 % |
-|---|---|---|---|---|---|
-| Day 90 | 876 (92.9 %) | 86 [82, 91] | 1.0 [−6.4, 7.8] | 1.1 [−7.5, 10.0] | 56 (6.4 %) |
-| Day 180 | 710 (75.3 %) | 179 [168, 188] | −2.6 [−12.0, 4.2] | −2.8 [−14.6, 5.5] | 94 (13.2 %) |
-| Day 365 | 489 (51.9 %) | 363 [353, 371] | −6.7 [−15.4, 1.6] | −7.8 [−18.5, 1.5] | 75 (15.3 %) |
+| Mark | n (of 943) | Actual day, median [IQR] | Δ eGFR | Δ eGFR % |
+|---|---|---|---|---|
+| Day 90 | 876 (92.9 %) | 86 [82, 91] | 1.0 [−6.4, 7.8] | 1.1 [−7.5, 10.0] |
+| Day 180 | 710 (75.3 %) | 179 [168, 188] | −2.6 [−12.0, 4.2] | −2.8 [−14.6, 5.5] |
+| Day 365 | 489 (51.9 %) | 363 [353, 371] | −6.7 [−15.4, 1.6] | −7.8 [−18.5, 1.5] |
 
 Per cohort, Δ eGFR at day 90 / 180 / 365:
 
@@ -641,17 +641,18 @@ cohort — worth stating in any write-up rather than reporting the median alone.
 
 #### Where it appears
 
-- **Table 1** on all four analysis pages — the three `dgfr_avail_*` indicators
-  as n (%), so each delta can be read against its own denominator, followed by
-  the six `delta_egfr_*` variables (three absolute, three percent).
+- **Table 1** on all four analysis pages — the six `delta_egfr_*` variables
+  (three absolute, three percent). The `dgfr_avail_*` indicators are **not** in
+  Table 1; the per-mark denominator is reported in the subsection below instead.
 
-  Availability in Table 1 is split by platinum group, which surfaces something
-  worth knowing: in the **entire cohort** cisplatin patients have materially less
-  follow-up creatinine than carboplatin patients at the later marks — 69 % vs
-  79 % at day 180 (p = 0.002) and 45 % vs 56 % at day 365 (p = 0.001). The
-  day-365 platinum-group comparison is therefore made on unequal and
-  non-randomly-missing fractions of each group. In the Local/Early cohort the
-  same difference is not significant (p = 0.5 and p = 0.4).
+  `dgfr_avail_*` is still derived and still in both masters. Tabulating it by
+  platinum group surfaces something worth knowing: in the **entire cohort**
+  cisplatin patients have materially less follow-up creatinine than carboplatin
+  patients at the later marks — 69 % vs 79 % at day 180 (p = 0.002) and 45 % vs
+  56 % at day 365 (p = 0.001). The day-365 platinum-group comparison therefore
+  rests on unequal and non-randomly-missing fractions of each group. In the
+  Local/Early cohort the same difference is not significant (p = 0.5 and
+  p = 0.4).
 - A dedicated subsection: §2.3 on the whole and entire pages, §3.3 on the two
   carboplatin pages, with n, realized day, eGFR at the mark, both deltas, and
   the count falling more than 25 %. Word download `sec2_3_delta_egfr.docx` /
