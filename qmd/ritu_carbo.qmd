@@ -511,6 +511,56 @@ flextable::save_as_docx(ft_dgfr, path = file.path(docx_dir, "sec3_3_delta_egfr.d
 ft_dgfr
 ```
 
+**Who is missing, and why.** The marks are only as good as the creatinine
+follow-up behind them. The first table below shows which of the three marks each
+patient covers; the second shows how many creatinines those patients had and how
+far their follow-up reached.
+
+```{r}
+#| label: ritu-carbo-delta-egfr-coverage
+.pat <- paste0(dat$dgfr_avail_d90, dat$dgfr_avail_d180, dat$dgfr_avail_d365)
+.k   <- dat$dgfr_avail_d90 + dat$dgfr_avail_d180 + dat$dgfr_avail_d365
+
+pat_lv <- c("111", "110", "101", "011", "100", "010", "001", "000")
+pat_lb <- c("All three", "Day 90 + 180", "Day 90 + 365", "Day 180 + 365",
+            "Day 90 only", "Day 180 only", "Day 365 only", "None of the three")
+
+cov_tbl <- tibble::tibble(
+  `Marks with a value` = pat_lb,
+  n = as.integer(table(factor(.pat, levels = pat_lv)))
+) %>%
+  dplyr::mutate(`% of cohort` = round(100 * n / nrow(dat), 1))
+
+knitr::kable(cov_tbl, caption = sprintf(paste0(
+  "Which of the three marks each patient has a creatinine for, N = %d. ",
+  "A mark counts only when a creatinine falls within ± 45 days of it."), nrow(dat)))
+```
+
+```{r}
+#| label: ritu-carbo-delta-egfr-coverage-why
+.iqr <- function(x) {
+  x <- x[!is.na(x)]
+  if (!length(x)) return("—")
+  sprintf("%.0f [%.0f, %.0f]", median(x), quantile(x, .25), quantile(x, .75))
+}
+
+why_tbl <- purrr::map_dfr(0:3, function(k) {
+  i <- .k == k
+  tibble::tibble(
+    `Marks covered` = paste0(k, " of 3"),
+    n = sum(i),
+    `% of cohort` = round(100 * sum(i) / nrow(dat), 1),
+    `No post-baseline creatinine at all` = sum(i & dat$n_cre_post == 0),
+    `Post-baseline creatinines, median [IQR]` = .iqr(dat$n_cre_post[i]),
+    `Last creatinine, day, median [IQR]` = .iqr(dat$last_cre_days[i])
+  )
+})
+
+knitr::kable(why_tbl, caption = sprintf(paste0(
+  "Why marks are missed, N = %d. Patients are grouped by how many of the three ",
+  "marks they cover. The last column is the day of their final creatinine."), nrow(dat)))
+```
+
 
 # 4 eGFR Ratio Distribution (Carboplatin)
 

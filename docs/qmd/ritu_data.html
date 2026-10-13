@@ -919,25 +919,29 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </tr>
 <tr class="even">
 <td><code>dgfr_avail_d90</code> / <code>_d180</code> / <code>_d365</code></td>
-<td>1 if the patient had a creatinine within +/- 45 days of that mark — the denominator behind each delta, reported as n (%) in Table 1</td>
+<td>1 if the patient had a creatinine within +/- 45 days of that mark — the denominator behind each delta</td>
 </tr>
 <tr class="odd">
+<td><code>n_cre_post</code></td>
+<td>Number of post-baseline creatinine measurements, 0 if none. Separates “no creatinine at all” from “creatinine drawn, but not near a mark”</td>
+</tr>
+<tr class="even">
 <td><code>death_lt</code> / <code>death_days_lt</code></td>
 <td>Death at any time with a date from the RPDR <code>Date_Of_Death</code>. An input to <code>death_days_any</code>, not used directly as a competing event</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>rpdr_deceased</code></td>
 <td>RPDR <code>Vital_status</code> is not “Not reported as deceased”. Exceeds <code>death_lt</code> because some deaths are recorded without a date</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>cmp_time_aki_365</code> / <code>cmp_status_aki_365</code></td>
 <td>Competing-risk pair for AKI, administratively censored at 365 days</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>cmp_time_ckd_composite</code> / <code>cmp_status_ckd_composite</code></td>
 <td>Competing-risk pair for the CKD composite, any time post-baseline</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>death_days_any</code> / <code>death_any</code></td>
 <td>Death at any time: the union of the two sources — RPDR <code>Date_Of_Death</code> when present, otherwise the REDCap last-follow-up date when <code>pt_status</code> is “Dead”. The competing event for both long-horizon models; <code>death_90</code> is capped at 90 days and cannot serve that role</td>
 </tr>
@@ -3041,7 +3045,14 @@ Thoracic   Breast       GI       GU      GYN    HEENT    Other
 <span id="cb77-39"><a href="#cb77-39" aria-hidden="true" tabindex="-1"></a>    <span class="fu">as.integer</span>(<span class="sc">!</span><span class="fu">is.na</span>(final_master[[<span class="fu">paste0</span>(<span class="st">"delta_egfr_d"</span>, mk)]]))</span>
 <span id="cb77-40"><a href="#cb77-40" aria-hidden="true" tabindex="-1"></a>}</span>
 <span id="cb77-41"><a href="#cb77-41" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb77-42"><a href="#cb77-42" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Creatinine available within +/-"</span>, DGFR_WINDOW, <span class="st">"days of each mark:</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb77-42"><a href="#cb77-42" aria-hidden="true" tabindex="-1"></a><span class="co"># Count of post-baseline creatinine measurements per patient. Needed by the</span></span>
+<span id="cb77-43"><a href="#cb77-43" aria-hidden="true" tabindex="-1"></a><span class="co"># coverage table on the analysis pages, which has to separate "no creatinine at</span></span>
+<span id="cb77-44"><a href="#cb77-44" aria-hidden="true" tabindex="-1"></a><span class="co"># all" from "creatinine drawn, but never near one of these marks".</span></span>
+<span id="cb77-45"><a href="#cb77-45" aria-hidden="true" tabindex="-1"></a>final_master <span class="ot">&lt;-</span> final_master <span class="sc">%&gt;%</span></span>
+<span id="cb77-46"><a href="#cb77-46" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(dgfr_traj <span class="sc">%&gt;%</span> <span class="fu">count</span>(EMPI, <span class="at">name =</span> <span class="st">"n_cre_post"</span>), <span class="at">by =</span> <span class="st">"EMPI"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb77-47"><a href="#cb77-47" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">n_cre_post =</span> <span class="fu">ifelse</span>(<span class="fu">is.na</span>(n_cre_post), <span class="dv">0</span>L, n_cre_post))</span>
+<span id="cb77-48"><a href="#cb77-48" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb77-49"><a href="#cb77-49" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Creatinine available within +/-"</span>, DGFR_WINDOW, <span class="st">"days of each mark:</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>Creatinine available within +/- 45 days of each mark:</code></pre>

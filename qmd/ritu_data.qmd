@@ -229,7 +229,8 @@ the full length of RPDR creatinine follow-up.
 | `cre_day_d90` / `_d180` / `_d365` | The actual day of the creatinine used, so the gap from the nominal mark is auditable |
 | `delta_egfr_d90` / `_d180` / `_d365` | `eGFR at the mark - eGFR_CRE_baseline`, mL/min/1.73m². **Negative = decline** |
 | `delta_egfr_pct_d90` / `_d180` / `_d365` | The same change as a percentage of baseline. **Negative = decline** |
-| `dgfr_avail_d90` / `_d180` / `_d365` | 1 if the patient had a creatinine within +/- 45 days of that mark — the denominator behind each delta, reported as n (%) in Table 1 |
+| `dgfr_avail_d90` / `_d180` / `_d365` | 1 if the patient had a creatinine within +/- 45 days of that mark — the denominator behind each delta |
+| `n_cre_post` | Number of post-baseline creatinine measurements, 0 if none. Separates "no creatinine at all" from "creatinine drawn, but not near a mark" |
 | `death_lt` / `death_days_lt` | Death at any time with a date from the RPDR `Date_Of_Death`. An input to `death_days_any`, not used directly as a competing event |
 | `rpdr_deceased` | RPDR `Vital_status` is not "Not reported as deceased". Exceeds `death_lt` because some deaths are recorded without a date |
 | `cmp_time_aki_365` / `cmp_status_aki_365` | Competing-risk pair for AKI, administratively censored at 365 days |
@@ -2164,6 +2165,13 @@ for (mk in DGFR_MARKS) {
   final_master[[paste0("dgfr_avail_d", mk)]] <-
     as.integer(!is.na(final_master[[paste0("delta_egfr_d", mk)]]))
 }
+
+# Count of post-baseline creatinine measurements per patient. Needed by the
+# coverage table on the analysis pages, which has to separate "no creatinine at
+# all" from "creatinine drawn, but never near one of these marks".
+final_master <- final_master %>%
+  left_join(dgfr_traj %>% count(EMPI, name = "n_cre_post"), by = "EMPI") %>%
+  mutate(n_cre_post = ifelse(is.na(n_cre_post), 0L, n_cre_post))
 
 cat("Creatinine available within +/-", DGFR_WINDOW, "days of each mark:\n")
 for (mk in DGFR_MARKS) {

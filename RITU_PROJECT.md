@@ -654,11 +654,56 @@ cohort — worth stating in any write-up rather than reporting the median alone.
   Local/Early cohort the same difference is not significant (p = 0.5 and
   p = 0.4).
 - A dedicated subsection: §2.3 on the whole and entire pages, §3.3 on the two
-  carboplatin pages, with n, realized day, eGFR at the mark, both deltas, and
-  the count falling more than 25 %. Word download `sec2_3_delta_egfr.docx` /
+  carboplatin pages, with n, `% with a value in window`, realized day, eGFR at
+  the mark and both deltas. Word download `sec2_3_delta_egfr.docx` /
   `sec3_3_delta_egfr.docx`.
 - **Not modelled.** Per the current scope only `aki` and `ckd_composite` are
   modelled (§2.12).
+- Two **coverage tables** below it: which of the three marks each patient has a
+  value for, and why marks are missed.
+
+#### Coverage: it is follow-up length, not sparse sampling
+
+The obvious worry about fixed marks is that patients with only one or two
+creatinines cannot contribute. That is not what happens here. In the entire
+cohort 776 of 943 have **10 or more** post-baseline creatinines; only 5 have
+exactly one and 7 have none at all.
+
+| Marks with a value | Entire 943 | Local/Early 322 |
+|---|---|---|
+| All three | 441 (46.8 %) | 154 (47.8 %) |
+| Day 90 + 180 | 255 (27.0 %) | 81 (25.2 %) |
+| Day 90 only | 144 (15.3 %) | 50 (15.5 %) |
+| Day 90 + 365 | 36 (3.8 %) | 16 (5.0 %) |
+| Day 180 + 365 | 7 (0.7 %) | 4 (1.2 %) |
+| Day 180 only | 7 (0.7 %) | 5 (1.6 %) |
+| Day 365 only | 5 (0.5 %) | 2 (0.6 %) |
+| None of the three | 48 (5.1 %) | 10 (3.1 %) |
+
+The pattern is almost perfectly **nested**: 888 of 943 fall into All three /
+Day 90 + 180 / Day 90 only / None. Only 55 patients have a gap-then-return shape.
+
+What separates the groups is how long creatinine kept being drawn, entire cohort:
+
+| Marks covered | n | Post-baseline creatinines, median [IQR] | Last creatinine, day |
+|---|---|---|---|
+| 0 of 3 | 48 | 6 [3, 9] | 23 [12, 41] |
+| 1 of 3 | 156 | 10 [7, 15] | 114 [78, 290] |
+| 2 of 3 | 298 | 18 [11, 29] | 270 [208, 410] |
+| 3 of 3 | 441 | 31 [22, 51] | 573 [432, 780] |
+
+Of the 48 covering no mark at all, only 7 have no post-baseline creatinine; the
+other 41 have a median of 6 each, but their last one is at day 23 — before the
+day-90 window opens at day 45.
+
+**Consequence for interpretation.** The day-365 delta describes patients still
+under active monitoring a year out. Patients discharged from follow-up early are
+absent from it, and they are plausibly the ones who did well, so the day-365
+median is if anything a pessimistic view of the cohort as a whole. In the two
+carboplatin cohorts the 0-of-3 group is smaller and less uniformly early —
+median last creatinine day 42 and 330 respectively — so there a few patients
+miss every mark because their draws fall in the gaps between windows rather than
+because follow-up stopped.
 
 ### 2.12 Explicitly unchanged
 
