@@ -79,7 +79,7 @@ Inherited from the Jiaxuan pipeline, then one additional step:
 
 ## 2 What changed relative to the Jiaxuan project
 
-Twelve kinds of change were made. Nothing else in the analysis was touched.
+Thirteen kinds of change were made. Nothing else in the analysis was touched.
 
 ### 2.1 Cohort filter
 
@@ -705,7 +705,71 @@ median last creatinine day 42 and 330 respectively — so there a few patients
 miss every mark because their draws fall in the gaps between windows rather than
 because follow-up stopped.
 
-### 2.12 Explicitly unchanged
+### 2.14 Two model variants added
+
+The same two outcomes — AKI within 1 year and the CKD composite — are now run
+three ways on every page. Same competing event (`death_days_any`), same
+non-kidney adjusters, same Fine-Gray machinery.
+
+| | Exposure | Kidney adjuster | § whole / entire | § carboplatin |
+|---|---|---|---|---|
+| Original | `egfr_diff_pct_per10` — (CKD-EPI Cr-Cys − Cockcroft-Gault) / CG | `cockcroft` | 4 | 5 |
+| **Variant 1** | the same | `ckd_epi_gfr_cre_cys_unindex` | 5 | 6 |
+| **Variant 2** | `egfr_diff_pct_sens_per10` — (CKD-EPI CysC − CKD-EPI Cr) / Cr | `cockcroft` | 6 | 7 |
+
+Both exposures are negated and divided by 10, so every hazard ratio reads per
+**10 percentage-point decline**. Variant 2's exposure was already in the
+pipeline — it was the exposure of the sensitivity sections removed in §2.12.
+
+Multivariable subHR for the exposure:
+
+| Cohort | Model | AKI ≤ 1 yr | CKD composite |
+|---|---|---|---|
+| Entire 943 | Original | 1.29 (1.16, 1.44) p < 0.001 | 1.14 (1.00, 1.30) p = 0.045 |
+| | Variant 1 | 1.21 (1.08, 1.36) p = 0.001 | 1.03 (0.90, 1.17) p = 0.69 |
+| | Variant 2 | 1.14 (1.03, 1.25) p = 0.009 | 1.14 (1.01, 1.28) p = 0.036 |
+| Local/Early 322 | Original | 1.10 (0.85, 1.43) p = 0.46 | 1.55 (1.13, 2.11) p = 0.006 |
+| | Variant 1 | 1.12 (0.83, 1.50) p = 0.46 | 1.11 (0.88, 1.39) p = 0.37 |
+| | Variant 2 | 0.98 (0.82, 1.18) p = 0.85 | 1.34 (1.10, 1.64) p = 0.004 |
+| Carboplatin 189 | Original | 1.13 (0.83, 1.53) p = 0.45 | 2.21 (0.94, 5.16) p = 0.068 |
+| | Variant 1 | 1.05 (0.74, 1.49) p = 0.78 | 1.25 (0.72, 2.18) p = 0.43 |
+| | Variant 2 | 0.93 (0.73, 1.19) p = 0.58 | 1.64 (1.05, 2.57) p = 0.030 |
+| Carbo AUC ≥ 3 142 | Original | 1.24 (0.66, 2.32) p = 0.51 | 1.20 (0.50, 2.84) p = 0.69 |
+| | Variant 1 | 1.63 (1.01, 2.62) p = 0.046 | 0.99 (0.62, 1.57) p = 0.96 |
+| | Variant 2 | 1.10 (0.69, 1.74) p = 0.68 | 1.24 (0.80, 1.90) p = 0.34 |
+
+All twenty-four models are estimable.
+
+#### Variant 1 is not a neutral swap — read it as a different question
+
+The exposure is `100 × (CrCys − CG) / CG`, so **both** candidate adjusters are
+components of the exposure itself. Which one is held constant decides what the
+remaining variation is:
+
+- Adjusting for `cockcroft` (original) holds the denominator — and the second
+  numerator term — constant, so the exposure's residual variation is essentially
+  variation in CKD-EPI Cr-Cys.
+- Adjusting for `ckd_epi_gfr_cre_cys_unindex` (variant 1) holds the first
+  numerator term constant, so the residual variation is essentially inverse
+  variation in Cockcroft-Gault.
+
+That is why the CKD-composite signal falls away under variant 1 in every cohort
+— 1.55 → 1.11 in Local/Early, 1.14 → 1.03 in the entire cohort, 2.21 → 1.25 in
+carboplatin. It is not evidence that the original result is fragile: the two
+models condition on different halves of the same ratio. They answer different
+questions and should be reported that way, not as a sensitivity check of one
+another.
+
+Variant 2 has no such entanglement — its exposure is built from cystatin C and
+creatinine alone, and `cockcroft` is a separate quantity. Its CKD-composite
+result holds across the entire, Local/Early and carboplatin cohorts (1.14 / 1.34
+/ 1.64, all p < 0.05), while its AKI result is weaker than the original
+everywhere.
+
+The AUC ≥ 3 variant-1 AKI estimate of 1.63 (1.01, 2.62) rests on 12 events
+against ~20 covariate degrees of freedom and should not be read as a finding.
+
+### 2.15 Explicitly unchanged
 
 - Primary exposure: `egfr_diff_pct_per10` — eGFR difference (%) per 10-percentage-point decline
 - Sensitivity exposure: `egfr_diff_pct_sens_per10` (CKD-EPI 2012 CysC vs CKD-EPI 2021 Cr)

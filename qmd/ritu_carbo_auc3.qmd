@@ -740,9 +740,74 @@ knitr::kable(lt_counts, caption = sprintf(
   nrow(dat)))
 ```
 
-# 6 Scatter Plots — Dose Discrepancy vs eGFR (Carboplatin AUC ≥ 3)
+# 6 Fine-Gray Models — Long-Horizon Kidney Outcomes (adjusted for CKD-EPI Cr-Cys instead of Cockcroft-Gault) (Carboplatin AUC ≥ 3)
 
-## 6.1 Dose Discrepancy vs CKD-EPI Cr-Cys (unindexed)
+> Identical to the section above — same two outcomes, same exposure
+> (`egfr_diff_pct_per10`, per 10 percentage-point decline in eGFR difference),
+> same competing event and the same adjuster set — with **one substitution**: the
+> kidney-function adjuster is `ckd_epi_gfr_cre_cys_unindex` (CKD-EPI 2012
+> creatinine + cystatin C, unindexed) in place of `cockcroft`. Cockcroft-Gault is
+> not in these models at all.
+
+## 6.1 AKI within 1 Year (Fine-Gray, death competing)
+
+[📄 Download Word table](../tables/auc3/sec6_aki_365.docx)
+
+```{r}
+#| label: ritu-auc3-fg-crcys-aki365
+fg_model("cmp_time_aki_365", "cmp_status_aki_365", "egfr_diff_pct_per10",
+         egfr_adj = "ckd_epi", docx_name = "sec6_aki_365")
+```
+
+## 6.2 CKD Composite, Any Time Post-Baseline (Fine-Gray, death competing)
+
+[📄 Download Word table](../tables/auc3/sec6_ckd_composite.docx)
+
+```{r}
+#| label: ritu-auc3-fg-crcys-ckdcomposite
+fg_model("cmp_time_ckd_composite", "cmp_status_ckd_composite", "egfr_diff_pct_per10",
+         egfr_adj = "ckd_epi", docx_name = "sec6_ckd_composite")
+```
+
+# 7 Fine-Gray Models — eGFR Difference as (CysC − Cr) / Cr, per 10 % decline (Carboplatin AUC ≥ 3)
+
+> Same two outcomes, same competing event and the same Cockcroft-Gault-adjusted
+> adjuster set as the first Fine-Gray section — with a **different exposure**.
+>
+> `egfr_diff_pct_sens` is `100 × (eGFR_CysC − eGFR_Cr) / eGFR_Cr`, built from
+> CKD-EPI 2012 cystatin C against CKD-EPI 2021 race-free creatinine, both
+> unindexed. `egfr_diff_pct_sens_per10` negates it and divides by 10, so the
+> subdistribution hazard ratio reads **per 10 percentage-point decline** — the
+> same reporting scale as the first section.
+>
+> The difference from that section: its exposure sets CKD-EPI Cr-Cys against
+> Cockcroft-Gault, so creatinine enters both terms. This one sets cystatin C
+> alone against creatinine alone, isolating the Cys-C / creatinine discordance
+> without a Cockcroft-Gault term in the numerator.
+
+## 7.1 AKI within 1 Year (Fine-Gray, death competing)
+
+[📄 Download Word table](../tables/auc3/sec7_aki_365.docx)
+
+```{r}
+#| label: ritu-auc3-fg-cysdiff-aki365
+fg_model("cmp_time_aki_365", "cmp_status_aki_365", "egfr_diff_pct_sens_per10",
+         egfr_adj = "cockcroft", docx_name = "sec7_aki_365")
+```
+
+## 7.2 CKD Composite, Any Time Post-Baseline (Fine-Gray, death competing)
+
+[📄 Download Word table](../tables/auc3/sec7_ckd_composite.docx)
+
+```{r}
+#| label: ritu-auc3-fg-cysdiff-ckdcomposite
+fg_model("cmp_time_ckd_composite", "cmp_status_ckd_composite", "egfr_diff_pct_sens_per10",
+         egfr_adj = "cockcroft", docx_name = "sec7_ckd_composite")
+```
+
+# 8 Scatter Plots — Dose Discrepancy vs eGFR (Carboplatin AUC ≥ 3)
+
+## 8.1 Dose Discrepancy vs CKD-EPI Cr-Cys (unindexed)
 
 ```{r}
 #| label: ritu-auc3-scatter-epi
@@ -758,7 +823,7 @@ ggplot(dat %>% filter(!is.na(dose_discrepancy)),
   theme_minimal(base_size = 11)
 ```
 
-## 6.2 Dose Discrepancy vs Cockcroft-Gault
+## 8.2 Dose Discrepancy vs Cockcroft-Gault
 
 ```{r}
 #| label: ritu-auc3-scatter-cg
@@ -775,7 +840,7 @@ ggplot(dat %>% filter(!is.na(dose_discrepancy)),
 ```
 
 
-# 7 Paper
+# 9 Paper
 
 ```{r}
 #| label: ritu-auc3-paper-stats

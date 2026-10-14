@@ -732,9 +732,74 @@ knitr::kable(lt_counts, caption = sprintf(
   nrow(dat)))
 ```
 
-# 5 Scatter Plots — eGFR Discrepancy
+# 5 Fine-Gray Models — Long-Horizon Kidney Outcomes (adjusted for CKD-EPI Cr-Cys instead of Cockcroft-Gault)
 
-## 5.1 eGFR Discrepancy vs CKD-EPI Cr-Cys (unindexed)
+> Identical to the section above — same two outcomes, same exposure
+> (`egfr_diff_pct_per10`, per 10 percentage-point decline in eGFR difference),
+> same competing event and the same adjuster set — with **one substitution**: the
+> kidney-function adjuster is `ckd_epi_gfr_cre_cys_unindex` (CKD-EPI 2012
+> creatinine + cystatin C, unindexed) in place of `cockcroft`. Cockcroft-Gault is
+> not in these models at all.
+
+## 5.1 AKI within 1 Year (Fine-Gray, death competing)
+
+[📄 Download Word table](../tables/whole/sec5_aki_365.docx)
+
+```{r}
+#| label: ritu-fg-crcys-aki365
+fg_model("cmp_time_aki_365", "cmp_status_aki_365", "egfr_diff_pct_per10",
+         egfr_adj = "ckd_epi", docx_name = "sec5_aki_365")
+```
+
+## 5.2 CKD Composite, Any Time Post-Baseline (Fine-Gray, death competing)
+
+[📄 Download Word table](../tables/whole/sec5_ckd_composite.docx)
+
+```{r}
+#| label: ritu-fg-crcys-ckdcomposite
+fg_model("cmp_time_ckd_composite", "cmp_status_ckd_composite", "egfr_diff_pct_per10",
+         egfr_adj = "ckd_epi", docx_name = "sec5_ckd_composite")
+```
+
+# 6 Fine-Gray Models — eGFR Difference as (CysC − Cr) / Cr, per 10 % decline
+
+> Same two outcomes, same competing event and the same Cockcroft-Gault-adjusted
+> adjuster set as the first Fine-Gray section — with a **different exposure**.
+>
+> `egfr_diff_pct_sens` is `100 × (eGFR_CysC − eGFR_Cr) / eGFR_Cr`, built from
+> CKD-EPI 2012 cystatin C against CKD-EPI 2021 race-free creatinine, both
+> unindexed. `egfr_diff_pct_sens_per10` negates it and divides by 10, so the
+> subdistribution hazard ratio reads **per 10 percentage-point decline** — the
+> same reporting scale as the first section.
+>
+> The difference from that section: its exposure sets CKD-EPI Cr-Cys against
+> Cockcroft-Gault, so creatinine enters both terms. This one sets cystatin C
+> alone against creatinine alone, isolating the Cys-C / creatinine discordance
+> without a Cockcroft-Gault term in the numerator.
+
+## 6.1 AKI within 1 Year (Fine-Gray, death competing)
+
+[📄 Download Word table](../tables/whole/sec6_aki_365.docx)
+
+```{r}
+#| label: ritu-fg-cysdiff-aki365
+fg_model("cmp_time_aki_365", "cmp_status_aki_365", "egfr_diff_pct_sens_per10",
+         egfr_adj = "cockcroft", docx_name = "sec6_aki_365")
+```
+
+## 6.2 CKD Composite, Any Time Post-Baseline (Fine-Gray, death competing)
+
+[📄 Download Word table](../tables/whole/sec6_ckd_composite.docx)
+
+```{r}
+#| label: ritu-fg-cysdiff-ckdcomposite
+fg_model("cmp_time_ckd_composite", "cmp_status_ckd_composite", "egfr_diff_pct_sens_per10",
+         egfr_adj = "cockcroft", docx_name = "sec6_ckd_composite")
+```
+
+# 7 Scatter Plots — eGFR Discrepancy
+
+## 7.1 eGFR Discrepancy vs CKD-EPI Cr-Cys (unindexed)
 
 ```{r}
 #| label: ritu-scatter-egfr-epi
@@ -751,7 +816,7 @@ ggplot(dat %>% filter(!is.na(egfr_discrepancy)),
   theme_minimal(base_size = 11)
 ```
 
-## 5.2 eGFR Discrepancy vs Cockcroft-Gault
+## 7.2 eGFR Discrepancy vs Cockcroft-Gault
 
 ```{r}
 #| label: ritu-scatter-egfr-cg
@@ -769,7 +834,7 @@ ggplot(dat %>% filter(!is.na(egfr_discrepancy)),
 ```
 
 
-# 6 CG vs CKD-EPI Cr-Cys (highlighted by Age / BMI)
+# 8 CG vs CKD-EPI Cr-Cys (highlighted by Age / BMI)
 
 For each plot below, the x-axis is Cockcroft-Gault eGFR (mL/min) and the y-axis is CKD-EPI Cr-Cys *unindexed* eGFR (mL/min). The dashed line is `y = x` (perfect agreement). Patients meeting the highlighted threshold are coloured red; all others are grey. `N` shown in each title is the count of patients with both eGFR values non-missing; `n_red` is the count meeting the red criterion.
 
@@ -819,7 +884,7 @@ plot_cg_vs_epi <- function(highlight_var, threshold, label) {
 }
 ```
 
-## 6.1 Age >= 70
+## 8.1 Age >= 70
 
 ```{r}
 #| label: ritu-scatter-cg-epi-age70
@@ -828,7 +893,7 @@ plot_cg_vs_epi <- function(highlight_var, threshold, label) {
 plot_cg_vs_epi("age", 70, "Age >= 70")
 ```
 
-## 6.2 Age >= 75
+## 8.2 Age >= 75
 
 ```{r}
 #| label: ritu-scatter-cg-epi-age75
@@ -837,7 +902,7 @@ plot_cg_vs_epi("age", 70, "Age >= 70")
 plot_cg_vs_epi("age", 75, "Age >= 75")
 ```
 
-## 6.3 Age >= 80
+## 8.3 Age >= 80
 
 ```{r}
 #| label: ritu-scatter-cg-epi-age80
@@ -846,7 +911,7 @@ plot_cg_vs_epi("age", 75, "Age >= 75")
 plot_cg_vs_epi("age", 80, "Age >= 80")
 ```
 
-## 6.4 BMI >= 25
+## 8.4 BMI >= 25
 
 ```{r}
 #| label: ritu-scatter-cg-epi-bmi25
@@ -855,7 +920,7 @@ plot_cg_vs_epi("age", 80, "Age >= 80")
 plot_cg_vs_epi("bmi", 25, "BMI >= 25")
 ```
 
-## 6.5 BMI >= 30
+## 8.5 BMI >= 30
 
 ```{r}
 #| label: ritu-scatter-cg-epi-bmi30
@@ -864,7 +929,7 @@ plot_cg_vs_epi("bmi", 25, "BMI >= 25")
 plot_cg_vs_epi("bmi", 30, "BMI >= 30")
 ```
 
-## 6.6 Sex
+## 8.6 Sex
 
 ```{r}
 #| label: ritu-scatter-cg-epi-sex
@@ -908,7 +973,7 @@ ggplot(d_sex, aes(x = cockcroft, y = ckd_epi_gfr_cre_cys_unindex,
   theme(legend.position = "top")
 ```
 
-## 6.7 – 6.12 eGFR Difference (%) distribution by category
+## 8.7 – 8.12 eGFR Difference (%) distribution by category
 
 For each of the same six splits as 10.1 – 10.6, overlaid kernel density curves of the eGFR difference (%) = 100 × (CKD-EPI Cr-Cys unindexed − Cockcroft-Gault) / Cockcroft-Gault. Red = highlighted level (≥ threshold, or Female for the sex panel); grey = reference level. Dashed grey vertical line marks the 0 % concordance point; dotted verticals mark each group's median. Subtitle carries N and median for each level plus a two-sided Mann-Whitney U p-value (equivalent to Wilcoxon rank-sum) comparing the two distributions.
 
@@ -962,7 +1027,7 @@ plot_ratio_by_group <- function(highlight_var, threshold, label,
 }
 ```
 
-### 6.7 eGFR Difference (%) by Age >= 70
+### 8.7 eGFR Difference (%) by Age >= 70
 
 ```{r}
 #| label: ritu-ratio-by-age70
@@ -972,7 +1037,7 @@ plot_ratio_by_group("age", 70, "eGFR Difference (%) by Age >= 70",
                     "Age >= 70", "Age < 70")
 ```
 
-### 6.8 eGFR Difference (%) by Age >= 75
+### 8.8 eGFR Difference (%) by Age >= 75
 
 ```{r}
 #| label: ritu-ratio-by-age75
@@ -982,7 +1047,7 @@ plot_ratio_by_group("age", 75, "eGFR Difference (%) by Age >= 75",
                     "Age >= 75", "Age < 75")
 ```
 
-### 6.9 eGFR Difference (%) by Age >= 80
+### 8.9 eGFR Difference (%) by Age >= 80
 
 ```{r}
 #| label: ritu-ratio-by-age80
@@ -992,7 +1057,7 @@ plot_ratio_by_group("age", 80, "eGFR Difference (%) by Age >= 80",
                     "Age >= 80", "Age < 80")
 ```
 
-### 6.10 eGFR Difference (%) by BMI >= 25
+### 8.10 eGFR Difference (%) by BMI >= 25
 
 ```{r}
 #| label: ritu-ratio-by-bmi25
@@ -1002,7 +1067,7 @@ plot_ratio_by_group("bmi", 25, "eGFR Difference (%) by BMI >= 25",
                     "BMI >= 25", "BMI < 25")
 ```
 
-### 6.11 eGFR Difference (%) by BMI >= 30
+### 8.11 eGFR Difference (%) by BMI >= 30
 
 ```{r}
 #| label: ritu-ratio-by-bmi30
@@ -1012,7 +1077,7 @@ plot_ratio_by_group("bmi", 30, "eGFR Difference (%) by BMI >= 30",
                     "BMI >= 30", "BMI < 30")
 ```
 
-### 6.12 eGFR Difference (%) by Sex
+### 8.12 eGFR Difference (%) by Sex
 
 ```{r}
 #| label: ritu-ratio-by-sex

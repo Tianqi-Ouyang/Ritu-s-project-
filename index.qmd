@@ -227,6 +227,21 @@ REDCap stays censored. Censoring is at the last creatinine.
 | AKI ≤ 1 yr | subHR 1.29 (1.16, 1.44), p < 0.001 | 1.10 (0.85, 1.43), p = 0.46 | 1.13 (0.83, 1.53), p = 0.45 | 1.24 (0.66, 2.32), p = 0.51 |
 | CKD composite, any time | 1.14 (1.00, 1.30), p = 0.045 | 1.55 (1.13, 2.11), p = 0.006 | 2.21 (0.94, 5.16), p = 0.068 | 1.20 (0.50, 2.84), p = 0.69 |
 
+Each outcome is now run **three ways** — same competing event, same non-kidney
+adjusters, differing only in the kidney adjuster or the exposure:
+
+| | Exposure | Kidney adjuster | § whole / entire | § carboplatin |
+|---|---|---|---|---|
+| Original | (CKD-EPI Cr-Cys − Cockcroft-Gault) / CG | `cockcroft` | 4 | 5 |
+| Variant 1 | the same | CKD-EPI Cr-Cys | 5 | 6 |
+| Variant 2 | (CKD-EPI CysC − CKD-EPI Cr) / Cr | `cockcroft` | 6 | 7 |
+
+Both exposures read per 10 percentage-point decline. `RITU_PROJECT.md` §2.14 has
+all twenty-four estimates, and explains why **variant 1 is not a sensitivity
+check of the original**: the exposure is a ratio of CKD-EPI Cr-Cys to
+Cockcroft-Gault, so the two models condition on different halves of it and
+answer different questions.
+
 Events / competing deaths: AKI **197 + 114** (entire), 51 + 8 (Local/Early);
 CKD composite **70 + 265** (entire), 26 + 28 (Local/Early). Only the
 entire-cohort AKI model is comfortably powered against ~21 covariates.
