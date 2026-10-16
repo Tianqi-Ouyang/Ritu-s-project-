@@ -10,7 +10,7 @@ tumour stages) and the **Local/Early** cohort (N = 322, advanced/metastatic
 excluded), which was the original point of the project.
 
 It has also gained, on request and documented in §2: KDIGO CKD stage in Table 1
-(§2.5); creatinine sourced from the newer 2022P001091 RPDR pull (§2.6); the
+(§2.5); creatinine sourced from a dedicated RPDR pull (§2.6); the
 long-horizon CKD / ESKD / AKI outcome family ported from the ICI-CKD project
 (§2.7); and the entire-cohort page (§2.8). None of these alters the
 Jiaxuan-derived models — the ported kidney outcomes are descriptive additions
@@ -190,13 +190,13 @@ G3b and G4 fall below the project's default small-cell threshold of 11, and the
 site is public. Collapsing the bottom into a single "G3b–G5 (< 45)" row is a
 one-line change if that is preferred.
 
-### 2.6 Creatinine switched to the 2022P001091 RPDR pull
+### 2.6 Creatinine switched to a dedicated creatinine-only RPDR pull
 
 `ritu_data.qmd` §4.7 now reads labs from **two** extracts:
 
 | Extract | Supplies |
 |---|---|
-| `2022P001091_mes98_072826125900866852` (Aug 2026) | **CRE only** — 48,843 rows |
+| `Ritu_project/RPDR/mes98_100826163401502663` (Oct 2026) | **CRE only** — 50,046 rows — plus `Vital_status` / `Date_Of_Death` |
 | `RPDR 2026-03-19/mes98_03182614492143216` | HGB, PLT, ALB, GHBA1C — 128,156 rows; plus all `Dia` and `Med` |
 
 The newer pull is a **creatinine-only** extract. It contains no `Dia` or `Med`
@@ -386,8 +386,8 @@ Competing-risk breakdown (censored / event / death):
 
 | Outcome | Entire (943) | Local/Early (322) |
 |---|---|---|
-| AKI ≤ 1 yr | 632 / 197 / 114 | 263 / 51 / 8 |
-| CKD composite | 608 / 70 / 265 | 268 / 26 / 28 |
+| AKI ≤ 1 yr | 630 / 198 / 115 | 262 / 52 / 8 |
+| CKD composite | 582 / 79 / 282 | 258 / 30 / 34 |
 
 The death counts are those of the broadened competing event introduced in §2.11;
 see that section for the figures these replaced.
@@ -396,8 +396,8 @@ Results for `egfr_diff_pct_per10` (subHR per 10 percentage-point decline):
 
 | Model | Entire (943) | Local/Early (322) | Carbo (189) | AUC ≥ 3 (142) |
 |---|---|---|---|---|
-| AKI ≤ 1 yr | 1.29 (1.16, 1.44), p < 0.001 | 1.10 (0.85, 1.43), p = 0.46 | 1.13 (0.83, 1.53), p = 0.45 | 1.24 (0.66, 2.32), p = 0.51 |
-| CKD composite | 1.14 (1.00, 1.30), p = 0.045 | 1.55 (1.13, 2.11), p = 0.006 | 2.21 (0.94, 5.16), p = 0.068 | 1.20 (0.50, 2.84), p = 0.69 |
+| AKI ≤ 1 yr | 1.30 (1.16, 1.45), p < 0.001 | 1.11 (0.86, 1.44), p = 0.43 | 1.13 (0.82, 1.56), p = 0.45 | 1.23 (0.66, 2.32), p = 0.51 |
+| CKD composite | 1.16 (1.03, 1.31), p = 0.018 | 1.52 (1.14, 2.02), p = 0.004 | 1.82 (0.98, 3.39), p = 0.059 | 1.73 (0.69, 4.34), p = 0.25 |
 
 With 70 and 26 events against ~21 covariates, the CKD composite models are
 over-parameterised; the AKI model in the entire cohort (197 events) is the only
@@ -470,10 +470,11 @@ CKD composite at any time — with `death_lt` / `death_days_lt` as the competing
 event, i.e. death dated from the RPDR `Date_Of_Death` alone. That under-counted
 the competing event:
 
-- The RPDR pull dates **252** deaths in the entire cohort while the refreshed
-  REDCap export (§2.10) records **272**, and the two sets do not nest: 27 REDCap
-  deaths have no RPDR date and 7 RPDR-dated deaths are not flagged dead in
-  REDCap.
+- The RPDR pull dates **278** deaths in the entire cohort while the refreshed
+  REDCap export (§2.10) records **272**, and the two sets do not nest: 22 REDCap
+  deaths have no RPDR date, and RPDR dates deaths REDCap has not caught up with.
+  (Figures are from the Oct 2026 creatinine pull of §2.6; the pull it replaced
+  dated 252.)
 - For a patient REDCap records as dead, the last-follow-up date *is* the death
   date — so REDCap can place a death in time that RPDR cannot.
 
@@ -487,16 +488,14 @@ Section 5.19 of `ritu_data.qmd` now builds the union and both models use it:
 `death_lt` / `death_days_lt` are kept as the RPDR input to `death_days_any` and
 for the QC prints, but are no longer used directly as a competing event.
 
-Effect: **279** dated deaths in the entire cohort instead of 252, **31** instead
-of 28 in Local/Early. Event counts are untouched — only the competing-death
-column moves.
+Effect: **300** dated deaths in the entire cohort instead of 278 from RPDR
+alone, **37** instead of 34 in Local/Early. Event counts are untouched — only
+the competing-death column moves.
 
 | Model | Entire 943, censored / event / death | Local/Early 322 |
 |---|---|---|
-| AKI ≤ 1 yr, was | 642 / 197 / 104 | 264 / 51 / 7 |
-| AKI ≤ 1 yr, now | 632 / 197 / **114** | 263 / 51 / **8** |
-| CKD composite, was | 632 / 70 / 241 | 271 / 26 / 25 |
-| CKD composite, now | 608 / 70 / **265** | 268 / 26 / **28** |
+| AKI ≤ 1 yr | 630 / 198 / **115** | 262 / 52 / **8** |
+| CKD composite | 582 / 79 / **282** | 258 / 30 / **34** |
 
 The AKI figures are lower than the full death count because that model is
 administratively censored at 365 days, so a death after day 365 is not a
@@ -560,10 +559,10 @@ the four cohorts:
 
 | Cohort | AKI ≤ 1 yr (events / competing deaths) | CKD composite |
 |---|---|---|
-| Entire (943) | 197 / 114 | 70 / 265 |
-| Local/Early (322) | 51 / 8 | 26 / 28 |
-| Carboplatin (189) | 23 / 5 | 11 / 15 |
-| Carbo AUC ≥ 3 (142) | 12 / 2 | 7 / 9 |
+| Entire (943) | 198 / 115 | 79 / 282 |
+| Local/Early (322) | 52 / 8 | 30 / 34 |
+| Carboplatin (189) | 24 / 5 | 14 / 18 |
+| Carbo AUC ≥ 3 (142) | 12 / 2 | 10 / 10 |
 
 Against ~20 covariate degrees of freedom only the entire-cohort AKI model meets
 the 10-events-per-covariate convention. The §3 caveats below were written for
@@ -613,28 +612,28 @@ Coverage by window, entire cohort (936 of 943 have any post-baseline creatinine)
 |---|---|---|---|---|---|
 | Day 90 | 815 | **876** | 901 | 933 | 936 |
 | Day 180 | 603 | **710** | 756 | 815 | 936 |
-| Day 365 | 425 | **489** | 530 | 593 | 936 |
+| Day 365 | 451 | **517** | 557 | 618 | 936 |
 
 #### Results
 
 | Mark | n (of 943) | Actual day, median [IQR] | Δ eGFR | Δ eGFR % |
 |---|---|---|---|---|
-| Day 90 | 876 (92.9 %) | 86 [82, 91] | 1.0 [−6.4, 7.8] | 1.1 [−7.5, 10.0] |
-| Day 180 | 710 (75.3 %) | 179 [168, 188] | −2.6 [−12.0, 4.2] | −2.8 [−14.6, 5.5] |
-| Day 365 | 489 (51.9 %) | 363 [353, 371] | −6.7 [−15.4, 1.6] | −7.8 [−18.5, 1.5] |
+| Day 90 | 876 (92.9 %) | 86 [82, 91] | 1.0 [−6.2, 7.7] | 1.1 [−7.5, 9.8] |
+| Day 180 | 710 (75.3 %) | 179 [168, 188] | −2.6 [−11.9, 4.2] | −2.8 [−14.5, 5.7] |
+| Day 365 | 517 (54.8 %) | 364 [354, 371] | −6.2 [−15.3, 1.6] | −7.6 [−18.5, 1.5] |
 
 Per cohort, Δ eGFR at day 90 / 180 / 365:
 
 | Cohort | Day 90 | Day 180 | Day 365 |
 |---|---|---|---|
-| Entire (943) | 1.0 (n = 876) | −2.6 (n = 710) | −6.7 (n = 489) |
-| Local/Early (322) | 0.9 (n = 301) | −2.2 (n = 244) | −7.5 (n = 176) |
-| Carboplatin (189) | 2.0 (n = 173) | −0.6 (n = 146) | −3.9 (n = 107) |
-| Carbo AUC ≥ 3 (142) | 2.0 (n = 133) | −0.9 (n = 111) | −5.9 (n = 85) |
+| Entire (943) | 1.0 (n = 876) | −2.6 (n = 710) | −6.2 (n = 517) |
+| Local/Early (322) | 0.9 (n = 301) | −2.2 (n = 244) | −7.1 (n = 186) |
+| Carboplatin (189) | 2.1 (n = 173) | −0.6 (n = 146) | −4.2 (n = 112) |
+| Carbo AUC ≥ 3 (142) | 2.1 (n = 133) | −0.9 (n = 111) | −6.0 (n = 88) |
 
-The realized day sits close to each nominal mark (medians 86 / 179 / 363), so the
+The realized day sits close to each nominal mark (medians 86 / 179 / 364), so the
 window is selecting near the target rather than shifting it. **Coverage is the
-caveat**: it falls from 93 % at day 90 to 52 % at day 365, because creatinine is
+caveat**: it falls from 93 % at day 90 to 55 % at day 365, because creatinine is
 drawn less often once treatment finishes. The day-365 row describes the half of
 the cohort still under monitoring a year out, which is not a random half of the
 cohort — worth stating in any write-up rather than reporting the median alone.
@@ -671,26 +670,26 @@ exactly one and 7 have none at all.
 
 | Marks with a value | Entire 943 | Local/Early 322 |
 |---|---|---|
-| All three | 441 (46.8 %) | 154 (47.8 %) |
-| Day 90 + 180 | 255 (27.0 %) | 81 (25.2 %) |
-| Day 90 only | 144 (15.3 %) | 50 (15.5 %) |
-| Day 90 + 365 | 36 (3.8 %) | 16 (5.0 %) |
+| All three | 468 (49.6 %) | 164 (50.9 %) |
+| Day 90 + 180 | 228 (24.2 %) | 71 (22.0 %) |
+| Day 90 only | 143 (15.2 %) | 50 (15.5 %) |
+| None of the three | 48 (5.1 %) | 10 (3.1 %) |
+| Day 90 + 365 | 37 (3.9 %) | 16 (5.0 %) |
 | Day 180 + 365 | 7 (0.7 %) | 4 (1.2 %) |
 | Day 180 only | 7 (0.7 %) | 5 (1.6 %) |
 | Day 365 only | 5 (0.5 %) | 2 (0.6 %) |
-| None of the three | 48 (5.1 %) | 10 (3.1 %) |
 
-The pattern is almost perfectly **nested**: 888 of 943 fall into All three /
-Day 90 + 180 / Day 90 only / None. Only 55 patients have a gap-then-return shape.
+The pattern is almost perfectly **nested**: 887 of 943 fall into All three /
+Day 90 + 180 / Day 90 only / None. Only 56 patients have a gap-then-return shape.
 
 What separates the groups is how long creatinine kept being drawn, entire cohort:
 
 | Marks covered | n | Post-baseline creatinines, median [IQR] | Last creatinine, day |
 |---|---|---|---|
-| 0 of 3 | 48 | 6 [3, 9] | 23 [12, 41] |
-| 1 of 3 | 156 | 10 [7, 15] | 114 [78, 290] |
-| 2 of 3 | 298 | 18 [11, 29] | 270 [208, 410] |
-| 3 of 3 | 441 | 31 [22, 51] | 573 [432, 780] |
+| 0 of 3 | 48 | 6 | 23 |
+| 1 of 3 | 155 | 10 | 115 |
+| 2 of 3 | 272 | 19 | 288 |
+| 3 of 3 | 468 | 31 | 594 |
 
 Of the 48 covering no mark at all, only 7 have no post-baseline creatinine; the
 other 41 have a median of 6 each, but their last one is at day 23 — before the
@@ -725,18 +724,18 @@ Multivariable subHR for the exposure:
 
 | Cohort | Model | AKI ≤ 1 yr | CKD composite |
 |---|---|---|---|
-| Entire 943 | Original | 1.29 (1.16, 1.44) p < 0.001 | 1.14 (1.00, 1.30) p = 0.045 |
-| | Variant 1 | 1.21 (1.08, 1.36) p = 0.001 | 1.03 (0.90, 1.17) p = 0.69 |
-| | Variant 2 | 1.14 (1.03, 1.25) p = 0.009 | 1.14 (1.01, 1.28) p = 0.036 |
-| Local/Early 322 | Original | 1.10 (0.85, 1.43) p = 0.46 | 1.55 (1.13, 2.11) p = 0.006 |
-| | Variant 1 | 1.12 (0.83, 1.50) p = 0.46 | 1.11 (0.88, 1.39) p = 0.37 |
-| | Variant 2 | 0.98 (0.82, 1.18) p = 0.85 | 1.34 (1.10, 1.64) p = 0.004 |
-| Carboplatin 189 | Original | 1.13 (0.83, 1.53) p = 0.45 | 2.21 (0.94, 5.16) p = 0.068 |
-| | Variant 1 | 1.05 (0.74, 1.49) p = 0.78 | 1.25 (0.72, 2.18) p = 0.43 |
-| | Variant 2 | 0.93 (0.73, 1.19) p = 0.58 | 1.64 (1.05, 2.57) p = 0.030 |
-| Carbo AUC ≥ 3 142 | Original | 1.24 (0.66, 2.32) p = 0.51 | 1.20 (0.50, 2.84) p = 0.69 |
-| | Variant 1 | 1.63 (1.01, 2.62) p = 0.046 | 0.99 (0.62, 1.57) p = 0.96 |
-| | Variant 2 | 1.10 (0.69, 1.74) p = 0.68 | 1.24 (0.80, 1.90) p = 0.34 |
+| Entire 943 | Original | 1.30 (1.16, 1.45) p < 0.001 | 1.16 (1.03, 1.31) p = 0.018 |
+| | Variant 1 | 1.22 (1.08, 1.36) p < 0.001 | 1.05 (0.93, 1.18) p = 0.44 |
+| | Variant 2 | 1.14 (1.04, 1.25) p = 0.007 | 1.16 (1.04, 1.30) p = 0.009 |
+| Local/Early 322 | Original | 1.11 (0.86, 1.44) p = 0.43 | 1.52 (1.14, 2.02) p = 0.004 |
+| | Variant 1 | 1.11 (0.82, 1.49) p = 0.50 | 1.18 (0.95, 1.47) p = 0.13 |
+| | Variant 2 | 0.99 (0.83, 1.18) p = 0.94 | 1.32 (1.10, 1.58) p = 0.002 |
+| Carboplatin 189 | Original | 1.13 (0.82, 1.56) p = 0.45 | 1.82 (0.98, 3.39) p = 0.059 |
+| | Variant 1 | 1.03 (0.71, 1.49) p = 0.87 | 1.34 (0.83, 2.18) p = 0.24 |
+| | Variant 2 | 0.94 (0.74, 1.20) p = 0.63 | 1.41 (1.03, 1.95) p = 0.034 |
+| Carbo AUC ≥ 3 142 | Original | 1.23 (0.66, 2.32) p = 0.51 | 1.73 (0.69, 4.34) p = 0.25 |
+| | Variant 1 | 1.63 (1.01, 2.62) p = 0.044 | 1.34 (0.73, 2.45) p = 0.34 |
+| | Variant 2 | 1.10 (0.69, 1.75) p = 0.69 | 1.57 (0.90, 2.75) p = 0.11 |
 
 All twenty-four models are estimable.
 
@@ -754,7 +753,7 @@ remaining variation is:
   variation in Cockcroft-Gault.
 
 That is why the CKD-composite signal falls away under variant 1 in every cohort
-— 1.55 → 1.11 in Local/Early, 1.14 → 1.03 in the entire cohort, 2.21 → 1.25 in
+— 1.52 → 1.18 in Local/Early, 1.16 → 1.05 in the entire cohort, 1.82 → 1.34 in
 carboplatin. It is not evidence that the original result is fragile: the two
 models condition on different halves of the same ratio. They answer different
 questions and should be reported that way, not as a sensitivity check of one
@@ -762,8 +761,8 @@ another.
 
 Variant 2 has no such entanglement — its exposure is built from cystatin C and
 creatinine alone, and `cockcroft` is a separate quantity. Its CKD-composite
-result holds across the entire, Local/Early and carboplatin cohorts (1.14 / 1.34
-/ 1.64, all p < 0.05), while its AKI result is weaker than the original
+result holds across the entire, Local/Early and carboplatin cohorts (1.16 / 1.32
+/ 1.41, all p < 0.05), while its AKI result is weaker than the original
 everywhere.
 
 The AUC ≥ 3 variant-1 AKI estimate of 1.63 (1.01, 2.62) rests on 12 events

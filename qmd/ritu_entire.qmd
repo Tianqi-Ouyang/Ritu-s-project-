@@ -8,7 +8,7 @@ execute:
   message: false
 ---
 
-> **Entire cohort — all tumour stages.** This page runs the same analysis as the Local/Early page on the **unrestricted** cohort: **N = 943** (322 Local/Early + 621 Advanced/Metastatic; 596 carboplatin, 347 cisplatin). It reads `ritu_full_master.rds`, saved by `ritu_data.qmd` immediately before the stage restriction, so every variable is identical — including the creatinine from the 2022P001091 RPDR pull and the CKD / ESKD / AKI family.
+> **Entire cohort — all tumour stages.** This page runs the same analysis as the Local/Early page on the **unrestricted** cohort: **N = 943** (322 Local/Early + 621 Advanced/Metastatic; 596 carboplatin, 347 cisplatin). It reads `ritu_full_master.rds`, saved by `ritu_data.qmd` immediately before the stage restriction, so every variable is identical — including the creatinine from the Ritu_project RPDR pull and the CKD / ESKD / AKI family.
 >
 > **`tumor_stage` is a covariate again here.** It is constant in the Local/Early cohort and therefore dropped there; in the entire cohort it varies, so it is restored to Table 1 and to every Fine-Gray, cause-specific, Cox and linear-subHR adjuster set. That makes this page's model specification the same as the Jiaxuan project's.
 >
@@ -307,7 +307,7 @@ flextable::flextable(followup_tbl) |>
 
 Ported from the [ICI-CKD project](https://tianqi-ouyang.github.io/ICI-CKD-/data_management.html)
 and built in Sections 5.16–5.19 of [Data Management](ritu_data.qmd). Creatinine
-for these comes from the newer 2022P001091 RPDR pull.
+for these comes from the Ritu_project RPDR pull (Oct 2026).
 
 > **None of these are censored at 90 days.** A qualifying CKD episode has to be
 > *sustained for ≥ 90 days*, so they run over the full length of RPDR creatinine

@@ -236,7 +236,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="project-overview" class="level1">
 <h1>Project Overview</h1>
 <p>Creatinine-to-cystatin C discordance and adverse events in patients receiving platinum-based chemotherapy.</p>
-<p>The project repeats the Jiaxuan analysis at <strong>two cohort levels off one pipeline</strong>: the <strong>entire cohort</strong> (N = 943, all tumour stages) and the <strong>Local/Early</strong> cohort (N = 322, advanced/metastatic patients excluded). Every exposure, model, table, figure and download is carried over unchanged at both levels; both use the newer 2022P001091 creatinine pull and carry the CKD / ESKD / AKI variable family ported from the ICI-CKD project.</p>
+<p>The project repeats the Jiaxuan analysis at <strong>two cohort levels off one pipeline</strong>: the <strong>entire cohort</strong> (N = 943, all tumour stages) and the <strong>Local/Early</strong> cohort (N = 322, advanced/metastatic patients excluded). Every exposure, model, table, figure and download is carried over unchanged at both levels; both use the Ritu_project creatinine pull and carry the CKD / ESKD / AKI variable family ported from the ICI-CKD project.</p>
 <table class="caption-top table">
 <thead>
 <tr class="header">
@@ -278,7 +278,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="pages-and-cohort-sizes" class="level1">
 <h1>Pages and Cohort Sizes</h1>
-<p>The project runs at two cohort levels off the same pipeline. Both use the 2022P001091 creatinine pull and carry the full CKD / ESKD / AKI variable family.</p>
+<p>The project runs at two cohort levels off the same pipeline. Both use the Ritu_project creatinine pull and carry the full CKD / ESKD / AKI variable family.</p>
 <table class="caption-top table">
 <thead>
 <tr class="header">
@@ -357,26 +357,26 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tbody>
 <tr class="odd">
 <td>Entire (943)</td>
-<td>197</td>
-<td>70</td>
+<td>198</td>
+<td>79</td>
 <td>AKI comfortably powered; CKD composite over-parameterised</td>
 </tr>
 <tr class="even">
 <td>Local/Early (322)</td>
-<td>51</td>
-<td>26</td>
+<td>52</td>
+<td>30</td>
 <td>both over-parameterised</td>
 </tr>
 <tr class="odd">
 <td>Carboplatin (189)</td>
-<td>23</td>
-<td>11</td>
+<td>24</td>
+<td>14</td>
 <td>both over-parameterised</td>
 </tr>
 <tr class="even">
 <td>Carbo AUC ≥ 3 (142)</td>
 <td>12</td>
-<td>7</td>
+<td>10</td>
 <td>not interpretable</td>
 </tr>
 </tbody>
@@ -534,32 +534,32 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="odd">
 <td>Day 90</td>
 <td>876 (92.9 %)</td>
-<td>1.0 [−6.4, 7.8]</td>
-<td>1.1 [−7.5, 10.0]</td>
+<td>1.0 [−6.2, 7.7]</td>
+<td>1.1 [−7.5, 9.8]</td>
 </tr>
 <tr class="even">
 <td>Day 180</td>
 <td>710 (75.3 %)</td>
-<td>−2.6 [−12.0, 4.2]</td>
-<td>−2.8 [−14.6, 5.5]</td>
+<td>−2.6 [−11.9, 4.2]</td>
+<td>−2.8 [−14.5, 5.7]</td>
 </tr>
 <tr class="odd">
 <td>Day 365</td>
-<td>489 (51.9 %)</td>
-<td>−6.7 [−15.4, 1.6]</td>
-<td>−7.8 [−18.5, 1.5]</td>
+<td>517 (54.8 %)</td>
+<td>−6.2 [−15.3, 1.6]</td>
+<td>−7.6 [−18.5, 1.5]</td>
 </tr>
 </tbody>
 </table>
-<p>Local/Early (322): day 90 n = 301, Δ 0.9 [−5.9, 7.2]; day 180 n = 244, Δ −2.2 [−12.7, 3.3]; day 365 n = 176, Δ −7.5 [−14.9, −0.3].</p>
-<p>The two carboplatin cohorts decline less: carboplatin (189) Δ +2.0 at day 90 and −3.9 at day 365; AUC ≥ 3 (142) Δ +2.0 and −5.9.</p>
-<p>Two things to read with it. The <strong>realized day is tight</strong> — median 86, 179 and 364 against nominal 90, 180 and 365 — so the window is doing its job rather than quietly shifting the timepoint. But <strong>coverage falls with time</strong>, from 93 % at day 90 to 52 % at day 365, because creatinine is drawn less often once treatment ends. The day-365 figures therefore describe the half of the cohort still being monitored a year out, who are not a random half.</p>
+<p>Local/Early (322): day 90 n = 301, Δ 0.9 [−5.9, 7.2]; day 180 n = 244, Δ −2.2 [−12.7, 3.4]; day 365 n = 186, Δ −7.1 [−15.3, −0.5].</p>
+<p>The two carboplatin cohorts decline less: carboplatin (189) Δ +2.1 at day 90 and −4.2 at day 365; AUC ≥ 3 (142) Δ +2.1 and −6.0.</p>
+<p>Two things to read with it. The <strong>realized day is tight</strong> — median 86, 179 and 364 against nominal 90, 180 and 365 — so the window is doing its job rather than quietly shifting the timepoint. But <strong>coverage falls with time</strong>, from 93 % at day 90 to 55 % at day 365, because creatinine is drawn less often once treatment ends. The day-365 figures therefore describe the half of the cohort still being monitored a year out, who are not a random half.</p>
 <p>The ± 45-day window matches the pipeline’s existing baseline-lab window (<code>pre_CRE_45days</code>) and is the widest that keeps the 90- and 180-day marks from drawing on the same measurement. Without any window every patient gets a value at every mark, but the closest creatinine to day 365 would be over 276 days away for a tenth of the cohort.</p>
 </section>
 <section id="competing-risk-models-death-competing" class="level2">
 <h2 class="anchored" data-anchor-id="competing-risk-models-death-competing">Competing-Risk Models (death competing)</h2>
 <p>Fine-Gray models for <code>egfr_diff_pct_per10</code> are in §4.12–4.13 of the whole and entire pages and §5.12–5.13 of the carboplatin pages. These are the only two long-horizon outcomes modelled; the 90-day adverse-event and hospitalization outcomes are modelled with the 90-day competing event in §4 / §5.</p>
-<p>The competing event is <strong>death at any time</strong>, <code>death_days_any</code> — <code>death_90</code> is capped at 90 days and cannot place a death in time beyond day 90, so it cannot serve over a multi-year horizon. <code>death_days_any</code> is the <strong>union of the two sources</strong> that carry a death date: the RPDR <code>Date_Of_Death</code> when there is one, otherwise the REDCap last-follow-up date for a patient whose <code>pt_status</code> is “Dead”. The two do not nest — 27 REDCap deaths have no RPDR date and 7 RPDR-dated deaths are not flagged dead in REDCap — so the union gives 279 dated deaths in the entire cohort against 252 from RPDR alone, and 31 against 28 in Local/Early. Someone flagged deceased in RPDR with no date who is still alive in REDCap stays censored. Censoring is at the last creatinine.</p>
+<p>The competing event is <strong>death at any time</strong>, <code>death_days_any</code> — <code>death_90</code> is capped at 90 days and cannot place a death in time beyond day 90, so it cannot serve over a multi-year horizon. <code>death_days_any</code> is the <strong>union of the two sources</strong> that carry a death date: the RPDR <code>Date_Of_Death</code> when there is one, otherwise the REDCap last-follow-up date for a patient whose <code>pt_status</code> is “Dead”. The two do not nest — 22 REDCap deaths have no RPDR date, and RPDR dates deaths REDCap has not caught up with — so the union gives 300 dated deaths in the entire cohort against 278 from RPDR alone, and 37 against 34 in Local/Early. Someone flagged deceased in RPDR with no date who is still alive in REDCap stays censored. Censoring is at the last creatinine.</p>
 <table class="caption-top table">
 <colgroup>
 <col style="width: 20%">
@@ -580,17 +580,17 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tbody>
 <tr class="odd">
 <td>AKI ≤ 1 yr</td>
-<td>subHR 1.29 (1.16, 1.44), p &lt; 0.001</td>
-<td>1.10 (0.85, 1.43), p = 0.46</td>
-<td>1.13 (0.83, 1.53), p = 0.45</td>
-<td>1.24 (0.66, 2.32), p = 0.51</td>
+<td>subHR 1.30 (1.16, 1.45), p &lt; 0.001</td>
+<td>1.11 (0.86, 1.44), p = 0.43</td>
+<td>1.13 (0.82, 1.56), p = 0.45</td>
+<td>1.23 (0.66, 2.32), p = 0.51</td>
 </tr>
 <tr class="even">
 <td>CKD composite, any time</td>
-<td>1.14 (1.00, 1.30), p = 0.045</td>
-<td>1.55 (1.13, 2.11), p = 0.006</td>
-<td>2.21 (0.94, 5.16), p = 0.068</td>
-<td>1.20 (0.50, 2.84), p = 0.69</td>
+<td>1.16 (1.03, 1.31), p = 0.018</td>
+<td>1.52 (1.14, 2.02), p = 0.004</td>
+<td>1.82 (0.98, 3.39), p = 0.059</td>
+<td>1.73 (0.69, 4.34), p = 0.25</td>
 </tr>
 </tbody>
 </table>
@@ -637,8 +637,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </tbody>
 </table>
 <p>Both exposures read per 10 percentage-point decline. <code>RITU_PROJECT.md</code> §2.14 has all twenty-four estimates, and explains why <strong>variant 1 is not a sensitivity check of the original</strong>: the exposure is a ratio of CKD-EPI Cr-Cys to Cockcroft-Gault, so the two models condition on different halves of it and answer different questions.</p>
-<p>Events / competing deaths: AKI <strong>197 + 114</strong> (entire), 51 + 8 (Local/Early); CKD composite <strong>70 + 265</strong> (entire), 26 + 28 (Local/Early). Only the entire-cohort AKI model is comfortably powered against ~21 covariates.</p>
-<p>Broadening the competing event from the RPDR-only <code>death_lt</code> to <code>death_days_any</code> left the estimates almost untouched — they were 1.31 (1.18, 1.47) and 1.14 (1.00, 1.30) in the entire cohort, 1.13 (0.87, 1.46) and 1.56 (1.13, 2.14) in Local/Early — so the extra competing events confirm the earlier result rather than revising it.</p>
+<p>Events / competing deaths: AKI <strong>198 + 115</strong> (entire), 52 + 8 (Local/Early); CKD composite <strong>79 + 282</strong> (entire), 30 + 34 (Local/Early). Only the entire-cohort AKI model is comfortably powered against ~21 covariates.</p>
 <p>All of the above are <strong>Table 1 rows</strong> on all three analysis pages, together with <code>esrd_kt</code> (ESRD / KT at or before baseline, n = 1), <code>eGFR_CRE_baseline</code>, <code>ckd_stage_baseline</code> and <code>last_cre_days</code>. They also keep a dedicated section — 2.2 on the whole-cohort page, 3.2 on the carboplatin pages — carrying the median time to each event, the length of creatinine follow-up, and the <code>aki</code> vs <code>AKI_kdigo_90days</code> cross-tabulation that Table 1 cannot show.</p>
 <p>AKI and the CKD composite are now <strong>modelled</strong> with Fine-Gray competing risks (see below). The remaining kidney variables stay descriptive.</p>
 <p><code>aki</code> is a different variable from the existing <code>AKI_g2_90days</code> / <code>AKI_kdigo_90days</code>: it compares each creatinine against the patient’s own preceding 90-day median across the whole record, not against a fixed pre-baseline value inside 90 days. In the whole cohort they agree on 19 patients, <code>aki</code> alone flags 44, and <code>AKI_kdigo_90days</code> alone flags 14.</p>
@@ -663,8 +662,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>Baseline, treatment, outcomes</td>
 </tr>
 <tr class="even">
-<td>RPDR <strong>2022P001091</strong> (<code>mes98_0728261259…</code>, Aug 2026)</td>
-<td><strong>All creatinine</strong> — 48,843 rows</td>
+<td>RPDR <strong>Ritu_project</strong> (<code>mes98_1008261634…</code>, Oct 2026)</td>
+<td><strong>All creatinine</strong> — 50,046 rows — and <code>Vital_status</code> / <code>Date_Of_Death</code></td>
 </tr>
 <tr class="odd">
 <td>RPDR <strong>2026-03-19</strong> (<code>mes98_0318261449…</code>)</td>
@@ -673,7 +672,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </tbody>
 </table>
 <p>The REDCap export was refreshed on 2026-10-09 with updated follow-up: median follow-up rose from 378 to 539 days, recorded deaths from 207 to 272, and one patient was reclassified Local/Early → Advanced/Metastatic (so the Local/Early cohort is 322, not 323). That export also carries <code>name</code>, <code>mgh_mrn</code> and <code>dob</code> columns, which are dropped at read time and never enter the dataset or this site.</p>
-<p>The newer RPDR pull is a creatinine-only extract — it has no <code>Dia</code> or <code>Med</code> file and no HGB/PLT/ALB/GHBA1C — so it supplies creatinine and the original pull supplies everything else. Both cover the same 973 EMPIs over 1989–2026; the newer one has ~2,800 more creatinine values, which is what the longitudinal eGFR, CKD and AKI outcomes are built from.</p>
+<p>The Ritu_project RPDR pull is a creatinine-only extract — it has no <code>Dia</code> or <code>Med</code> file and no HGB/PLT/ALB/GHBA1C — so it supplies creatinine plus vital status, and the 2026-03-19 pull supplies everything else. Both cover the same 973 EMPIs.</p>
+<p>It replaced an earlier creatinine pull in October 2026 and is a strict extension of it: 50,046 creatinine values against 48,843, with follow-up running to 2026-08-30 instead of 2026-06-28 and no changed values. Its <code>Dem</code> file is also newer — 288 dated deaths against 262, latest 2026-10-06 — and those 26 extra dates are additions, not corrections. The extra follow-up is what the longitudinal eGFR, CKD and AKI outcomes are built from, and it added 9 CKD composite events in the entire cohort (70 → 79) and 28 more patients with a day-365 eGFR.</p>
 </section>
 <section id="key-variables" class="level1">
 <h1>Key Variables</h1>

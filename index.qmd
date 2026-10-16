@@ -13,7 +13,7 @@ The project repeats the Jiaxuan analysis at **two cohort levels off one
 pipeline**: the **entire cohort** (N = 943, all tumour stages) and the
 **Local/Early** cohort (N = 322, advanced/metastatic patients excluded). Every
 exposure, model, table, figure and download is carried over unchanged at both
-levels; both use the newer 2022P001091 creatinine pull and carry the CKD / ESKD
+levels; both use the Ritu_project creatinine pull and carry the CKD / ESKD
 / AKI variable family ported from the ICI-CKD project.
 
 | | Details |
@@ -29,7 +29,7 @@ levels; both use the newer 2022P001091 creatinine pull and carry the CKD / ESKD
 # Pages and Cohort Sizes
 
 The project runs at two cohort levels off the same pipeline. Both use the
-2022P001091 creatinine pull and carry the full CKD / ESKD / AKI variable family.
+Ritu_project creatinine pull and carry the full CKD / ESKD / AKI variable family.
 
 | Page | Cohort | N |
 |---|---|---|
@@ -108,10 +108,10 @@ readable:
 
 | Cohort | AKI ≤ 1 yr events | CKD composite events | Verdict |
 |---|---|---|---|
-| Entire (943) | 197 | 70 | AKI comfortably powered; CKD composite over-parameterised |
-| Local/Early (322) | 51 | 26 | both over-parameterised |
-| Carboplatin (189) | 23 | 11 | both over-parameterised |
-| Carbo AUC ≥ 3 (142) | 12 | 7 | not interpretable |
+| Entire (943) | 198 | 79 | AKI comfortably powered; CKD composite over-parameterised |
+| Local/Early (322) | 52 | 30 | both over-parameterised |
+| Carboplatin (189) | 24 | 14 | both over-parameterised |
+| Carbo AUC ≥ 3 (142) | 12 | 10 | not interpretable |
 
 Univariable columns remain readable throughout. The entire-cohort AKI model is
 the only one of the eight that meets the 10-events-per-covariate convention.
@@ -181,20 +181,20 @@ the opposite sign to `pct_drop` in the pipeline.
 
 | Mark | n (of 943) | Δ eGFR, median [IQR] | Δ eGFR %, median [IQR] |
 |---|---|---|---|
-| Day 90 | 876 (92.9 %) | 1.0 [−6.4, 7.8] | 1.1 [−7.5, 10.0] |
-| Day 180 | 710 (75.3 %) | −2.6 [−12.0, 4.2] | −2.8 [−14.6, 5.5] |
-| Day 365 | 489 (51.9 %) | −6.7 [−15.4, 1.6] | −7.8 [−18.5, 1.5] |
+| Day 90 | 876 (92.9 %) | 1.0 [−6.2, 7.7] | 1.1 [−7.5, 9.8] |
+| Day 180 | 710 (75.3 %) | −2.6 [−11.9, 4.2] | −2.8 [−14.5, 5.7] |
+| Day 365 | 517 (54.8 %) | −6.2 [−15.3, 1.6] | −7.6 [−18.5, 1.5] |
 
 Local/Early (322): day 90 n = 301, Δ 0.9 [−5.9, 7.2]; day 180 n = 244,
-Δ −2.2 [−12.7, 3.3]; day 365 n = 176, Δ −7.5 [−14.9, −0.3].
+Δ −2.2 [−12.7, 3.4]; day 365 n = 186, Δ −7.1 [−15.3, −0.5].
 
-The two carboplatin cohorts decline less: carboplatin (189) Δ +2.0 at day 90 and
-−3.9 at day 365; AUC ≥ 3 (142) Δ +2.0 and −5.9.
+The two carboplatin cohorts decline less: carboplatin (189) Δ +2.1 at day 90 and
+−4.2 at day 365; AUC ≥ 3 (142) Δ +2.1 and −6.0.
 
 Two things to read with it. The **realized day is tight** — median 86, 179 and 364
 against nominal 90, 180 and 365 — so the window is doing its job rather than
 quietly shifting the timepoint. But **coverage falls with time**, from 93 % at day
-90 to 52 % at day 365, because creatinine is drawn less often once treatment
+90 to 55 % at day 365, because creatinine is drawn less often once treatment
 ends. The day-365 figures therefore describe the half of the cohort still being
 monitored a year out, who are not a random half.
 
@@ -216,16 +216,16 @@ capped at 90 days and cannot place a death in time beyond day 90, so it cannot
 serve over a multi-year horizon. `death_days_any` is the **union of the two
 sources** that carry a death date: the RPDR `Date_Of_Death` when there is one,
 otherwise the REDCap last-follow-up date for a patient whose `pt_status` is
-"Dead". The two do not nest — 27 REDCap deaths have no RPDR date and 7
-RPDR-dated deaths are not flagged dead in REDCap — so the union gives 279 dated
-deaths in the entire cohort against 252 from RPDR alone, and 31 against 28 in
+"Dead". The two do not nest — 22 REDCap deaths have no RPDR date, and RPDR dates
+deaths REDCap has not caught up with — so the union gives 300 dated deaths in
+the entire cohort against 278 from RPDR alone, and 37 against 34 in
 Local/Early. Someone flagged deceased in RPDR with no date who is still alive in
 REDCap stays censored. Censoring is at the last creatinine.
 
 | Model | Entire 943 | Local/Early 322 | Carbo 189 | AUC ≥ 3 142 |
 |---|---|---|---|---|
-| AKI ≤ 1 yr | subHR 1.29 (1.16, 1.44), p < 0.001 | 1.10 (0.85, 1.43), p = 0.46 | 1.13 (0.83, 1.53), p = 0.45 | 1.24 (0.66, 2.32), p = 0.51 |
-| CKD composite, any time | 1.14 (1.00, 1.30), p = 0.045 | 1.55 (1.13, 2.11), p = 0.006 | 2.21 (0.94, 5.16), p = 0.068 | 1.20 (0.50, 2.84), p = 0.69 |
+| AKI ≤ 1 yr | subHR 1.30 (1.16, 1.45), p < 0.001 | 1.11 (0.86, 1.44), p = 0.43 | 1.13 (0.82, 1.56), p = 0.45 | 1.23 (0.66, 2.32), p = 0.51 |
+| CKD composite, any time | 1.16 (1.03, 1.31), p = 0.018 | 1.52 (1.14, 2.02), p = 0.004 | 1.82 (0.98, 3.39), p = 0.059 | 1.73 (0.69, 4.34), p = 0.25 |
 
 Each outcome is now run **three ways** — same competing event, same non-kidney
 adjusters, differing only in the kidney adjuster or the exposure:
@@ -242,15 +242,9 @@ check of the original**: the exposure is a ratio of CKD-EPI Cr-Cys to
 Cockcroft-Gault, so the two models condition on different halves of it and
 answer different questions.
 
-Events / competing deaths: AKI **197 + 114** (entire), 51 + 8 (Local/Early);
-CKD composite **70 + 265** (entire), 26 + 28 (Local/Early). Only the
+Events / competing deaths: AKI **198 + 115** (entire), 52 + 8 (Local/Early);
+CKD composite **79 + 282** (entire), 30 + 34 (Local/Early). Only the
 entire-cohort AKI model is comfortably powered against ~21 covariates.
-
-Broadening the competing event from the RPDR-only `death_lt` to `death_days_any`
-left the estimates almost untouched — they were 1.31 (1.18, 1.47) and 1.14
-(1.00, 1.30) in the entire cohort, 1.13 (0.87, 1.46) and 1.56 (1.13, 2.14) in
-Local/Early — so the extra competing events confirm the earlier result rather
-than revising it.
 
 All of the above are **Table 1 rows** on all three analysis pages, together with
 `esrd_kt` (ESRD / KT at or before baseline, n = 1), `eGFR_CRE_baseline`,
@@ -273,7 +267,7 @@ patients, `aki` alone flags 44, and `AKI_kdigo_90days` alone flags 14.
 | Source | Used for |
 |---|---|
 | REDCap export `CystatinCInPatientsO_DATA_2026-10-09_1107.csv` (refreshed follow-up) | Baseline, treatment, outcomes |
-| RPDR **2022P001091** (`mes98_0728261259…`, Aug 2026) | **All creatinine** — 48,843 rows |
+| RPDR **Ritu_project** (`mes98_1008261634…`, Oct 2026) | **All creatinine** — 50,046 rows — and `Vital_status` / `Date_Of_Death` |
 | RPDR **2026-03-19** (`mes98_0318261449…`) | HGB, PLT, ALB, GHBA1C (128,156 rows), plus all diagnoses and medications |
 
 The REDCap export was refreshed on 2026-10-09 with updated follow-up: median
@@ -282,11 +276,19 @@ patient was reclassified Local/Early → Advanced/Metastatic (so the Local/Early
 cohort is 322, not 323). That export also carries `name`, `mgh_mrn` and `dob`
 columns, which are dropped at read time and never enter the dataset or this site.
 
-The newer RPDR pull is a creatinine-only extract — it has no `Dia` or `Med` file
-and no HGB/PLT/ALB/GHBA1C — so it supplies creatinine and the original pull
-supplies everything else. Both cover the same 973 EMPIs over 1989–2026; the newer one has
-~2,800 more creatinine values, which is what the longitudinal eGFR, CKD and AKI
-outcomes are built from.
+The Ritu_project RPDR pull is a creatinine-only extract — it has no `Dia` or
+`Med` file and no HGB/PLT/ALB/GHBA1C — so it supplies creatinine plus vital
+status, and the 2026-03-19 pull supplies everything else. Both cover the same
+973 EMPIs.
+
+It replaced an earlier creatinine pull in October 2026 and is a strict extension
+of it: 50,046 creatinine values against 48,843, with follow-up running to
+2026-08-30 instead of 2026-06-28 and no changed values. Its `Dem` file is also
+newer — 288 dated deaths against 262, latest 2026-10-06 — and those 26 extra
+dates are additions, not corrections. The extra follow-up is what the
+longitudinal eGFR, CKD and AKI outcomes are built from, and it added 9 CKD
+composite events in the entire cohort (70 → 79) and 28 more patients with a
+day-365 eGFR.
 
 # Key Variables
 

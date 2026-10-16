@@ -1709,38 +1709,41 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Labs — TWO pulls, combined.</span></span>
 <span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a><span class="co">#</span></span>
-<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a><span class="co"># CREATININE comes from the newer 2022P001091 pull (mes98_0728261259...), which</span></span>
-<span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a><span class="co"># is a creatinine-only extract: 48,843 CRE rows vs 46,078 in the original pull,</span></span>
-<span id="cb24-10"><a href="#cb24-10" aria-hidden="true" tabindex="-1"></a><span class="co"># same 973 EMPIs, same 1989-2026 span. The extra rows matter here because the</span></span>
-<span id="cb24-11"><a href="#cb24-11" aria-hidden="true" tabindex="-1"></a><span class="co"># longitudinal eGFR / CKD / AKI outcomes below are built from serial creatinine.</span></span>
-<span id="cb24-12"><a href="#cb24-12" aria-hidden="true" tabindex="-1"></a><span class="co">#</span></span>
-<span id="cb24-13"><a href="#cb24-13" aria-hidden="true" tabindex="-1"></a><span class="co"># HGB / PLT / ALB / GHBA1C are NOT in that pull, so they still come from the</span></span>
-<span id="cb24-14"><a href="#cb24-14" aria-hidden="true" tabindex="-1"></a><span class="co"># original 2026-03-19 extract. It is the only source for them, and the anemia</span></span>
-<span id="cb24-15"><a href="#cb24-15" aria-hidden="true" tabindex="-1"></a><span class="co"># and thrombocytopenia outcomes depend on HGB and PLT.</span></span>
-<span id="cb24-16"><a href="#cb24-16" aria-hidden="true" tabindex="-1"></a>cre_new_path <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">'/Users/to909/Partners HealthCare Dropbox/Tianqi Ouyang/'</span>,</span>
-<span id="cb24-17"><a href="#cb24-17" aria-hidden="true" tabindex="-1"></a>                       <span class="st">'Jiaxuan/RPDR/2022P001091_mes98_072826125900866852/'</span>,</span>
-<span id="cb24-18"><a href="#cb24-18" aria-hidden="true" tabindex="-1"></a>                       <span class="st">'mes98_072826125900866852_Lab.txt'</span>)</span>
-<span id="cb24-19"><a href="#cb24-19" aria-hidden="true" tabindex="-1"></a>lab_old_path <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">'/Users/to909/Partners HealthCare Dropbox/Tianqi Ouyang/'</span>,</span>
-<span id="cb24-20"><a href="#cb24-20" aria-hidden="true" tabindex="-1"></a>                       <span class="st">'Thoracic Oncology Spreadsheets/Carboplatin Paper/'</span>,</span>
-<span id="cb24-21"><a href="#cb24-21" aria-hidden="true" tabindex="-1"></a>                       <span class="st">'RPDR 2026-03-19/mes98_03182614492143216_Lab.txt'</span>)</span>
-<span id="cb24-22"><a href="#cb24-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-23"><a href="#cb24-23" aria-hidden="true" tabindex="-1"></a>lab_cre <span class="ot">&lt;-</span> <span class="fu">read.table</span>(cre_new_path, <span class="at">sep =</span> <span class="st">"|"</span>, <span class="at">fill =</span> <span class="cn">TRUE</span>, <span class="at">quote =</span> <span class="st">""</span>,</span>
-<span id="cb24-24"><a href="#cb24-24" aria-hidden="true" tabindex="-1"></a>                      <span class="at">header =</span> <span class="cn">TRUE</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb24-25"><a href="#cb24-25" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(EMPI, Seq_Date_Time, Result, Group_Id, Test_Description) <span class="sc">%&gt;%</span></span>
-<span id="cb24-26"><a href="#cb24-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(Group_Id <span class="sc">==</span> <span class="st">"CRE"</span>)</span>
-<span id="cb24-27"><a href="#cb24-27" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-28"><a href="#cb24-28" aria-hidden="true" tabindex="-1"></a>lab_other <span class="ot">&lt;-</span> <span class="fu">read.table</span>(lab_old_path, <span class="at">sep =</span> <span class="st">"|"</span>, <span class="at">fill =</span> <span class="cn">TRUE</span>, <span class="at">quote =</span> <span class="st">""</span>,</span>
-<span id="cb24-29"><a href="#cb24-29" aria-hidden="true" tabindex="-1"></a>                        <span class="at">header =</span> <span class="cn">TRUE</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb24-30"><a href="#cb24-30" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(EMPI, Seq_Date_Time, Result, Group_Id, Test_Description) <span class="sc">%&gt;%</span></span>
-<span id="cb24-31"><a href="#cb24-31" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(Group_Id <span class="sc">!=</span> <span class="st">"CRE"</span>)</span>
-<span id="cb24-32"><a href="#cb24-32" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-33"><a href="#cb24-33" aria-hidden="true" tabindex="-1"></a>lab <span class="ot">&lt;-</span> <span class="fu">bind_rows</span>(lab_cre, lab_other)</span>
-<span id="cb24-34"><a href="#cb24-34" aria-hidden="true" tabindex="-1"></a>lab<span class="sc">$</span>Seq_Date_Time <span class="ot">&lt;-</span> <span class="fu">as.Date</span>(lab<span class="sc">$</span>Seq_Date_Time, <span class="st">"%m/%d/%Y"</span>)</span>
+<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a><span class="co"># CREATININE comes from the Ritu_project pull (mes98_1008261634..., Oct 2026),</span></span>
+<span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a><span class="co"># a creatinine-only extract: 50,046 CRE rows over the same 973 EMPIs, running</span></span>
+<span id="cb24-10"><a href="#cb24-10" aria-hidden="true" tabindex="-1"></a><span class="co"># 1989-12-04 to 2026-08-30. It supersedes the 2022P001091 pull it was compared</span></span>
+<span id="cb24-11"><a href="#cb24-11" aria-hidden="true" tabindex="-1"></a><span class="co"># against (48,843 rows, ending 2026-06-28) and is a strict extension of it --</span></span>
+<span id="cb24-12"><a href="#cb24-12" aria-hidden="true" tabindex="-1"></a><span class="co"># +1,203 rows, two further months of follow-up, no changed values. The extra</span></span>
+<span id="cb24-13"><a href="#cb24-13" aria-hidden="true" tabindex="-1"></a><span class="co"># rows matter because the longitudinal eGFR / CKD / AKI outcomes below are built</span></span>
+<span id="cb24-14"><a href="#cb24-14" aria-hidden="true" tabindex="-1"></a><span class="co"># from serial creatinine.</span></span>
+<span id="cb24-15"><a href="#cb24-15" aria-hidden="true" tabindex="-1"></a><span class="co">#</span></span>
+<span id="cb24-16"><a href="#cb24-16" aria-hidden="true" tabindex="-1"></a><span class="co"># HGB / PLT / ALB / GHBA1C are NOT in that pull, so they still come from the</span></span>
+<span id="cb24-17"><a href="#cb24-17" aria-hidden="true" tabindex="-1"></a><span class="co"># original 2026-03-19 extract. It is the only source for them, and the anemia</span></span>
+<span id="cb24-18"><a href="#cb24-18" aria-hidden="true" tabindex="-1"></a><span class="co"># and thrombocytopenia outcomes depend on HGB and PLT.</span></span>
+<span id="cb24-19"><a href="#cb24-19" aria-hidden="true" tabindex="-1"></a>cre_new_path <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">'/Users/to909/Partners HealthCare Dropbox/Tianqi Ouyang/'</span>,</span>
+<span id="cb24-20"><a href="#cb24-20" aria-hidden="true" tabindex="-1"></a>                       <span class="st">'Thoracic Oncology Spreadsheets/Ritu_project/RPDR/'</span>,</span>
+<span id="cb24-21"><a href="#cb24-21" aria-hidden="true" tabindex="-1"></a>                       <span class="st">'mes98_100826163401502663_Lab.txt'</span>)</span>
+<span id="cb24-22"><a href="#cb24-22" aria-hidden="true" tabindex="-1"></a>lab_old_path <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">'/Users/to909/Partners HealthCare Dropbox/Tianqi Ouyang/'</span>,</span>
+<span id="cb24-23"><a href="#cb24-23" aria-hidden="true" tabindex="-1"></a>                       <span class="st">'Thoracic Oncology Spreadsheets/Carboplatin Paper/'</span>,</span>
+<span id="cb24-24"><a href="#cb24-24" aria-hidden="true" tabindex="-1"></a>                       <span class="st">'RPDR 2026-03-19/mes98_03182614492143216_Lab.txt'</span>)</span>
+<span id="cb24-25"><a href="#cb24-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-26"><a href="#cb24-26" aria-hidden="true" tabindex="-1"></a>lab_cre <span class="ot">&lt;-</span> <span class="fu">read.table</span>(cre_new_path, <span class="at">sep =</span> <span class="st">"|"</span>, <span class="at">fill =</span> <span class="cn">TRUE</span>, <span class="at">quote =</span> <span class="st">""</span>,</span>
+<span id="cb24-27"><a href="#cb24-27" aria-hidden="true" tabindex="-1"></a>                      <span class="at">header =</span> <span class="cn">TRUE</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb24-28"><a href="#cb24-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(EMPI, Seq_Date_Time, Result, Group_Id, Test_Description) <span class="sc">%&gt;%</span></span>
+<span id="cb24-29"><a href="#cb24-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(Group_Id <span class="sc">==</span> <span class="st">"CRE"</span>)</span>
+<span id="cb24-30"><a href="#cb24-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-31"><a href="#cb24-31" aria-hidden="true" tabindex="-1"></a>lab_other <span class="ot">&lt;-</span> <span class="fu">read.table</span>(lab_old_path, <span class="at">sep =</span> <span class="st">"|"</span>, <span class="at">fill =</span> <span class="cn">TRUE</span>, <span class="at">quote =</span> <span class="st">""</span>,</span>
+<span id="cb24-32"><a href="#cb24-32" aria-hidden="true" tabindex="-1"></a>                        <span class="at">header =</span> <span class="cn">TRUE</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb24-33"><a href="#cb24-33" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(EMPI, Seq_Date_Time, Result, Group_Id, Test_Description) <span class="sc">%&gt;%</span></span>
+<span id="cb24-34"><a href="#cb24-34" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(Group_Id <span class="sc">!=</span> <span class="st">"CRE"</span>)</span>
 <span id="cb24-35"><a href="#cb24-35" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-36"><a href="#cb24-36" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"CRE rows (new 2022P001091 pull):"</span>, <span class="fu">nrow</span>(lab_cre), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb24-36"><a href="#cb24-36" aria-hidden="true" tabindex="-1"></a>lab <span class="ot">&lt;-</span> <span class="fu">bind_rows</span>(lab_cre, lab_other)</span>
+<span id="cb24-37"><a href="#cb24-37" aria-hidden="true" tabindex="-1"></a>lab<span class="sc">$</span>Seq_Date_Time <span class="ot">&lt;-</span> <span class="fu">as.Date</span>(lab<span class="sc">$</span>Seq_Date_Time, <span class="st">"%m/%d/%Y"</span>)</span>
+<span id="cb24-38"><a href="#cb24-38" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-39"><a href="#cb24-39" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"CRE rows (Ritu_project Oct 2026 pull):"</span>, <span class="fu">nrow</span>(lab_cre), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>CRE rows (new 2022P001091 pull): 48843 </code></pre>
+<pre><code>CRE rows (Ritu_project Oct 2026 pull): 50046 </code></pre>
 </div>
 <details class="code-fold">
 <summary>Code</summary>
@@ -1756,7 +1759,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="cell-output cell-output-stdout">
 <pre><code>
    ALB    CRE GHBA1C    HGB    PLT 
- 34033  48843   3236  45487  45400 </code></pre>
+ 34033  50046   3236  45487  45400 </code></pre>
 </div>
 <details class="code-fold">
 <summary>Code</summary>
@@ -1769,29 +1772,33 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Demographics -- read ONLY for vital status and date of death. The Dem file also</span></span>
 <span id="cb30-8"><a href="#cb30-8" aria-hidden="true" tabindex="-1"></a><span class="co"># carries Date_of_Birth, MRN and Zip_code; those columns are dropped at read time</span></span>
 <span id="cb30-9"><a href="#cb30-9" aria-hidden="true" tabindex="-1"></a><span class="co"># and never enter final_master, any table or any figure.</span></span>
-<span id="cb30-10"><a href="#cb30-10" aria-hidden="true" tabindex="-1"></a>dem <span class="ot">&lt;-</span> <span class="fu">read.table</span>(<span class="fu">paste0</span>(<span class="st">'/Users/to909/Partners HealthCare Dropbox/Tianqi Ouyang/'</span>,</span>
-<span id="cb30-11"><a href="#cb30-11" aria-hidden="true" tabindex="-1"></a>                         <span class="st">'Jiaxuan/RPDR/2022P001091_mes98_072826125900866852/'</span>,</span>
-<span id="cb30-12"><a href="#cb30-12" aria-hidden="true" tabindex="-1"></a>                         <span class="st">'mes98_072826125900866852_Dem.txt'</span>),</span>
-<span id="cb30-13"><a href="#cb30-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">sep =</span> <span class="st">"|"</span>, <span class="at">fill =</span> <span class="cn">TRUE</span>, <span class="at">quote =</span> <span class="st">""</span>, <span class="at">header =</span> <span class="cn">TRUE</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb30-14"><a href="#cb30-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(EMPI, Vital_status, Date_Of_Death)</span>
-<span id="cb30-15"><a href="#cb30-15" aria-hidden="true" tabindex="-1"></a>dem<span class="sc">$</span>death_date <span class="ot">&lt;-</span> <span class="fu">as.Date</span>(dem<span class="sc">$</span>Date_Of_Death, <span class="st">"%m/%d/%Y"</span>)</span>
-<span id="cb30-16"><a href="#cb30-16" aria-hidden="true" tabindex="-1"></a>dem <span class="ot">&lt;-</span> dem <span class="sc">%&gt;%</span></span>
-<span id="cb30-17"><a href="#cb30-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">rpdr_deceased =</span> <span class="fu">as.integer</span>(Vital_status <span class="sc">!=</span> <span class="st">"Not reported as deceased"</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb30-18"><a href="#cb30-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(EMPI, rpdr_deceased, death_date)</span>
-<span id="cb30-19"><a href="#cb30-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb30-20"><a href="#cb30-20" aria-hidden="true" tabindex="-1"></a><span class="co"># Patient index: EMPI + baseline date (needed by pre/post lab functions)</span></span>
-<span id="cb30-21"><a href="#cb30-21" aria-hidden="true" tabindex="-1"></a>master_list <span class="ot">&lt;-</span> final_master <span class="sc">%&gt;%</span> <span class="fu">select</span>(EMPI, baseline_sample_date)</span>
-<span id="cb30-22"><a href="#cb30-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb30-23"><a href="#cb30-23" aria-hidden="true" tabindex="-1"></a>master_lab     <span class="ot">&lt;-</span> <span class="fu">merge</span>(master_list, lab,     <span class="at">by =</span> <span class="st">"EMPI"</span>, <span class="at">all.x =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb30-24"><a href="#cb30-24" aria-hidden="true" tabindex="-1"></a>master_dia     <span class="ot">&lt;-</span> <span class="fu">merge</span>(master_list, dia,     <span class="at">by =</span> <span class="st">"EMPI"</span>, <span class="at">all.y =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb30-25"><a href="#cb30-25" aria-hidden="true" tabindex="-1"></a>master_med     <span class="ot">&lt;-</span> <span class="fu">merge</span>(master_list, med,     <span class="at">by =</span> <span class="st">"EMPI"</span>, <span class="at">all.y =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb30-10"><a href="#cb30-10" aria-hidden="true" tabindex="-1"></a><span class="co"># The Oct 2026 pull ships its own Dem file and supersedes the one it replaces:</span></span>
+<span id="cb30-11"><a href="#cb30-11" aria-hidden="true" tabindex="-1"></a><span class="co"># 306 deceased vs 280, 288 with a usable date vs 262, latest death 2026-10-06 vs</span></span>
+<span id="cb30-12"><a href="#cb30-12" aria-hidden="true" tabindex="-1"></a><span class="co"># 2026-07-23. The 26 extra dates are additions, not corrections -- no death date</span></span>
+<span id="cb30-13"><a href="#cb30-13" aria-hidden="true" tabindex="-1"></a><span class="co"># present in both files disagrees.</span></span>
+<span id="cb30-14"><a href="#cb30-14" aria-hidden="true" tabindex="-1"></a>dem <span class="ot">&lt;-</span> <span class="fu">read.table</span>(<span class="fu">paste0</span>(<span class="st">'/Users/to909/Partners HealthCare Dropbox/Tianqi Ouyang/'</span>,</span>
+<span id="cb30-15"><a href="#cb30-15" aria-hidden="true" tabindex="-1"></a>                         <span class="st">'Thoracic Oncology Spreadsheets/Ritu_project/RPDR/'</span>,</span>
+<span id="cb30-16"><a href="#cb30-16" aria-hidden="true" tabindex="-1"></a>                         <span class="st">'mes98_100826163401502663_Dem.txt'</span>),</span>
+<span id="cb30-17"><a href="#cb30-17" aria-hidden="true" tabindex="-1"></a>  <span class="at">sep =</span> <span class="st">"|"</span>, <span class="at">fill =</span> <span class="cn">TRUE</span>, <span class="at">quote =</span> <span class="st">""</span>, <span class="at">header =</span> <span class="cn">TRUE</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb30-18"><a href="#cb30-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(EMPI, Vital_status, Date_Of_Death)</span>
+<span id="cb30-19"><a href="#cb30-19" aria-hidden="true" tabindex="-1"></a>dem<span class="sc">$</span>death_date <span class="ot">&lt;-</span> <span class="fu">as.Date</span>(dem<span class="sc">$</span>Date_Of_Death, <span class="st">"%m/%d/%Y"</span>)</span>
+<span id="cb30-20"><a href="#cb30-20" aria-hidden="true" tabindex="-1"></a>dem <span class="ot">&lt;-</span> dem <span class="sc">%&gt;%</span></span>
+<span id="cb30-21"><a href="#cb30-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">rpdr_deceased =</span> <span class="fu">as.integer</span>(Vital_status <span class="sc">!=</span> <span class="st">"Not reported as deceased"</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb30-22"><a href="#cb30-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(EMPI, rpdr_deceased, death_date)</span>
+<span id="cb30-23"><a href="#cb30-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-24"><a href="#cb30-24" aria-hidden="true" tabindex="-1"></a><span class="co"># Patient index: EMPI + baseline date (needed by pre/post lab functions)</span></span>
+<span id="cb30-25"><a href="#cb30-25" aria-hidden="true" tabindex="-1"></a>master_list <span class="ot">&lt;-</span> final_master <span class="sc">%&gt;%</span> <span class="fu">select</span>(EMPI, baseline_sample_date)</span>
 <span id="cb30-26"><a href="#cb30-26" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb30-27"><a href="#cb30-27" aria-hidden="true" tabindex="-1"></a><span class="co"># Exclude patients with no RPDR labs</span></span>
-<span id="cb30-28"><a href="#cb30-28" aria-hidden="true" tabindex="-1"></a>empis_with_labs <span class="ot">&lt;-</span> <span class="fu">unique</span>(lab<span class="sc">$</span>EMPI[lab<span class="sc">$</span>EMPI <span class="sc">%in%</span> final_master<span class="sc">$</span>EMPI])</span>
-<span id="cb30-29"><a href="#cb30-29" aria-hidden="true" tabindex="-1"></a>empis_no_labs   <span class="ot">&lt;-</span> <span class="fu">setdiff</span>(final_master<span class="sc">$</span>EMPI, empis_with_labs)</span>
-<span id="cb30-30"><a href="#cb30-30" aria-hidden="true" tabindex="-1"></a>n_no_labs       <span class="ot">&lt;-</span> <span class="fu">length</span>(empis_no_labs)</span>
-<span id="cb30-31"><a href="#cb30-31" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb30-32"><a href="#cb30-32" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Patients before RPDR lab exclusion:"</span>, <span class="fu">nrow</span>(final_master), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb30-27"><a href="#cb30-27" aria-hidden="true" tabindex="-1"></a>master_lab     <span class="ot">&lt;-</span> <span class="fu">merge</span>(master_list, lab,     <span class="at">by =</span> <span class="st">"EMPI"</span>, <span class="at">all.x =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb30-28"><a href="#cb30-28" aria-hidden="true" tabindex="-1"></a>master_dia     <span class="ot">&lt;-</span> <span class="fu">merge</span>(master_list, dia,     <span class="at">by =</span> <span class="st">"EMPI"</span>, <span class="at">all.y =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb30-29"><a href="#cb30-29" aria-hidden="true" tabindex="-1"></a>master_med     <span class="ot">&lt;-</span> <span class="fu">merge</span>(master_list, med,     <span class="at">by =</span> <span class="st">"EMPI"</span>, <span class="at">all.y =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb30-30"><a href="#cb30-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-31"><a href="#cb30-31" aria-hidden="true" tabindex="-1"></a><span class="co"># Exclude patients with no RPDR labs</span></span>
+<span id="cb30-32"><a href="#cb30-32" aria-hidden="true" tabindex="-1"></a>empis_with_labs <span class="ot">&lt;-</span> <span class="fu">unique</span>(lab<span class="sc">$</span>EMPI[lab<span class="sc">$</span>EMPI <span class="sc">%in%</span> final_master<span class="sc">$</span>EMPI])</span>
+<span id="cb30-33"><a href="#cb30-33" aria-hidden="true" tabindex="-1"></a>empis_no_labs   <span class="ot">&lt;-</span> <span class="fu">setdiff</span>(final_master<span class="sc">$</span>EMPI, empis_with_labs)</span>
+<span id="cb30-34"><a href="#cb30-34" aria-hidden="true" tabindex="-1"></a>n_no_labs       <span class="ot">&lt;-</span> <span class="fu">length</span>(empis_no_labs)</span>
+<span id="cb30-35"><a href="#cb30-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-36"><a href="#cb30-36" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Patients before RPDR lab exclusion:"</span>, <span class="fu">nrow</span>(final_master), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>Patients before RPDR lab exclusion: 946 </code></pre>
@@ -2935,7 +2942,7 @@ Thoracic   Breast       GI       GU      GYN    HEENT    Other
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb74"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb74-1"><a href="#cb74-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Post-baseline creatinine measurements:"</span>, <span class="fu">nrow</span>(egfr_traj), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>Post-baseline creatinine measurements: 27908 </code></pre>
+<pre><code>Post-baseline creatinine measurements: 29086 </code></pre>
 </div>
 <details class="code-fold">
 <summary>Code</summary>
@@ -3068,7 +3075,7 @@ Thoracic   Breast       GI       GU      GYN    HEENT    Other
 <div class="cell-output cell-output-stdout">
 <pre><code>  day  90: 876 / 943 (92.9%)
   day 180: 710 / 943 (75.3%)
-  day 365: 489 / 943 (51.9%)</code></pre>
+  day 365: 517 / 943 (54.8%)</code></pre>
 </div>
 <details class="code-fold">
 <summary>Code</summary>
@@ -3122,24 +3129,24 @@ Thoracic   Breast       GI       GU      GYN    HEENT    Other
 <td style="text-align: right;">876</td>
 <td style="text-align: right;">92.9</td>
 <td style="text-align: left;">86 [82, 91]</td>
-<td style="text-align: left;">1.0 [-6.4, 7.8]</td>
-<td style="text-align: left;">1.1 [-7.5, 10.0]</td>
+<td style="text-align: left;">1.0 [-6.2, 7.7]</td>
+<td style="text-align: left;">1.1 [-7.5, 9.8]</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">Day 180</td>
 <td style="text-align: right;">710</td>
 <td style="text-align: right;">75.3</td>
 <td style="text-align: left;">179 [168, 188]</td>
-<td style="text-align: left;">-2.6 [-12.0, 4.2]</td>
-<td style="text-align: left;">-2.8 [-14.6, 5.5]</td>
+<td style="text-align: left;">-2.6 [-11.9, 4.2]</td>
+<td style="text-align: left;">-2.8 [-14.5, 5.7]</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">Day 365</td>
-<td style="text-align: right;">489</td>
-<td style="text-align: right;">51.9</td>
-<td style="text-align: left;">363 [353, 371]</td>
-<td style="text-align: left;">-6.7 [-15.4, 1.6]</td>
-<td style="text-align: left;">-7.8 [-18.5, 1.5]</td>
+<td style="text-align: right;">517</td>
+<td style="text-align: right;">54.8</td>
+<td style="text-align: left;">364 [354, 371]</td>
+<td style="text-align: left;">-6.2 [-15.3, 1.6]</td>
+<td style="text-align: left;">-7.6 [-18.5, 1.5]</td>
 </tr>
 </tbody>
 </table>
@@ -3182,7 +3189,7 @@ Thoracic   Breast       GI       GU      GYN    HEENT    Other
 <span id="cb82-25"><a href="#cb82-25" aria-hidden="true" tabindex="-1"></a>    <span class="st">" | AKI at any time (reference):"</span>, <span class="fu">sum</span>(final_master<span class="sc">$</span>aki_any <span class="sc">==</span> <span class="dv">1</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>AKI within 1 year: 197 of 943  | AKI at any time (reference): 240 </code></pre>
+<pre><code>AKI within 1 year: 198 of 943  | AKI at any time (reference): 243 </code></pre>
 </div>
 </div>
 </section>
@@ -3190,7 +3197,7 @@ Thoracic   Breast       GI       GU      GYN    HEENT    Other
 <h2 class="anchored" data-anchor-id="esrd-kidney-transplant-from-rpdr-diagnoses">5.18 ESRD / kidney transplant from RPDR diagnoses</h2>
 <p>Ported from ICI-CKD §5.4 / §8.1. The ICD-9 / ICD-10 list is reproduced exactly.</p>
 <blockquote class="blockquote">
-<p>The new 2022P001091 RPDR pull is <strong>creatinine only</strong> — it contains no <code>Dia</code> file — so these diagnosis-based variables are read from the original 2026-03-19 diagnosis extract, which is the only source for them.</p>
+<p>The Ritu_project RPDR pull is <strong>creatinine only</strong> — it contains no <code>Dia</code> file — so these diagnosis-based variables are read from the original 2026-03-19 diagnosis extract, which is the only source for them.</p>
 </blockquote>
 <p>Note that <code>dia_list_icd()</code> matches with <code>grepl()</code> on the joined code vector, so matching is by substring and <code>.</code> is a regex wildcard: <code>T86.1</code> also captures <code>T86.10</code>–<code>T86.19</code>. This is the source project’s behaviour, kept unchanged.</p>
 <div class="cell">
@@ -3282,7 +3289,7 @@ Thoracic   Breast       GI       GU      GYN    HEENT    Other
 <span id="cb88-49"><a href="#cb88-49" aria-hidden="true" tabindex="-1"></a>    <span class="fu">sum</span>(final_master<span class="sc">$</span>rpdr_deceased <span class="sc">==</span> <span class="dv">1</span> <span class="sc">&amp;</span> final_master<span class="sc">$</span>death_lt <span class="sc">==</span> <span class="dv">0</span>), <span class="st">")</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>RPDR deceased: 269  with a usable death date: 252  (deceased but undated, censored instead: 17 )</code></pre>
+<pre><code>RPDR deceased: 295  with a usable death date: 278  (deceased but undated, censored instead: 17 )</code></pre>
 </div>
 <details class="code-fold">
 <summary>Code</summary>
@@ -3299,7 +3306,7 @@ Thoracic   Breast       GI       GU      GYN    HEENT    Other
 <span id="cb92-2"><a href="#cb92-2" aria-hidden="true" tabindex="-1"></a>    <span class="fu">sum</span>(final_master<span class="sc">$</span>death_days_lt <span class="sc">&lt;=</span> <span class="dv">365</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>RPDR deaths within 365 days: 159 </code></pre>
+<pre><code>RPDR deaths within 365 days: 161 </code></pre>
 </div>
 <details class="code-fold">
 <summary>Code</summary>
@@ -3323,7 +3330,7 @@ Thoracic   Breast       GI       GU      GYN    HEENT    Other
 <span id="cb94-18"><a href="#cb94-18" aria-hidden="true" tabindex="-1"></a>    <span class="st">"+ REDCap-only"</span>, <span class="fu">sum</span>(final_master<span class="sc">$</span>death_any <span class="sc">==</span> <span class="dv">1</span> <span class="sc">&amp;</span> final_master<span class="sc">$</span>death_lt <span class="sc">==</span> <span class="dv">0</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>death_days_any (union): 279  = RPDR-dated 252 + REDCap-only 27 </code></pre>
+<pre><code>death_days_any (union): 300  = RPDR-dated 278 + REDCap-only 22 </code></pre>
 </div>
 <details class="code-fold">
 <summary>Code</summary>
@@ -3351,7 +3358,7 @@ cmp_status_aki_365:</code></pre>
 <div class="cell-output cell-output-stdout">
 <pre><code>
   0   1   2 
-632 197 114 </code></pre>
+630 198 115 </code></pre>
 </div>
 <details class="code-fold">
 <summary>Code</summary>
@@ -3363,7 +3370,7 @@ cmp_status_aki_365:</code></pre>
 <div class="cell-output cell-output-stdout">
 <pre><code>
   0   1   2 
-608  70 265 </code></pre>
+582  79 282 </code></pre>
 </div>
 <details class="code-fold">
 <summary>Code</summary>
@@ -3398,18 +3405,18 @@ cmp_status_aki_365:</code></pre>
 <tbody>
 <tr class="odd">
 <td style="text-align: left;">AKI (serial creatinine)</td>
-<td style="text-align: right;">197</td>
-<td style="text-align: right;">20.9</td>
+<td style="text-align: right;">198</td>
+<td style="text-align: right;">21.0</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">CKD incidence</td>
-<td style="text-align: right;">61</td>
-<td style="text-align: right;">6.5</td>
+<td style="text-align: right;">71</td>
+<td style="text-align: right;">7.5</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">CKD progression</td>
-<td style="text-align: right;">8</td>
-<td style="text-align: right;">0.8</td>
+<td style="text-align: right;">7</td>
+<td style="text-align: right;">0.7</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">ESKD (eGFR &lt; 10, sustained)</td>
@@ -3428,8 +3435,8 @@ cmp_status_aki_365:</code></pre>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">CKD composite</td>
-<td style="text-align: right;">70</td>
-<td style="text-align: right;">7.4</td>
+<td style="text-align: right;">79</td>
+<td style="text-align: right;">8.4</td>
 </tr>
 </tbody>
 </table>

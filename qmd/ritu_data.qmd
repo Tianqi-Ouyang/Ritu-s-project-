@@ -1006,17 +1006,20 @@ dia$Date <- as.Date(dia$Date, "%m/%d/%Y")
 
 # Labs — TWO pulls, combined.
 #
-# CREATININE comes from the newer 2022P001091 pull (mes98_0728261259...), which
-# is a creatinine-only extract: 48,843 CRE rows vs 46,078 in the original pull,
-# same 973 EMPIs, same 1989-2026 span. The extra rows matter here because the
-# longitudinal eGFR / CKD / AKI outcomes below are built from serial creatinine.
+# CREATININE comes from the Ritu_project pull (mes98_1008261634..., Oct 2026),
+# a creatinine-only extract: 50,046 CRE rows over the same 973 EMPIs, running
+# 1989-12-04 to 2026-08-30. It supersedes the 2022P001091 pull it was compared
+# against (48,843 rows, ending 2026-06-28) and is a strict extension of it --
+# +1,203 rows, two further months of follow-up, no changed values. The extra
+# rows matter because the longitudinal eGFR / CKD / AKI outcomes below are built
+# from serial creatinine.
 #
 # HGB / PLT / ALB / GHBA1C are NOT in that pull, so they still come from the
 # original 2026-03-19 extract. It is the only source for them, and the anemia
 # and thrombocytopenia outcomes depend on HGB and PLT.
 cre_new_path <- paste0('/Users/to909/Partners HealthCare Dropbox/Tianqi Ouyang/',
-                       'Jiaxuan/RPDR/2022P001091_mes98_072826125900866852/',
-                       'mes98_072826125900866852_Lab.txt')
+                       'Thoracic Oncology Spreadsheets/Ritu_project/RPDR/',
+                       'mes98_100826163401502663_Lab.txt')
 lab_old_path <- paste0('/Users/to909/Partners HealthCare Dropbox/Tianqi Ouyang/',
                        'Thoracic Oncology Spreadsheets/Carboplatin Paper/',
                        'RPDR 2026-03-19/mes98_03182614492143216_Lab.txt')
@@ -1034,7 +1037,7 @@ lab_other <- read.table(lab_old_path, sep = "|", fill = TRUE, quote = "",
 lab <- bind_rows(lab_cre, lab_other)
 lab$Seq_Date_Time <- as.Date(lab$Seq_Date_Time, "%m/%d/%Y")
 
-cat("CRE rows (new 2022P001091 pull):", nrow(lab_cre), "\n")
+cat("CRE rows (Ritu_project Oct 2026 pull):", nrow(lab_cre), "\n")
 cat("Non-CRE rows (original 2026-03-19 pull):", nrow(lab_other), "\n")
 print(table(lab$Group_Id))
 
@@ -1047,9 +1050,13 @@ med$Medication_Date <- as.Date(med$Medication_Date, "%m/%d/%Y")
 # Demographics -- read ONLY for vital status and date of death. The Dem file also
 # carries Date_of_Birth, MRN and Zip_code; those columns are dropped at read time
 # and never enter final_master, any table or any figure.
+# The Oct 2026 pull ships its own Dem file and supersedes the one it replaces:
+# 306 deceased vs 280, 288 with a usable date vs 262, latest death 2026-10-06 vs
+# 2026-07-23. The 26 extra dates are additions, not corrections -- no death date
+# present in both files disagrees.
 dem <- read.table(paste0('/Users/to909/Partners HealthCare Dropbox/Tianqi Ouyang/',
-                         'Jiaxuan/RPDR/2022P001091_mes98_072826125900866852/',
-                         'mes98_072826125900866852_Dem.txt'),
+                         'Thoracic Oncology Spreadsheets/Ritu_project/RPDR/',
+                         'mes98_100826163401502663_Dem.txt'),
   sep = "|", fill = TRUE, quote = "", header = TRUE) %>%
   select(EMPI, Vital_status, Date_Of_Death)
 dem$death_date <- as.Date(dem$Date_Of_Death, "%m/%d/%Y")
@@ -2248,7 +2255,7 @@ cat("AKI within 1 year:", sum(final_master$aki == 1), "of", nrow(final_master),
 
 Ported from ICI-CKD §5.4 / §8.1. The ICD-9 / ICD-10 list is reproduced exactly.
 
-> The new 2022P001091 RPDR pull is **creatinine only** — it contains no `Dia`
+> The Ritu_project RPDR pull is **creatinine only** — it contains no `Dia`
 > file — so these diagnosis-based variables are read from the original
 > 2026-03-19 diagnosis extract, which is the only source for them.
 
