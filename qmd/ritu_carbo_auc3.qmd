@@ -195,6 +195,13 @@ dat <- dat %>%
     # numerator - denominator = CKD-EPI 2012 CysC - CKD-EPI 2021 Cr, both unindexed.
     egfr_diff_pct_sens        = 100 * (baseline_cys_c_egfr_unindexed - baseline_cre_egfr_unindexed) / baseline_cre_egfr_unindexed,
     egfr_diff_pct_sens_per10  = -egfr_diff_pct_sens / 10,
+    # Binary form of the same exposure: 1 when the cystatin C eGFR sits more
+    # than 10 % below the creatinine eGFR. Reference level is ">= -10%".
+    egfr_diff_pct_sens_cat    = factor(
+      ifelse(egfr_diff_pct_sens < -10, "< -10%", ">= -10%"),
+      levels = c(">= -10%", "< -10%")),
+    # "Survivor": still in follow-up beyond one year.
+    survivor_365              = days_last_follow_up > 365,
     # Dose discrepancy uses CAPPED eGFR (already computed in ritu_data.qmd)
     dose_discrep_per25increase = dose_discrepancy / 25,
     abs_dose_discrep = abs(dose_discrepancy),
@@ -561,7 +568,9 @@ knitr::kable(why_tbl, caption = sprintf(paste0(
 ```
 
 
-# 4 eGFR Ratio Distribution (Carboplatin AUC ≥ 3)
+# 4 eGFR Distributions (Carboplatin AUC ≥ 3)
+
+## 4.1 eGFR Ratio distribution
 
 ```{r}
 #| label: ritu-auc3-egfr-ratio-hist
@@ -585,9 +594,61 @@ ggplot(ratio_hist, aes(x = egfr_ratio, fill = side)) +
   theme_minimal(base_size = 14)
 ```
 
-# 5 Fine-Gray Models — Long-Horizon Kidney Outcomes (eGFR Difference (%) per 10 % decline, adjusted for Cockcroft-Gault) (Carboplatin AUC ≥ 3)
+## 4.2 eGFR Difference (sens) distribution
 
-Each table below shows univariable (one variable at a time) and multivariable Fine-Gray subdistribution hazard ratios side-by-side. A Word version of each table is saved during render — the download link sits under its heading.
+Signed eGFR difference (sens) = 100 × (CKD-EPI 2012 cystatin C − CKD-EPI 2021
+creatinine) / CKD-EPI 2021 creatinine, both unindexed. Concordance sits at 0 %.
+Red bins are the negative side — cystatin C below creatinine, the
+muscle-wasting direction. The dashed line at **− 10 %** is the cut used for the
+binary exposure further down.
+
+```{r}
+#| label: ritu-auc3-egfr-diffsens-hist
+#| fig-width: 8
+#| fig-height: 5
+diffsens_hist <- dat %>%
+  filter(!is.na(egfr_diff_pct_sens)) %>%
+  mutate(side = ifelse(egfr_diff_pct_sens < 0, "neg", "pos"))
+
+ggplot(diffsens_hist, aes(x = egfr_diff_pct_sens, fill = side)) +
+  geom_histogram(aes(y = after_stat(count) / sum(after_stat(count)) * 100),
+                 binwidth = 2, boundary = 0, color = "black", alpha = 0.85) +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "grey30") +
+  geom_vline(xintercept = -10, linetype = "dotted", color = "#1F78B4", linewidth = 1) +
+  scale_fill_manual(values = c(neg = "#E31A1C", pos = "grey60"), guide = "none") +
+  labs(title = "Distribution of eGFR Difference (sens): 100 × (CysC − Cr) / Cr",
+       subtitle = sprintf("Median %.1f %%; %d of %d (%.1f %%) fall below -10 %%",
+                          median(diffsens_hist$egfr_diff_pct_sens),
+                          sum(diffsens_hist$egfr_diff_pct_sens < -10),
+                          nrow(diffsens_hist),
+                          100 * mean(diffsens_hist$egfr_diff_pct_sens < -10)),
+       x = "eGFR Difference (sens, %)", y = "Percent of Patients (%)") +
+  scale_x_continuous(breaks = seq(-100, 200, 10)) +
+  theme_minimal(base_size = 14)
+```
+
+# 5 Fine-Gray Models — eGFR Difference as (CysC − Cr) / Cr, adjusted for CKD-EPI Cr-Cys (Carboplatin AUC ≥ 3)
+
+> **These are the only two outcomes modelled on this page.** Both run on the
+> long-horizon kidney outcomes built in Sections 5.16–5.19 of
+> [Data Management](ritu_data.qmd):
+> AKI is administratively censored at **365 days**, the CKD composite runs to the
+> **last creatinine** (day 0 → last follow-up). Death at any time is the
+> competing event in both, taken from `death_days_any` rather than the 90-day
+> `death_90` flag, which cannot place a death in time beyond day 90.
+> `death_days_any` is the union of the two sources that carry a death date — the
+> RPDR `Date_Of_Death` when there is one, otherwise the REDCap last-follow-up
+> date for a patient REDCap records as dead. Someone flagged deceased in RPDR
+> with no date who is still alive in REDCap stays censored.
+>
+> **The exposure in both sections below is `egfr_diff_pct_sens_per10`** —
+> `100 × (eGFR_CysC − eGFR_Cr) / eGFR_Cr`, negated and divided by 10, so every
+> subdistribution hazard ratio reads per **10 percentage-point decline**.
+> Cystatin C against creatinine alone, both unindexed. The two sections differ
+> only in the kidney adjuster: CKD-EPI Cr-Cys here, Cockcroft-Gault in the next.
+> All other adjusters are the project's standard set (Section 1).
+
+Each table shows univariable (one variable at a time) and multivariable Fine-Gray subdistribution hazard ratios side-by-side. A Word version of each table is saved during render — the download link sits under its heading.
 
 ```{r}
 #| label: ritu-auc3-fg-helper
@@ -686,44 +747,6 @@ cox_model <- .wrap_tbl(cox_model)
 
 ```
 
-## 5.1 AKI within 1 Year (Fine-Gray, death competing)
-
-> **These are the only two outcomes modelled on this page.** Both run on the
-> long-horizon kidney outcomes built in Sections 5.16–5.19 of
-> [Data Management](ritu_data.qmd):
-> AKI is administratively censored at **365 days**, the CKD composite runs to the
-> **last creatinine** (day 0 → last follow-up). Death at any time is the
-> competing event in both, taken from `death_days_any` rather than the 90-day
-> `death_90` flag, which cannot place a death in time beyond day 90.
-> `death_days_any` is the union of the two sources that carry a death date — the
-> RPDR `Date_Of_Death` when there is one, otherwise the REDCap last-follow-up
-> date for a patient REDCap records as dead. Someone flagged deceased in RPDR
-> with no date who is still alive in REDCap stays censored.
->
-> The predictor is `egfr_diff_pct_per10` (per 10 percentage-point decline in the
-> eGFR difference), adjusted for Cockcroft-Gault plus the project's standard
-> adjuster set (Section 1).
-
-[📄 Download Word table](../tables/auc3/sec5_aki_365.docx) · [CKD Composite](../tables/auc3/sec5_ckd_composite.docx)
-
-```{r}
-#| label: ritu-auc3-fg-aki365
-fg_model("cmp_time_aki_365", "cmp_status_aki_365", "egfr_diff_pct_per10",
-         egfr_adj = "cockcroft", docx_name = "sec5_aki_365")
-```
-
-## 5.2 CKD Composite, Any Time Post-Baseline (Fine-Gray, death competing)
-
-CKD composite = CKD incidence (> 25 % eGFR drop to < 60, sustained ≥ 90 d)
-**+** CKD progression (eGFR < 60 at baseline with a further > 30 % drop, sustained
-≥ 90 d) **+** ESKD composite.
-
-```{r}
-#| label: ritu-auc3-fg-ckdcomposite
-fg_model("cmp_time_ckd_composite", "cmp_status_ckd_composite", "egfr_diff_pct_per10",
-         egfr_adj = "cockcroft", docx_name = "sec5_ckd_composite")
-```
-
 ```{r}
 #| label: ritu-auc3-fg-lt-counts
 lt_counts <- tibble::tibble(
@@ -740,43 +763,27 @@ knitr::kable(lt_counts, caption = sprintf(
   nrow(dat)))
 ```
 
-# 6 Fine-Gray Models — eGFR Difference as (CysC − Cr) / Cr, adjusted for CKD-EPI Cr-Cys (Carboplatin AUC ≥ 3)
+## 5.1 AKI within 1 Year (Fine-Gray, death competing)
 
-> Same two outcomes, same competing event and the same non-kidney adjusters as
-> the sections around it. Two things differ from the first Fine-Gray section:
->
-> - **Exposure** is `egfr_diff_pct_sens_per10` — `100 × (eGFR_CysC − eGFR_Cr) /
->   eGFR_Cr`, negated and divided by 10, so the subdistribution hazard ratio
->   reads per **10 percentage-point decline**. Cystatin C against creatinine
->   alone, both unindexed.
-> - **Kidney adjuster** is `ckd_epi_gfr_cre_cys_unindex` (CKD-EPI 2012 creatinine
->   + cystatin C, unindexed) in place of `cockcroft`. Cockcroft-Gault is not in
->   these models at all.
->
-> This section and the next share that exposure and differ only in the kidney
-> adjuster — CKD-EPI Cr-Cys here, Cockcroft-Gault there.
-
-## 6.1 AKI within 1 Year (Fine-Gray, death competing)
-
-[📄 Download Word table](../tables/auc3/sec6_aki_365.docx)
+[📄 Download Word table](../tables/auc3/sec5_aki_365.docx)
 
 ```{r}
 #| label: ritu-auc3-fg-crcys-aki365
 fg_model("cmp_time_aki_365", "cmp_status_aki_365", "egfr_diff_pct_sens_per10",
-         egfr_adj = "ckd_epi", docx_name = "sec6_aki_365")
+         egfr_adj = "ckd_epi", docx_name = "sec5_aki_365")
 ```
 
-## 6.2 CKD Composite, Any Time Post-Baseline (Fine-Gray, death competing)
+## 5.2 CKD Composite, Any Time Post-Baseline (Fine-Gray, death competing)
 
-[📄 Download Word table](../tables/auc3/sec6_ckd_composite.docx)
+[📄 Download Word table](../tables/auc3/sec5_ckd_composite.docx)
 
 ```{r}
 #| label: ritu-auc3-fg-crcys-ckdcomposite
 fg_model("cmp_time_ckd_composite", "cmp_status_ckd_composite", "egfr_diff_pct_sens_per10",
-         egfr_adj = "ckd_epi", docx_name = "sec6_ckd_composite")
+         egfr_adj = "ckd_epi", docx_name = "sec5_ckd_composite")
 ```
 
-# 7 Fine-Gray Models — eGFR Difference as (CysC − Cr) / Cr, adjusted for Cockcroft-Gault (Carboplatin AUC ≥ 3)
+# 6 Fine-Gray Models — eGFR Difference as (CysC − Cr) / Cr, adjusted for Cockcroft-Gault (Carboplatin AUC ≥ 3)
 
 > Same two outcomes, same competing event and the same Cockcroft-Gault-adjusted
 > adjuster set as the first Fine-Gray section — with a **different exposure**.
@@ -792,29 +799,197 @@ fg_model("cmp_time_ckd_composite", "cmp_status_ckd_composite", "egfr_diff_pct_se
 > alone against creatinine alone, isolating the Cys-C / creatinine discordance
 > without a Cockcroft-Gault term in the numerator.
 
-## 7.1 AKI within 1 Year (Fine-Gray, death competing)
+## 6.1 AKI within 1 Year (Fine-Gray, death competing)
 
-[📄 Download Word table](../tables/auc3/sec7_aki_365.docx)
+[📄 Download Word table](../tables/auc3/sec6_aki_365.docx)
 
 ```{r}
 #| label: ritu-auc3-fg-cysdiff-aki365
 fg_model("cmp_time_aki_365", "cmp_status_aki_365", "egfr_diff_pct_sens_per10",
-         egfr_adj = "cockcroft", docx_name = "sec7_aki_365")
+         egfr_adj = "cockcroft", docx_name = "sec6_aki_365")
 ```
 
-## 7.2 CKD Composite, Any Time Post-Baseline (Fine-Gray, death competing)
+## 6.2 CKD Composite, Any Time Post-Baseline (Fine-Gray, death competing)
 
-[📄 Download Word table](../tables/auc3/sec7_ckd_composite.docx)
+[📄 Download Word table](../tables/auc3/sec6_ckd_composite.docx)
 
 ```{r}
 #| label: ritu-auc3-fg-cysdiff-ckdcomposite
 fg_model("cmp_time_ckd_composite", "cmp_status_ckd_composite", "egfr_diff_pct_sens_per10",
-         egfr_adj = "cockcroft", docx_name = "sec7_ckd_composite")
+         egfr_adj = "cockcroft", docx_name = "sec6_ckd_composite")
 ```
 
-# 8 Scatter Plots — Dose Discrepancy vs eGFR (Carboplatin AUC ≥ 3)
+# 7 Survivors Cohort — Follow-up > 365 Days (Carboplatin AUC ≥ 3)
 
-## 8.1 Dose Discrepancy vs CKD-EPI Cr-Cys (unindexed)
+> Both Fine-Gray sections above, rerun on patients still in follow-up beyond one
+> year (`days_last_follow_up > 365`). Same exposure, same adjusters, same
+> competing event — only the cohort changes.
+>
+> **This conditions on a post-baseline characteristic.** Surviving and staying in
+> follow-up past a year is partly a consequence of the kidney trajectory being
+> modelled, so this subset is not a random sample and these estimates are not
+> directly comparable with the full-cohort ones above. Read it as a restriction
+> analysis, not a sensitivity analysis.
+
+```{r}
+#| label: ritu-auc3-surv-enter
+dat_full_cohort <- dat
+dat <- dat_full_cohort %>%
+  filter(!is.na(days_last_follow_up), days_last_follow_up > 365) %>%
+  mutate(across(where(is.factor) & !starts_with("cmp_status_"), droplevels))
+
+surv_counts <- tibble::tibble(
+  Outcome  = c("AKI within 1 year", "CKD composite (any time)"),
+  Censored = c(sum(dat$cmp_status_aki_365 == 0), sum(dat$cmp_status_ckd_composite == 0)),
+  Event    = c(sum(dat$cmp_status_aki_365 == 1), sum(dat$cmp_status_ckd_composite == 1)),
+  Death    = c(sum(dat$cmp_status_aki_365 == 2), sum(dat$cmp_status_ckd_composite == 2))
+)
+knitr::kable(surv_counts, caption = sprintf(
+  "Survivors cohort: %d of %d patients (%.1f %%). Competing-risk event counts.",
+  nrow(dat), nrow(dat_full_cohort), 100 * nrow(dat) / nrow(dat_full_cohort)))
+```
+
+## 7.1 AKI within 1 Year — adjusted for CKD-EPI Cr-Cys
+
+[📄 Download Word table](../tables/auc3/sec7_aki_crcys.docx)
+
+```{r}
+#| label: ritu-auc3-surv-aki-crcys
+fg_model("cmp_time_aki_365", "cmp_status_aki_365", "egfr_diff_pct_sens_per10",
+         egfr_adj = "ckd_epi", docx_name = "sec7_aki_crcys")
+```
+
+## 7.2 CKD Composite — adjusted for CKD-EPI Cr-Cys
+
+[📄 Download Word table](../tables/auc3/sec7_ckd_crcys.docx)
+
+```{r}
+#| label: ritu-auc3-surv-ckd-crcys
+fg_model("cmp_time_ckd_composite", "cmp_status_ckd_composite", "egfr_diff_pct_sens_per10",
+         egfr_adj = "ckd_epi", docx_name = "sec7_ckd_crcys")
+```
+
+## 7.3 AKI within 1 Year — adjusted for Cockcroft-Gault
+
+[📄 Download Word table](../tables/auc3/sec7_aki_cg.docx)
+
+```{r}
+#| label: ritu-auc3-surv-aki-cg
+fg_model("cmp_time_aki_365", "cmp_status_aki_365", "egfr_diff_pct_sens_per10",
+         egfr_adj = "cockcroft", docx_name = "sec7_aki_cg")
+```
+
+## 7.4 CKD Composite — adjusted for Cockcroft-Gault
+
+[📄 Download Word table](../tables/auc3/sec7_ckd_cg.docx)
+
+```{r}
+#| label: ritu-auc3-surv-ckd-cg
+fg_model("cmp_time_ckd_composite", "cmp_status_ckd_composite", "egfr_diff_pct_sens_per10",
+         egfr_adj = "cockcroft", docx_name = "sec7_ckd_cg")
+```
+
+```{r}
+#| label: ritu-auc3-surv-exit
+dat <- dat_full_cohort
+```
+
+# 8 Binary eGFR Difference (sens) and 365-Day Delta eGFR (Carboplatin AUC ≥ 3)
+
+> `egfr_diff_pct_sens_cat` splits the cohort at **− 10 %**: `< -10%` means the
+> cystatin C eGFR sits more than 10 % below the creatinine eGFR; `>= -10%` is the
+> reference level. The outcome is `delta_egfr_d365` — eGFR at day 365 minus
+> baseline, in mL/min/1.73m², **negative = decline** (§ Delta eGFR above).
+>
+> Only patients with a creatinine within ± 45 days of day 365 contribute, so the
+> analysis is complete-case on that variable and its n is well below the cohort.
+
+## 8.1 365-day delta eGFR by group
+
+```{r}
+#| label: ritu-auc3-cat-groups
+.grp_row <- function(d, lab) {
+  v <- d$delta_egfr_d365[!is.na(d$delta_egfr_d365)]
+  p <- d$delta_egfr_pct_d365[!is.na(d$delta_egfr_pct_d365)]
+  tibble::tibble(
+    Group = lab, n = length(v),
+    `Delta eGFR, mean (SD)` = sprintf("%.1f (%.1f)", mean(v), sd(v)),
+    `Delta eGFR, median [IQR]` = sprintf("%.1f [%.1f, %.1f]",
+      median(v), quantile(v, .25), quantile(v, .75)),
+    `Delta eGFR %, median [IQR]` = sprintf("%.1f [%.1f, %.1f]",
+      median(p), quantile(p, .25), quantile(p, .75)))
+}
+d0 <- dat %>% filter(egfr_diff_pct_sens_cat == ">= -10%")
+d1 <- dat %>% filter(egfr_diff_pct_sens_cat == "< -10%")
+grp_tbl <- dplyr::bind_rows(.grp_row(d0, ">= -10% (reference)"), .grp_row(d1, "< -10%"))
+
+.wt <- tryCatch(wilcox.test(delta_egfr_d365 ~ egfr_diff_pct_sens_cat, data = dat),
+                error = function(e) NULL)
+.tt <- tryCatch(t.test(delta_egfr_d365 ~ egfr_diff_pct_sens_cat, data = dat),
+                error = function(e) NULL)
+knitr::kable(grp_tbl, caption = sprintf(paste0(
+  "365-day delta eGFR by binary eGFR difference (sens). Negative = decline. ",
+  "Wilcoxon p = %s; Welch t-test p = %s."),
+  if (is.null(.wt)) "—" else format.pval(.wt$p.value, digits = 3),
+  if (is.null(.tt)) "—" else format.pval(.tt$p.value, digits = 3)))
+```
+
+## 8.2 Linear model — 365-day delta eGFR on the binary exposure
+
+Adjusted for the same multivariable covariate set as the Fine-Gray models,
+Cockcroft-Gault included. Coefficients are mL/min/1.73m² of 365-day eGFR change:
+a negative coefficient on `< -10%` means that group declined further.
+
+[📄 Download Word table](../tables/auc3/sec8_lm_d365.docx)
+
+```{r}
+#| label: ritu-auc3-cat-lm
+# .adj_set has three arguments on the whole/entire pages and two on the
+# carboplatin pages; call it with whichever this page defines.
+.adj_for <- function(pred_var, egfr_adj) {
+  if (length(formals(.adj_set)) == 3) .adj_set(pred_var, NULL, egfr_adj)
+  else .adj_set(NULL, egfr_adj)
+}
+
+lm_d365 <- function(pred_var, egfr_adj = "cockcroft", docx_name = NULL) {
+  adj  <- .adj_for(pred_var, egfr_adj)
+  vars <- c(pred_var, adj)
+  fmla <- as.formula(paste("delta_egfr_d365 ~", paste(vars, collapse = " + ")))
+  tbl_mv <- lm(fmla, data = dat) %>%
+    tbl_regression(pvalue_fun = function(x) style_pvalue(x, digits = 3)) %>%
+    add_n()
+  tbl_uv <- tbl_uvregression(
+    data = dat %>% dplyr::select(dplyr::all_of(c("delta_egfr_d365", vars))),
+    method = lm, y = delta_egfr_d365,
+    pvalue_fun = function(x) style_pvalue(x, digits = 3))
+  out <- tbl_merge(tbls = list(tbl_uv, tbl_mv),
+                   tab_spanner = c("**Univariable**", "**Multivariable**"))
+  if (!is.null(docx_name)) save_tbl_docx(out, docx_name)
+  out
+}
+lm_d365 <- .wrap_tbl(lm_d365)
+
+lm_d365("egfr_diff_pct_sens_cat", docx_name = "sec8_lm_d365")
+```
+
+## 8.3 The same model in the survivors cohort
+
+[📄 Download Word table](../tables/auc3/sec8_lm_d365_surv.docx)
+
+```{r}
+#| label: ritu-auc3-cat-lm-surv
+dat_full_cohort <- dat
+dat <- dat_full_cohort %>%
+  filter(!is.na(days_last_follow_up), days_last_follow_up > 365) %>%
+  mutate(across(where(is.factor) & !starts_with("cmp_status_"), droplevels))
+out <- lm_d365("egfr_diff_pct_sens_cat", docx_name = "sec8_lm_d365_surv")
+dat <- dat_full_cohort
+out
+```
+
+# 9 Scatter Plots — Dose Discrepancy vs eGFR (Carboplatin AUC ≥ 3)
+
+## 9.1 Dose Discrepancy vs CKD-EPI Cr-Cys (unindexed)
 
 ```{r}
 #| label: ritu-auc3-scatter-epi
@@ -830,7 +1005,7 @@ ggplot(dat %>% filter(!is.na(dose_discrepancy)),
   theme_minimal(base_size = 11)
 ```
 
-## 8.2 Dose Discrepancy vs Cockcroft-Gault
+## 9.2 Dose Discrepancy vs Cockcroft-Gault
 
 ```{r}
 #| label: ritu-auc3-scatter-cg
@@ -847,7 +1022,7 @@ ggplot(dat %>% filter(!is.na(dose_discrepancy)),
 ```
 
 
-# 9 Paper
+# 10 Paper
 
 ```{r}
 #| label: ritu-auc3-paper-stats

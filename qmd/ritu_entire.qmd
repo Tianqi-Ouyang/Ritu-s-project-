@@ -197,6 +197,13 @@ dat <- dat %>%
     # numerator - denominator = CKD-EPI 2012 CysC - CKD-EPI 2021 Cr, both unindexed.
     egfr_diff_pct_sens        = 100 * (baseline_cys_c_egfr_unindexed - baseline_cre_egfr_unindexed) / baseline_cre_egfr_unindexed,
     egfr_diff_pct_sens_per10  = -egfr_diff_pct_sens / 10,
+    # Binary form of the same exposure: 1 when the cystatin C eGFR sits more
+    # than 10 % below the creatinine eGFR. Reference level is ">= -10%".
+    egfr_diff_pct_sens_cat    = factor(
+      ifelse(egfr_diff_pct_sens < -10, "< -10%", ">= -10%"),
+      levels = c(">= -10%", "< -10%")),
+    # "Survivor": still in follow-up beyond one year.
+    survivor_365              = days_last_follow_up > 365,
     cockcroft_per10 = cockcroft / 10,
     ckd_epi_per10   = ckd_epi_gfr_cre_cys_unindex / 10
   )
@@ -573,9 +580,61 @@ ggplot(diffpct_hist, aes(x = egfr_diff_pct, fill = side)) +
   theme_minimal(base_size = 14)
 ```
 
-# 4 Fine-Gray Models — Long-Horizon Kidney Outcomes (eGFR Difference (%) per 10 % decline, adjusted for Cockcroft-Gault)
+## 3.4 eGFR Difference (sens) distribution
 
-Each table below shows univariable (one variable at a time) and multivariable Fine-Gray subdistribution hazard ratios side-by-side. A Word version of each table is saved during render — the download link sits under its heading.
+Signed eGFR difference (sens) = 100 × (CKD-EPI 2012 cystatin C − CKD-EPI 2021
+creatinine) / CKD-EPI 2021 creatinine, both unindexed. Concordance sits at 0 %.
+Red bins are the negative side — cystatin C below creatinine, the
+muscle-wasting direction. The dashed line at **− 10 %** is the cut used for the
+binary exposure further down.
+
+```{r}
+#| label: ritu-entire-egfr-diffsens-hist
+#| fig-width: 8
+#| fig-height: 5
+diffsens_hist <- dat %>%
+  filter(!is.na(egfr_diff_pct_sens)) %>%
+  mutate(side = ifelse(egfr_diff_pct_sens < 0, "neg", "pos"))
+
+ggplot(diffsens_hist, aes(x = egfr_diff_pct_sens, fill = side)) +
+  geom_histogram(aes(y = after_stat(count) / sum(after_stat(count)) * 100),
+                 binwidth = 2, boundary = 0, color = "black", alpha = 0.85) +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "grey30") +
+  geom_vline(xintercept = -10, linetype = "dotted", color = "#1F78B4", linewidth = 1) +
+  scale_fill_manual(values = c(neg = "#E31A1C", pos = "grey60"), guide = "none") +
+  labs(title = "Distribution of eGFR Difference (sens): 100 × (CysC − Cr) / Cr",
+       subtitle = sprintf("Median %.1f %%; %d of %d (%.1f %%) fall below -10 %%",
+                          median(diffsens_hist$egfr_diff_pct_sens),
+                          sum(diffsens_hist$egfr_diff_pct_sens < -10),
+                          nrow(diffsens_hist),
+                          100 * mean(diffsens_hist$egfr_diff_pct_sens < -10)),
+       x = "eGFR Difference (sens, %)", y = "Percent of Patients (%)") +
+  scale_x_continuous(breaks = seq(-100, 200, 10)) +
+  theme_minimal(base_size = 14)
+```
+
+# 4 Fine-Gray Models — eGFR Difference as (CysC − Cr) / Cr, adjusted for CKD-EPI Cr-Cys
+
+> **These are the only two outcomes modelled on this page.** Both run on the
+> long-horizon kidney outcomes built in Sections 5.16–5.19 of
+> [Data Management](ritu_data.qmd):
+> AKI is administratively censored at **365 days**, the CKD composite runs to the
+> **last creatinine** (day 0 → last follow-up). Death at any time is the
+> competing event in both, taken from `death_days_any` rather than the 90-day
+> `death_90` flag, which cannot place a death in time beyond day 90.
+> `death_days_any` is the union of the two sources that carry a death date — the
+> RPDR `Date_Of_Death` when there is one, otherwise the REDCap last-follow-up
+> date for a patient REDCap records as dead. Someone flagged deceased in RPDR
+> with no date who is still alive in REDCap stays censored.
+>
+> **The exposure in both sections below is `egfr_diff_pct_sens_per10`** —
+> `100 × (eGFR_CysC − eGFR_Cr) / eGFR_Cr`, negated and divided by 10, so every
+> subdistribution hazard ratio reads per **10 percentage-point decline**.
+> Cystatin C against creatinine alone, both unindexed. The two sections differ
+> only in the kidney adjuster: CKD-EPI Cr-Cys here, Cockcroft-Gault in the next.
+> All other adjusters are the project's standard set (Section 1).
+
+Each table shows univariable (one variable at a time) and multivariable Fine-Gray subdistribution hazard ratios side-by-side. A Word version of each table is saved during render — the download link sits under its heading.
 
 ```{r}
 #| label: ritu-entire-fg-helper
@@ -679,44 +738,6 @@ cox_model <- .wrap_tbl(cox_model)
 
 ```
 
-## 4.1 AKI within 1 Year (Fine-Gray, death competing)
-
-> **These are the only two outcomes modelled on this page.** Both run on the
-> long-horizon kidney outcomes built in Sections 5.16–5.19 of
-> [Data Management](ritu_data.qmd):
-> AKI is administratively censored at **365 days**, the CKD composite runs to the
-> **last creatinine** (day 0 → last follow-up). Death at any time is the
-> competing event in both, taken from `death_days_any` rather than the 90-day
-> `death_90` flag, which cannot place a death in time beyond day 90.
-> `death_days_any` is the union of the two sources that carry a death date — the
-> RPDR `Date_Of_Death` when there is one, otherwise the REDCap last-follow-up
-> date for a patient REDCap records as dead. Someone flagged deceased in RPDR
-> with no date who is still alive in REDCap stays censored.
->
-> The predictor is `egfr_diff_pct_per10` (per 10 percentage-point decline in the
-> eGFR difference), adjusted for Cockcroft-Gault plus the project's standard
-> adjuster set (Section 1).
-
-[📄 Download Word table](../tables/entire/sec4_aki_365.docx) · [CKD Composite](../tables/entire/sec4_ckd_composite.docx)
-
-```{r}
-#| label: ritu-entire-fg-aki365
-fg_model("cmp_time_aki_365", "cmp_status_aki_365", "egfr_diff_pct_per10",
-         egfr_adj = "cockcroft", docx_name = "sec4_aki_365")
-```
-
-## 4.2 CKD Composite, Any Time Post-Baseline (Fine-Gray, death competing)
-
-CKD composite = CKD incidence (> 25 % eGFR drop to < 60, sustained ≥ 90 d)
-**+** CKD progression (eGFR < 60 at baseline with a further > 30 % drop, sustained
-≥ 90 d) **+** ESKD composite.
-
-```{r}
-#| label: ritu-entire-fg-ckdcomposite
-fg_model("cmp_time_ckd_composite", "cmp_status_ckd_composite", "egfr_diff_pct_per10",
-         egfr_adj = "cockcroft", docx_name = "sec4_ckd_composite")
-```
-
 ```{r}
 #| label: ritu-entire-fg-lt-counts
 lt_counts <- tibble::tibble(
@@ -733,43 +754,27 @@ knitr::kable(lt_counts, caption = sprintf(
   nrow(dat)))
 ```
 
-# 5 Fine-Gray Models — eGFR Difference as (CysC − Cr) / Cr, adjusted for CKD-EPI Cr-Cys
+## 4.1 AKI within 1 Year (Fine-Gray, death competing)
 
-> Same two outcomes, same competing event and the same non-kidney adjusters as
-> the sections around it. Two things differ from the first Fine-Gray section:
->
-> - **Exposure** is `egfr_diff_pct_sens_per10` — `100 × (eGFR_CysC − eGFR_Cr) /
->   eGFR_Cr`, negated and divided by 10, so the subdistribution hazard ratio
->   reads per **10 percentage-point decline**. Cystatin C against creatinine
->   alone, both unindexed.
-> - **Kidney adjuster** is `ckd_epi_gfr_cre_cys_unindex` (CKD-EPI 2012 creatinine
->   + cystatin C, unindexed) in place of `cockcroft`. Cockcroft-Gault is not in
->   these models at all.
->
-> This section and the next share that exposure and differ only in the kidney
-> adjuster — CKD-EPI Cr-Cys here, Cockcroft-Gault there.
-
-## 5.1 AKI within 1 Year (Fine-Gray, death competing)
-
-[📄 Download Word table](../tables/entire/sec5_aki_365.docx)
+[📄 Download Word table](../tables/entire/sec4_aki_365.docx)
 
 ```{r}
 #| label: ritu-entire-fg-crcys-aki365
 fg_model("cmp_time_aki_365", "cmp_status_aki_365", "egfr_diff_pct_sens_per10",
-         egfr_adj = "ckd_epi", docx_name = "sec5_aki_365")
+         egfr_adj = "ckd_epi", docx_name = "sec4_aki_365")
 ```
 
-## 5.2 CKD Composite, Any Time Post-Baseline (Fine-Gray, death competing)
+## 4.2 CKD Composite, Any Time Post-Baseline (Fine-Gray, death competing)
 
-[📄 Download Word table](../tables/entire/sec5_ckd_composite.docx)
+[📄 Download Word table](../tables/entire/sec4_ckd_composite.docx)
 
 ```{r}
 #| label: ritu-entire-fg-crcys-ckdcomposite
 fg_model("cmp_time_ckd_composite", "cmp_status_ckd_composite", "egfr_diff_pct_sens_per10",
-         egfr_adj = "ckd_epi", docx_name = "sec5_ckd_composite")
+         egfr_adj = "ckd_epi", docx_name = "sec4_ckd_composite")
 ```
 
-# 6 Fine-Gray Models — eGFR Difference as (CysC − Cr) / Cr, adjusted for Cockcroft-Gault
+# 5 Fine-Gray Models — eGFR Difference as (CysC − Cr) / Cr, adjusted for Cockcroft-Gault
 
 > Same two outcomes, same competing event and the same Cockcroft-Gault-adjusted
 > adjuster set as the first Fine-Gray section — with a **different exposure**.
@@ -785,29 +790,197 @@ fg_model("cmp_time_ckd_composite", "cmp_status_ckd_composite", "egfr_diff_pct_se
 > alone against creatinine alone, isolating the Cys-C / creatinine discordance
 > without a Cockcroft-Gault term in the numerator.
 
-## 6.1 AKI within 1 Year (Fine-Gray, death competing)
+## 5.1 AKI within 1 Year (Fine-Gray, death competing)
 
-[📄 Download Word table](../tables/entire/sec6_aki_365.docx)
+[📄 Download Word table](../tables/entire/sec5_aki_365.docx)
 
 ```{r}
 #| label: ritu-entire-fg-cysdiff-aki365
 fg_model("cmp_time_aki_365", "cmp_status_aki_365", "egfr_diff_pct_sens_per10",
-         egfr_adj = "cockcroft", docx_name = "sec6_aki_365")
+         egfr_adj = "cockcroft", docx_name = "sec5_aki_365")
 ```
 
-## 6.2 CKD Composite, Any Time Post-Baseline (Fine-Gray, death competing)
+## 5.2 CKD Composite, Any Time Post-Baseline (Fine-Gray, death competing)
 
-[📄 Download Word table](../tables/entire/sec6_ckd_composite.docx)
+[📄 Download Word table](../tables/entire/sec5_ckd_composite.docx)
 
 ```{r}
 #| label: ritu-entire-fg-cysdiff-ckdcomposite
 fg_model("cmp_time_ckd_composite", "cmp_status_ckd_composite", "egfr_diff_pct_sens_per10",
-         egfr_adj = "cockcroft", docx_name = "sec6_ckd_composite")
+         egfr_adj = "cockcroft", docx_name = "sec5_ckd_composite")
 ```
 
-# 7 Scatter Plots — eGFR Discrepancy
+# 6 Survivors Cohort — Follow-up > 365 Days
 
-## 7.1 eGFR Discrepancy vs CKD-EPI Cr-Cys (unindexed)
+> Both Fine-Gray sections above, rerun on patients still in follow-up beyond one
+> year (`days_last_follow_up > 365`). Same exposure, same adjusters, same
+> competing event — only the cohort changes.
+>
+> **This conditions on a post-baseline characteristic.** Surviving and staying in
+> follow-up past a year is partly a consequence of the kidney trajectory being
+> modelled, so this subset is not a random sample and these estimates are not
+> directly comparable with the full-cohort ones above. Read it as a restriction
+> analysis, not a sensitivity analysis.
+
+```{r}
+#| label: ritu-entire-surv-enter
+dat_full_cohort <- dat
+dat <- dat_full_cohort %>%
+  filter(!is.na(days_last_follow_up), days_last_follow_up > 365) %>%
+  mutate(across(where(is.factor) & !starts_with("cmp_status_"), droplevels))
+
+surv_counts <- tibble::tibble(
+  Outcome  = c("AKI within 1 year", "CKD composite (any time)"),
+  Censored = c(sum(dat$cmp_status_aki_365 == 0), sum(dat$cmp_status_ckd_composite == 0)),
+  Event    = c(sum(dat$cmp_status_aki_365 == 1), sum(dat$cmp_status_ckd_composite == 1)),
+  Death    = c(sum(dat$cmp_status_aki_365 == 2), sum(dat$cmp_status_ckd_composite == 2))
+)
+knitr::kable(surv_counts, caption = sprintf(
+  "Survivors cohort: %d of %d patients (%.1f %%). Competing-risk event counts.",
+  nrow(dat), nrow(dat_full_cohort), 100 * nrow(dat) / nrow(dat_full_cohort)))
+```
+
+## 6.1 AKI within 1 Year — adjusted for CKD-EPI Cr-Cys
+
+[📄 Download Word table](../tables/entire/sec6_aki_crcys.docx)
+
+```{r}
+#| label: ritu-entire-surv-aki-crcys
+fg_model("cmp_time_aki_365", "cmp_status_aki_365", "egfr_diff_pct_sens_per10",
+         egfr_adj = "ckd_epi", docx_name = "sec6_aki_crcys")
+```
+
+## 6.2 CKD Composite — adjusted for CKD-EPI Cr-Cys
+
+[📄 Download Word table](../tables/entire/sec6_ckd_crcys.docx)
+
+```{r}
+#| label: ritu-entire-surv-ckd-crcys
+fg_model("cmp_time_ckd_composite", "cmp_status_ckd_composite", "egfr_diff_pct_sens_per10",
+         egfr_adj = "ckd_epi", docx_name = "sec6_ckd_crcys")
+```
+
+## 6.3 AKI within 1 Year — adjusted for Cockcroft-Gault
+
+[📄 Download Word table](../tables/entire/sec6_aki_cg.docx)
+
+```{r}
+#| label: ritu-entire-surv-aki-cg
+fg_model("cmp_time_aki_365", "cmp_status_aki_365", "egfr_diff_pct_sens_per10",
+         egfr_adj = "cockcroft", docx_name = "sec6_aki_cg")
+```
+
+## 6.4 CKD Composite — adjusted for Cockcroft-Gault
+
+[📄 Download Word table](../tables/entire/sec6_ckd_cg.docx)
+
+```{r}
+#| label: ritu-entire-surv-ckd-cg
+fg_model("cmp_time_ckd_composite", "cmp_status_ckd_composite", "egfr_diff_pct_sens_per10",
+         egfr_adj = "cockcroft", docx_name = "sec6_ckd_cg")
+```
+
+```{r}
+#| label: ritu-entire-surv-exit
+dat <- dat_full_cohort
+```
+
+# 7 Binary eGFR Difference (sens) and 365-Day Delta eGFR
+
+> `egfr_diff_pct_sens_cat` splits the cohort at **− 10 %**: `< -10%` means the
+> cystatin C eGFR sits more than 10 % below the creatinine eGFR; `>= -10%` is the
+> reference level. The outcome is `delta_egfr_d365` — eGFR at day 365 minus
+> baseline, in mL/min/1.73m², **negative = decline** (§ Delta eGFR above).
+>
+> Only patients with a creatinine within ± 45 days of day 365 contribute, so the
+> analysis is complete-case on that variable and its n is well below the cohort.
+
+## 7.1 365-day delta eGFR by group
+
+```{r}
+#| label: ritu-entire-cat-groups
+.grp_row <- function(d, lab) {
+  v <- d$delta_egfr_d365[!is.na(d$delta_egfr_d365)]
+  p <- d$delta_egfr_pct_d365[!is.na(d$delta_egfr_pct_d365)]
+  tibble::tibble(
+    Group = lab, n = length(v),
+    `Delta eGFR, mean (SD)` = sprintf("%.1f (%.1f)", mean(v), sd(v)),
+    `Delta eGFR, median [IQR]` = sprintf("%.1f [%.1f, %.1f]",
+      median(v), quantile(v, .25), quantile(v, .75)),
+    `Delta eGFR %, median [IQR]` = sprintf("%.1f [%.1f, %.1f]",
+      median(p), quantile(p, .25), quantile(p, .75)))
+}
+d0 <- dat %>% filter(egfr_diff_pct_sens_cat == ">= -10%")
+d1 <- dat %>% filter(egfr_diff_pct_sens_cat == "< -10%")
+grp_tbl <- dplyr::bind_rows(.grp_row(d0, ">= -10% (reference)"), .grp_row(d1, "< -10%"))
+
+.wt <- tryCatch(wilcox.test(delta_egfr_d365 ~ egfr_diff_pct_sens_cat, data = dat),
+                error = function(e) NULL)
+.tt <- tryCatch(t.test(delta_egfr_d365 ~ egfr_diff_pct_sens_cat, data = dat),
+                error = function(e) NULL)
+knitr::kable(grp_tbl, caption = sprintf(paste0(
+  "365-day delta eGFR by binary eGFR difference (sens). Negative = decline. ",
+  "Wilcoxon p = %s; Welch t-test p = %s."),
+  if (is.null(.wt)) "—" else format.pval(.wt$p.value, digits = 3),
+  if (is.null(.tt)) "—" else format.pval(.tt$p.value, digits = 3)))
+```
+
+## 7.2 Linear model — 365-day delta eGFR on the binary exposure
+
+Adjusted for the same multivariable covariate set as the Fine-Gray models,
+Cockcroft-Gault included. Coefficients are mL/min/1.73m² of 365-day eGFR change:
+a negative coefficient on `< -10%` means that group declined further.
+
+[📄 Download Word table](../tables/entire/sec7_lm_d365.docx)
+
+```{r}
+#| label: ritu-entire-cat-lm
+# .adj_set has three arguments on the whole/entire pages and two on the
+# carboplatin pages; call it with whichever this page defines.
+.adj_for <- function(pred_var, egfr_adj) {
+  if (length(formals(.adj_set)) == 3) .adj_set(pred_var, NULL, egfr_adj)
+  else .adj_set(NULL, egfr_adj)
+}
+
+lm_d365 <- function(pred_var, egfr_adj = "cockcroft", docx_name = NULL) {
+  adj  <- .adj_for(pred_var, egfr_adj)
+  vars <- c(pred_var, adj)
+  fmla <- as.formula(paste("delta_egfr_d365 ~", paste(vars, collapse = " + ")))
+  tbl_mv <- lm(fmla, data = dat) %>%
+    tbl_regression(pvalue_fun = function(x) style_pvalue(x, digits = 3)) %>%
+    add_n()
+  tbl_uv <- tbl_uvregression(
+    data = dat %>% dplyr::select(dplyr::all_of(c("delta_egfr_d365", vars))),
+    method = lm, y = delta_egfr_d365,
+    pvalue_fun = function(x) style_pvalue(x, digits = 3))
+  out <- tbl_merge(tbls = list(tbl_uv, tbl_mv),
+                   tab_spanner = c("**Univariable**", "**Multivariable**"))
+  if (!is.null(docx_name)) save_tbl_docx(out, docx_name)
+  out
+}
+lm_d365 <- .wrap_tbl(lm_d365)
+
+lm_d365("egfr_diff_pct_sens_cat", docx_name = "sec7_lm_d365")
+```
+
+## 7.3 The same model in the survivors cohort
+
+[📄 Download Word table](../tables/entire/sec7_lm_d365_surv.docx)
+
+```{r}
+#| label: ritu-entire-cat-lm-surv
+dat_full_cohort <- dat
+dat <- dat_full_cohort %>%
+  filter(!is.na(days_last_follow_up), days_last_follow_up > 365) %>%
+  mutate(across(where(is.factor) & !starts_with("cmp_status_"), droplevels))
+out <- lm_d365("egfr_diff_pct_sens_cat", docx_name = "sec7_lm_d365_surv")
+dat <- dat_full_cohort
+out
+```
+
+# 8 Scatter Plots — eGFR Discrepancy
+
+## 8.1 eGFR Discrepancy vs CKD-EPI Cr-Cys (unindexed)
 
 ```{r}
 #| label: ritu-entire-scatter-egfr-epi
@@ -824,7 +997,7 @@ ggplot(dat %>% filter(!is.na(egfr_discrepancy)),
   theme_minimal(base_size = 11)
 ```
 
-## 7.2 eGFR Discrepancy vs Cockcroft-Gault
+## 8.2 eGFR Discrepancy vs Cockcroft-Gault
 
 ```{r}
 #| label: ritu-entire-scatter-egfr-cg
@@ -842,7 +1015,7 @@ ggplot(dat %>% filter(!is.na(egfr_discrepancy)),
 ```
 
 
-# 8 CG vs CKD-EPI Cr-Cys (highlighted by Age / BMI)
+# 9 CG vs CKD-EPI Cr-Cys (highlighted by Age / BMI)
 
 For each plot below, the x-axis is Cockcroft-Gault eGFR (mL/min) and the y-axis is CKD-EPI Cr-Cys *unindexed* eGFR (mL/min). The dashed line is `y = x` (perfect agreement). Patients meeting the highlighted threshold are coloured red; all others are grey. `N` shown in each title is the count of patients with both eGFR values non-missing; `n_red` is the count meeting the red criterion.
 
@@ -892,7 +1065,7 @@ plot_cg_vs_epi <- function(highlight_var, threshold, label) {
 }
 ```
 
-## 8.1 Age >= 70
+## 9.1 Age >= 70
 
 ```{r}
 #| label: ritu-entire-scatter-cg-epi-age70
@@ -901,7 +1074,7 @@ plot_cg_vs_epi <- function(highlight_var, threshold, label) {
 plot_cg_vs_epi("age", 70, "Age >= 70")
 ```
 
-## 8.2 Age >= 75
+## 9.2 Age >= 75
 
 ```{r}
 #| label: ritu-entire-scatter-cg-epi-age75
@@ -910,7 +1083,7 @@ plot_cg_vs_epi("age", 70, "Age >= 70")
 plot_cg_vs_epi("age", 75, "Age >= 75")
 ```
 
-## 8.3 Age >= 80
+## 9.3 Age >= 80
 
 ```{r}
 #| label: ritu-entire-scatter-cg-epi-age80
@@ -919,7 +1092,7 @@ plot_cg_vs_epi("age", 75, "Age >= 75")
 plot_cg_vs_epi("age", 80, "Age >= 80")
 ```
 
-## 8.4 BMI >= 25
+## 9.4 BMI >= 25
 
 ```{r}
 #| label: ritu-entire-scatter-cg-epi-bmi25
@@ -928,7 +1101,7 @@ plot_cg_vs_epi("age", 80, "Age >= 80")
 plot_cg_vs_epi("bmi", 25, "BMI >= 25")
 ```
 
-## 8.5 BMI >= 30
+## 9.5 BMI >= 30
 
 ```{r}
 #| label: ritu-entire-scatter-cg-epi-bmi30
@@ -937,7 +1110,7 @@ plot_cg_vs_epi("bmi", 25, "BMI >= 25")
 plot_cg_vs_epi("bmi", 30, "BMI >= 30")
 ```
 
-## 8.6 Sex
+## 9.6 Sex
 
 ```{r}
 #| label: ritu-entire-scatter-cg-epi-sex
@@ -981,7 +1154,7 @@ ggplot(d_sex, aes(x = cockcroft, y = ckd_epi_gfr_cre_cys_unindex,
   theme(legend.position = "top")
 ```
 
-## 8.7 – 8.12 eGFR Difference (%) distribution by category
+## 9.7 – 8.12 eGFR Difference (%) distribution by category
 
 For each of the same six splits as 10.1 – 10.6, overlaid kernel density curves of the eGFR difference (%) = 100 × (CKD-EPI Cr-Cys unindexed − Cockcroft-Gault) / Cockcroft-Gault. Red = highlighted level (≥ threshold, or Female for the sex panel); grey = reference level. Dashed grey vertical line marks the 0 % concordance point; dotted verticals mark each group's median. Subtitle carries N and median for each level plus a two-sided Mann-Whitney U p-value (equivalent to Wilcoxon rank-sum) comparing the two distributions.
 
@@ -1035,7 +1208,7 @@ plot_ratio_by_group <- function(highlight_var, threshold, label,
 }
 ```
 
-### 8.7 eGFR Difference (%) by Age >= 70
+### 9.7 eGFR Difference (%) by Age >= 70
 
 ```{r}
 #| label: ritu-entire-ratio-by-age70
@@ -1045,7 +1218,7 @@ plot_ratio_by_group("age", 70, "eGFR Difference (%) by Age >= 70",
                     "Age >= 70", "Age < 70")
 ```
 
-### 8.8 eGFR Difference (%) by Age >= 75
+### 9.8 eGFR Difference (%) by Age >= 75
 
 ```{r}
 #| label: ritu-entire-ratio-by-age75
@@ -1055,7 +1228,7 @@ plot_ratio_by_group("age", 75, "eGFR Difference (%) by Age >= 75",
                     "Age >= 75", "Age < 75")
 ```
 
-### 8.9 eGFR Difference (%) by Age >= 80
+### 9.9 eGFR Difference (%) by Age >= 80
 
 ```{r}
 #| label: ritu-entire-ratio-by-age80
@@ -1065,7 +1238,7 @@ plot_ratio_by_group("age", 80, "eGFR Difference (%) by Age >= 80",
                     "Age >= 80", "Age < 80")
 ```
 
-### 8.10 eGFR Difference (%) by BMI >= 25
+### 9.10 eGFR Difference (%) by BMI >= 25
 
 ```{r}
 #| label: ritu-entire-ratio-by-bmi25
@@ -1075,7 +1248,7 @@ plot_ratio_by_group("bmi", 25, "eGFR Difference (%) by BMI >= 25",
                     "BMI >= 25", "BMI < 25")
 ```
 
-### 8.11 eGFR Difference (%) by BMI >= 30
+### 9.11 eGFR Difference (%) by BMI >= 30
 
 ```{r}
 #| label: ritu-entire-ratio-by-bmi30
@@ -1085,7 +1258,7 @@ plot_ratio_by_group("bmi", 30, "eGFR Difference (%) by BMI >= 30",
                     "BMI >= 30", "BMI < 30")
 ```
 
-### 8.12 eGFR Difference (%) by Sex
+### 9.12 eGFR Difference (%) by Sex
 
 ```{r}
 #| label: ritu-entire-ratio-by-sex
