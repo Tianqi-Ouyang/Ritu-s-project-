@@ -233,14 +233,15 @@ adjusters, differing only in the kidney adjuster or the exposure:
 | | Exposure | Kidney adjuster | § whole / entire | § carboplatin |
 |---|---|---|---|---|
 | Original | (CKD-EPI Cr-Cys − Cockcroft-Gault) / CG | `cockcroft` | 4 | 5 |
-| Variant 1 | the same | CKD-EPI Cr-Cys | 5 | 6 |
-| Variant 2 | (CKD-EPI CysC − CKD-EPI Cr) / Cr | `cockcroft` | 6 | 7 |
+| Variant 1 | (CKD-EPI CysC − CKD-EPI Cr) / Cr | CKD-EPI Cr-Cys | 5 | 6 |
+| Variant 2 | the same | `cockcroft` | 6 | 7 |
 
-Both exposures read per 10 percentage-point decline. `RITU_PROJECT.md` §2.14 has
-all twenty-four estimates, and explains why **variant 1 is not a sensitivity
-check of the original**: the exposure is a ratio of CKD-EPI Cr-Cys to
-Cockcroft-Gault, so the two models condition on different halves of it and
-answer different questions.
+Both exposures read per 10 percentage-point decline. Variants 1 and 2 share an
+exposure and differ only in the kidney adjuster, so they are directly
+comparable. `RITU_PROJECT.md` §2.14 has all twenty-four estimates and explains
+why **variant 2 is the better-specified of the pair**: CKD-EPI Cr-Cys embeds the
+cystatin C signal the exposure is built from, so adjusting for it removes part
+of what is being measured.
 
 Events / competing deaths: AKI **198 + 115** (entire), 52 + 8 (Local/Early);
 CKD composite **79 + 282** (entire), 30 + 34 (Local/Early). Only the

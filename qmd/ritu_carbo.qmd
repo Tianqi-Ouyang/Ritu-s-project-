@@ -741,14 +741,21 @@ knitr::kable(lt_counts, caption = sprintf(
   nrow(dat)))
 ```
 
-# 6 Fine-Gray Models — Long-Horizon Kidney Outcomes (adjusted for CKD-EPI Cr-Cys instead of Cockcroft-Gault) (Carboplatin)
+# 6 Fine-Gray Models — eGFR Difference as (CysC − Cr) / Cr, adjusted for CKD-EPI Cr-Cys (Carboplatin)
 
-> Identical to the section above — same two outcomes, same exposure
-> (`egfr_diff_pct_per10`, per 10 percentage-point decline in eGFR difference),
-> same competing event and the same adjuster set — with **one substitution**: the
-> kidney-function adjuster is `ckd_epi_gfr_cre_cys_unindex` (CKD-EPI 2012
-> creatinine + cystatin C, unindexed) in place of `cockcroft`. Cockcroft-Gault is
-> not in these models at all.
+> Same two outcomes, same competing event and the same non-kidney adjusters as
+> the sections around it. Two things differ from the first Fine-Gray section:
+>
+> - **Exposure** is `egfr_diff_pct_sens_per10` — `100 × (eGFR_CysC − eGFR_Cr) /
+>   eGFR_Cr`, negated and divided by 10, so the subdistribution hazard ratio
+>   reads per **10 percentage-point decline**. Cystatin C against creatinine
+>   alone, both unindexed.
+> - **Kidney adjuster** is `ckd_epi_gfr_cre_cys_unindex` (CKD-EPI 2012 creatinine
+>   + cystatin C, unindexed) in place of `cockcroft`. Cockcroft-Gault is not in
+>   these models at all.
+>
+> This section and the next share that exposure and differ only in the kidney
+> adjuster — CKD-EPI Cr-Cys here, Cockcroft-Gault there.
 
 ## 6.1 AKI within 1 Year (Fine-Gray, death competing)
 
@@ -756,7 +763,7 @@ knitr::kable(lt_counts, caption = sprintf(
 
 ```{r}
 #| label: ritu-carbo-fg-crcys-aki365
-fg_model("cmp_time_aki_365", "cmp_status_aki_365", "egfr_diff_pct_per10",
+fg_model("cmp_time_aki_365", "cmp_status_aki_365", "egfr_diff_pct_sens_per10",
          egfr_adj = "ckd_epi", docx_name = "sec6_aki_365")
 ```
 
@@ -766,11 +773,11 @@ fg_model("cmp_time_aki_365", "cmp_status_aki_365", "egfr_diff_pct_per10",
 
 ```{r}
 #| label: ritu-carbo-fg-crcys-ckdcomposite
-fg_model("cmp_time_ckd_composite", "cmp_status_ckd_composite", "egfr_diff_pct_per10",
+fg_model("cmp_time_ckd_composite", "cmp_status_ckd_composite", "egfr_diff_pct_sens_per10",
          egfr_adj = "ckd_epi", docx_name = "sec6_ckd_composite")
 ```
 
-# 7 Fine-Gray Models — eGFR Difference as (CysC − Cr) / Cr, per 10 % decline (Carboplatin)
+# 7 Fine-Gray Models — eGFR Difference as (CysC − Cr) / Cr, adjusted for Cockcroft-Gault (Carboplatin)
 
 > Same two outcomes, same competing event and the same Cockcroft-Gault-adjusted
 > adjuster set as the first Fine-Gray section — with a **different exposure**.

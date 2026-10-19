@@ -622,21 +622,21 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </tr>
 <tr class="even">
 <td>Variant 1</td>
-<td>the same</td>
+<td>(CKD-EPI CysC − CKD-EPI Cr) / Cr</td>
 <td>CKD-EPI Cr-Cys</td>
 <td>5</td>
 <td>6</td>
 </tr>
 <tr class="odd">
 <td>Variant 2</td>
-<td>(CKD-EPI CysC − CKD-EPI Cr) / Cr</td>
+<td>the same</td>
 <td><code>cockcroft</code></td>
 <td>6</td>
 <td>7</td>
 </tr>
 </tbody>
 </table>
-<p>Both exposures read per 10 percentage-point decline. <code>RITU_PROJECT.md</code> §2.14 has all twenty-four estimates, and explains why <strong>variant 1 is not a sensitivity check of the original</strong>: the exposure is a ratio of CKD-EPI Cr-Cys to Cockcroft-Gault, so the two models condition on different halves of it and answer different questions.</p>
+<p>Both exposures read per 10 percentage-point decline. Variants 1 and 2 share an exposure and differ only in the kidney adjuster, so they are directly comparable. <code>RITU_PROJECT.md</code> §2.14 has all twenty-four estimates and explains why <strong>variant 2 is the better-specified of the pair</strong>: CKD-EPI Cr-Cys embeds the cystatin C signal the exposure is built from, so adjusting for it removes part of what is being measured.</p>
 <p>Events / competing deaths: AKI <strong>198 + 115</strong> (entire), 52 + 8 (Local/Early); CKD composite <strong>79 + 282</strong> (entire), 30 + 34 (Local/Early). Only the entire-cohort AKI model is comfortably powered against ~21 covariates.</p>
 <p>All of the above are <strong>Table 1 rows</strong> on all three analysis pages, together with <code>esrd_kt</code> (ESRD / KT at or before baseline, n = 1), <code>eGFR_CRE_baseline</code>, <code>ckd_stage_baseline</code> and <code>last_cre_days</code>. They also keep a dedicated section — 2.2 on the whole-cohort page, 3.2 on the carboplatin pages — carrying the median time to each event, the length of creatinine follow-up, and the <code>aki</code> vs <code>AKI_kdigo_90days</code> cross-tabulation that Table 1 cannot show.</p>
 <p>AKI and the CKD composite are now <strong>modelled</strong> with Fine-Gray competing risks (see below). The remaining kidney variables stay descriptive.</p>

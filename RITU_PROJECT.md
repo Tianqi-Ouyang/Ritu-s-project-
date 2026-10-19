@@ -713,60 +713,75 @@ non-kidney adjusters, same Fine-Gray machinery.
 | | Exposure | Kidney adjuster | § whole / entire | § carboplatin |
 |---|---|---|---|---|
 | Original | `egfr_diff_pct_per10` — (CKD-EPI Cr-Cys − Cockcroft-Gault) / CG | `cockcroft` | 4 | 5 |
-| **Variant 1** | the same | `ckd_epi_gfr_cre_cys_unindex` | 5 | 6 |
-| **Variant 2** | `egfr_diff_pct_sens_per10` — (CKD-EPI CysC − CKD-EPI Cr) / Cr | `cockcroft` | 6 | 7 |
+| **Variant 1** | `egfr_diff_pct_sens_per10` — (CKD-EPI CysC − CKD-EPI Cr) / Cr | `ckd_epi_gfr_cre_cys_unindex` | 5 | 6 |
+| **Variant 2** | the same | `cockcroft` | 6 | 7 |
 
 Both exposures are negated and divided by 10, so every hazard ratio reads per
-**10 percentage-point decline**. Variant 2's exposure was already in the
+**10 percentage-point decline**. The `_sens` exposure was already in the
 pipeline — it was the exposure of the sensitivity sections removed in §2.12.
+
+Variants 1 and 2 share that exposure and differ **only in the kidney adjuster**,
+which makes them a clean pair. Variant 1 originally reused the original
+exposure; it was switched to the `_sens` exposure because the original one
+algebraically contains both candidate adjusters (see below).
 
 Multivariable subHR for the exposure:
 
 | Cohort | Model | AKI ≤ 1 yr | CKD composite |
 |---|---|---|---|
 | Entire 943 | Original | 1.30 (1.16, 1.45) p < 0.001 | 1.16 (1.03, 1.31) p = 0.018 |
-| | Variant 1 | 1.22 (1.08, 1.36) p < 0.001 | 1.05 (0.93, 1.18) p = 0.44 |
+| | Variant 1 | 1.07 (0.96, 1.20) p = 0.20 | 1.08 (0.96, 1.22) p = 0.21 |
 | | Variant 2 | 1.14 (1.04, 1.25) p = 0.007 | 1.16 (1.04, 1.30) p = 0.009 |
 | Local/Early 322 | Original | 1.11 (0.86, 1.44) p = 0.43 | 1.52 (1.14, 2.02) p = 0.004 |
-| | Variant 1 | 1.11 (0.82, 1.49) p = 0.50 | 1.18 (0.95, 1.47) p = 0.13 |
+| | Variant 1 | 0.97 (0.79, 1.20) p = 0.79 | 1.11 (0.93, 1.33) p = 0.24 |
 | | Variant 2 | 0.99 (0.83, 1.18) p = 0.94 | 1.32 (1.10, 1.58) p = 0.002 |
 | Carboplatin 189 | Original | 1.13 (0.82, 1.56) p = 0.45 | 1.82 (0.98, 3.39) p = 0.059 |
-| | Variant 1 | 1.03 (0.71, 1.49) p = 0.87 | 1.34 (0.83, 2.18) p = 0.24 |
+| | Variant 1 | 0.85 (0.64, 1.14) p = 0.28 | 1.17 (0.87, 1.58) p = 0.29 |
 | | Variant 2 | 0.94 (0.74, 1.20) p = 0.63 | 1.41 (1.03, 1.95) p = 0.034 |
 | Carbo AUC ≥ 3 142 | Original | 1.23 (0.66, 2.32) p = 0.51 | 1.73 (0.69, 4.34) p = 0.25 |
-| | Variant 1 | 1.63 (1.01, 2.62) p = 0.044 | 1.34 (0.73, 2.45) p = 0.34 |
+| | Variant 1 | 1.41 (0.91, 2.18) p = 0.12 | 1.42 (0.87, 2.30) p = 0.16 |
 | | Variant 2 | 1.10 (0.69, 1.75) p = 0.69 | 1.57 (0.90, 2.75) p = 0.11 |
 
 All twenty-four models are estimable.
 
-#### Variant 1 is not a neutral swap — read it as a different question
+#### Why variant 1 no longer reuses the original exposure
 
-The exposure is `100 × (CrCys − CG) / CG`, so **both** candidate adjusters are
-components of the exposure itself. Which one is held constant decides what the
-remaining variation is:
+The original exposure is `100 × (CrCys − CG) / CG`, so **both** candidate
+adjusters are components of the exposure itself. Which one is held constant
+decides what the remaining variation is: adjusting for `cockcroft` leaves
+residual variation that is essentially CKD-EPI Cr-Cys, while adjusting for
+`ckd_epi_gfr_cre_cys_unindex` leaves residual variation that is essentially
+inverse Cockcroft-Gault. Run that way the two models conditioned on different
+halves of the same ratio and answered different questions, which is not what a
+sensitivity analysis is for.
 
-- Adjusting for `cockcroft` (original) holds the denominator — and the second
-  numerator term — constant, so the exposure's residual variation is essentially
-  variation in CKD-EPI Cr-Cys.
-- Adjusting for `ckd_epi_gfr_cre_cys_unindex` (variant 1) holds the first
-  numerator term constant, so the residual variation is essentially inverse
-  variation in Cockcroft-Gault.
+Variant 1 now uses the `_sens` exposure instead, built from cystatin C and
+creatinine alone. Variants 1 and 2 therefore differ only in the kidney adjuster
+and are directly comparable. One honest residual: the variant-1 adjuster,
+CKD-EPI Cr-Cys, is itself a function of both creatinine and cystatin C, so it
+is correlated with `(CysC − Cr) / Cr` — ordinary covariate correlation, not the
+algebraic containment the earlier pairing had.
 
-That is why the CKD-composite signal falls away under variant 1 in every cohort
-— 1.52 → 1.18 in Local/Early, 1.16 → 1.05 in the entire cohort, 1.82 → 1.34 in
-carboplatin. It is not evidence that the original result is fragile: the two
-models condition on different halves of the same ratio. They answer different
-questions and should be reported that way, not as a sensitivity check of one
-another.
+#### What the comparison shows
 
-Variant 2 has no such entanglement — its exposure is built from cystatin C and
-creatinine alone, and `cockcroft` is a separate quantity. Its CKD-composite
-result holds across the entire, Local/Early and carboplatin cohorts (1.16 / 1.32
-/ 1.41, all p < 0.05), while its AKI result is weaker than the original
-everywhere.
+Against the Cockcroft-Gault-adjusted variant 2, adjusting for CKD-EPI Cr-Cys
+attenuates the `_sens` exposure everywhere it was significant: the CKD composite
+goes 1.16 → 1.08 (entire), 1.32 → 1.11 (Local/Early) and 1.41 → 1.17
+(carboplatin), losing significance in all three. AKI behaves the same way in the
+entire cohort, 1.14 → 1.07.
 
-The AUC ≥ 3 variant-1 AKI estimate of 1.63 (1.01, 2.62) rests on 12 events
-against ~20 covariate degrees of freedom and should not be read as a finding.
+That is the expected direction. CKD-EPI Cr-Cys embeds the cystatin C signal the
+exposure is built from, so conditioning on it removes part of what the exposure
+is measuring. **Variant 2 is the better-specified of the pair**; variant 1 is
+worth reporting as a conservative bound, not as the primary result.
+
+Nothing in the AUC ≥ 3 cohort reaches significance under any of the three
+models. With 12 AKI and 10 CKD-composite events against ~20 covariate degrees of
+freedom that cohort cannot support these models, and its estimates should not be
+read as findings either way. (Under the earlier pairing, variant 1 there
+produced a nominally significant AKI estimate of 1.63 (1.01, 2.62); it does not
+survive the switch to the `_sens` exposure, which is a useful reminder of how
+little that cohort constrains.)
 
 ### 2.15 Explicitly unchanged
 
