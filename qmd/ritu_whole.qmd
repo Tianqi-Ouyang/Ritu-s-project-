@@ -158,7 +158,7 @@ local({
 }
 
 # Table 1 via tableone. Factor-like columns (factor / character / logical and
-# 0-1 numeric indicators) are summarised as n (%); every other numeric column
+# indicator columns of 0/1) are summarised as n (%); every other numeric column
 # as median [IQR], except the variables named in `normal_vars` (mean (SD)).
 # Categorical variables with any observed cell < 5 get Fisher's exact test.
 tableone_mat <- function(d, strata = NULL, normal_vars = "age") {
@@ -688,7 +688,7 @@ Each table shows univariable (one variable at a time) and multivariable Fine-Gra
   adj <- c("age","sex","score","ecog_score_cat2",
            "cancer_type_cat_7","platin_group","high_dose",
            "Paclitaxel","Pemetrexed","Gemcitabine","ici",
-           "bmi","smoking","steroids","thyroid")
+           "bmi","smoking","thyroid")
   # Drop platin_group when predictor requires dose data (carbo-only after drop_na)
   if (grepl("dose_discrep", pred_var)) adj <- setdiff(adj, "platin_group")
   if (egfr_adj == "cockcroft") adj <- c(adj, "cockcroft")
@@ -1386,3 +1386,142 @@ ggplot(d_sex_r, aes(x = egfr_diff_pct, fill = sex, color = sex)) +
 ```
 
 
+# 10 365-Day Delta eGFR on the Binary eGFR Difference (sens)
+
+> The outcome is `delta_egfr_d365` — eGFR at day 365 minus baseline, in
+> mL/min/1.73m², **negative = decline** (see the Delta eGFR table above). Only
+> patients with a creatinine within ± 45 days of day 365 contribute, so every
+> model in this section is complete-case on that variable and its n is well
+> below the cohort.
+>
+> Both cuts of `egfr_diff_pct_sens` are reported: the primary one at **− 10 %**
+> and the stricter one at **− 30 %**. `< -10%` means the cystatin C eGFR sits
+> more than 10 % below the creatinine eGFR; `>= -10%` is the reference level.
+
+## 10.1 365-day delta eGFR by group — cut at − 10 %
+
+```{r}
+#| label: ritu-cat-groups
+.grp_row <- function(d, lab) {
+  v <- d$delta_egfr_d365[!is.na(d$delta_egfr_d365)]
+  p <- d$delta_egfr_pct_d365[!is.na(d$delta_egfr_pct_d365)]
+  tibble::tibble(
+    Group = lab, n = length(v),
+    `Delta eGFR, mean (SD)` = sprintf("%.1f (%.1f)", mean(v), sd(v)),
+    `Delta eGFR, median [IQR]` = sprintf("%.1f [%.1f, %.1f]",
+      median(v), quantile(v, .25), quantile(v, .75)),
+    `Delta eGFR %, median [IQR]` = sprintf("%.1f [%.1f, %.1f]",
+      median(p), quantile(p, .25), quantile(p, .75)))
+}
+d0 <- dat %>% filter(egfr_diff_pct_sens_cat == ">= -10%")
+d1 <- dat %>% filter(egfr_diff_pct_sens_cat == "< -10%")
+grp_tbl <- dplyr::bind_rows(.grp_row(d0, ">= -10% (reference)"), .grp_row(d1, "< -10%"))
+
+.wt <- tryCatch(wilcox.test(delta_egfr_d365 ~ egfr_diff_pct_sens_cat, data = dat),
+                error = function(e) NULL)
+.tt <- tryCatch(t.test(delta_egfr_d365 ~ egfr_diff_pct_sens_cat, data = dat),
+                error = function(e) NULL)
+knitr::kable(grp_tbl, caption = sprintf(paste0(
+  "365-day delta eGFR by binary eGFR difference (sens). Negative = decline. ",
+  "Wilcoxon p = %s; Welch t-test p = %s."),
+  if (is.null(.wt)) "—" else format.pval(.wt$p.value, digits = 3),
+  if (is.null(.tt)) "—" else format.pval(.tt$p.value, digits = 3)))
+```
+
+## 10.2 Linear model — cut at − 10 %
+
+Adjusted for the same multivariable covariate set as the Fine-Gray models,
+including the same kidney adjuster — `ckd_epi_gfr_cre_cys`, CKD-EPI Cr-Cys
+indexed to body surface area (mL/min/1.73m²). Coefficients are mL/min/1.73m² of
+365-day eGFR change: a negative coefficient on `< -10%` means that group
+declined further.
+
+[📄 Download Word table](../tables/whole/sec10_lm_d365.docx)
+
+```{r}
+#| label: ritu-cat-lm
+# .adj_set has three arguments on the whole/entire pages and two on the
+# carboplatin pages; call it with whichever this page defines.
+.adj_for <- function(pred_var, egfr_adj) {
+  if (length(formals(.adj_set)) == 3) .adj_set(pred_var, NULL, egfr_adj)
+  else .adj_set(NULL, egfr_adj)
+}
+
+lm_d365 <- function(pred_var, egfr_adj = "ckd_epi_idx", docx_name = NULL) {
+  adj  <- .adj_for(pred_var, egfr_adj)
+  vars <- c(pred_var, adj)
+  fmla <- as.formula(paste("delta_egfr_d365 ~", paste(vars, collapse = " + ")))
+  tbl_mv <- lm(fmla, data = dat) %>%
+    tbl_regression(pvalue_fun = function(x) style_pvalue(x, digits = 3)) %>%
+    add_n()
+  tbl_uv <- tbl_uvregression(
+    data = dat %>% dplyr::select(dplyr::all_of(c("delta_egfr_d365", vars))),
+    method = lm, y = delta_egfr_d365,
+    pvalue_fun = function(x) style_pvalue(x, digits = 3))
+  out <- tbl_merge(tbls = list(tbl_uv, tbl_mv),
+                   tab_spanner = c("**Univariable**", "**Multivariable**"))
+  if (!is.null(docx_name)) save_tbl_docx(out, docx_name)
+  out
+}
+lm_d365 <- .wrap_tbl(lm_d365)
+
+lm_d365("egfr_diff_pct_sens_cat", docx_name = "sec10_lm_d365")
+```
+
+## 10.3 Linear model — cut at − 10 %, survivors cohort
+
+[📄 Download Word table](../tables/whole/sec10_lm_d365_surv.docx)
+
+```{r}
+#| label: ritu-cat-lm-surv
+dat_full_cohort <- dat
+dat <- dat_full_cohort %>%
+  filter(!is.na(days_last_follow_up), days_last_follow_up > 365) %>%
+  mutate(across(where(is.factor) & !starts_with("cmp_status_"), droplevels))
+out <- lm_d365("egfr_diff_pct_sens_cat", docx_name = "sec10_lm_d365_surv")
+dat <- dat_full_cohort
+out
+```
+
+## 10.4 365-day delta eGFR by group — stricter cut at − 30 %
+
+```{r}
+#| label: ritu-cat30-groups
+e0 <- dat %>% filter(egfr_diff_pct_sens_cat30 == ">= -30%")
+e1 <- dat %>% filter(egfr_diff_pct_sens_cat30 == "< -30%")
+grp30 <- dplyr::bind_rows(.grp_row(e0, ">= -30% (reference)"), .grp_row(e1, "< -30%"))
+
+.wt30 <- tryCatch(wilcox.test(delta_egfr_d365 ~ egfr_diff_pct_sens_cat30, data = dat),
+                  error = function(e) NULL)
+.tt30 <- tryCatch(t.test(delta_egfr_d365 ~ egfr_diff_pct_sens_cat30, data = dat),
+                  error = function(e) NULL)
+knitr::kable(grp30, caption = sprintf(paste0(
+  "365-day delta eGFR by the stricter -30 %% cut. Negative = decline. ",
+  "Wilcoxon p = %s; Welch t-test p = %s."),
+  if (is.null(.wt30)) "—" else format.pval(.wt30$p.value, digits = 3),
+  if (is.null(.tt30)) "—" else format.pval(.tt30$p.value, digits = 3)))
+```
+
+## 10.5 Linear model — cut at − 30 %
+
+[📄 Download Word table](../tables/whole/sec10_lm_d365_c30.docx)
+
+```{r}
+#| label: ritu-cat30-lm
+lm_d365("egfr_diff_pct_sens_cat30", docx_name = "sec10_lm_d365_c30")
+```
+
+## 10.6 Linear model — cut at − 30 %, survivors cohort
+
+[📄 Download Word table](../tables/whole/sec10_lm_d365_c30_surv.docx)
+
+```{r}
+#| label: ritu-cat30-lm-surv
+dat_full_cohort <- dat
+dat <- dat_full_cohort %>%
+  filter(!is.na(days_last_follow_up), days_last_follow_up > 365) %>%
+  mutate(across(where(is.factor) & !starts_with("cmp_status_"), droplevels))
+out30 <- lm_d365("egfr_diff_pct_sens_cat30", docx_name = "sec10_lm_d365_c30_surv")
+dat <- dat_full_cohort
+out30
+```
