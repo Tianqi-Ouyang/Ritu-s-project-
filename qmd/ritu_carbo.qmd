@@ -956,6 +956,77 @@ fg_model("cmp_time_ckd_composite", "cmp_status_ckd_composite", "egfr_diff_pct_se
          egfr_adj = "ckd_epi_idx", docx_name = "sec8_ckd_c30")
 ```
 
+The four models above, repeated on the **survivors cohort**
+(`days_last_follow_up > 365`). Same exposures, outcomes, adjusters and competing
+event; only the cohort changes. As in the survivors section earlier, this
+conditions on a post-baseline characteristic, so these are a restriction
+analysis rather than a sensitivity check.
+
+```{r}
+#| label: ritu-carbo-binsurv-enter
+dat_full_cohort <- dat
+dat <- dat_full_cohort %>%
+  filter(!is.na(days_last_follow_up), days_last_follow_up > 365) %>%
+  mutate(across(where(is.factor) & !starts_with("cmp_status_"), droplevels))
+
+binsurv <- purrr::map_dfr(
+  list(c("< -10%", "egfr_diff_pct_sens_cat"), c("< -30%", "egfr_diff_pct_sens_cat30")),
+  function(z) {
+    e <- dat[[z[2]]] == z[1]
+    tibble::tibble(Cut = z[1], `n survivors` = nrow(dat), Exposed = sum(e),
+                   `AKI events, exposed` = sum(dat$cmp_status_aki_365[e] == 1),
+                   `CKD events, exposed` = sum(dat$cmp_status_ckd_composite[e] == 1))
+  })
+knitr::kable(binsurv, caption = sprintf(
+  "Survivors cohort: %d of %d patients. Exposed-group event counts behind the four models below.",
+  nrow(dat), nrow(dat_full_cohort)))
+```
+
+## 8.6 AKI within 1 Year — exposure split at − 10 % (survivors)
+
+[📄 Download Word table](../tables/carbo/sec8_aki_c10_surv.docx)
+
+```{r}
+#| label: ritu-carbo-binsurv-aki-c10
+fg_model("cmp_time_aki_365", "cmp_status_aki_365", "egfr_diff_pct_sens_cat",
+         egfr_adj = "ckd_epi_idx", docx_name = "sec8_aki_c10_surv")
+```
+
+## 8.7 CKD Composite — exposure split at − 10 % (survivors)
+
+[📄 Download Word table](../tables/carbo/sec8_ckd_c10_surv.docx)
+
+```{r}
+#| label: ritu-carbo-binsurv-ckd-c10
+fg_model("cmp_time_ckd_composite", "cmp_status_ckd_composite", "egfr_diff_pct_sens_cat",
+         egfr_adj = "ckd_epi_idx", docx_name = "sec8_ckd_c10_surv")
+```
+
+## 8.8 AKI within 1 Year — exposure split at − 30 % (survivors)
+
+[📄 Download Word table](../tables/carbo/sec8_aki_c30_surv.docx)
+
+```{r}
+#| label: ritu-carbo-binsurv-aki-c30
+fg_model("cmp_time_aki_365", "cmp_status_aki_365", "egfr_diff_pct_sens_cat30",
+         egfr_adj = "ckd_epi_idx", docx_name = "sec8_aki_c30_surv")
+```
+
+## 8.9 CKD Composite — exposure split at − 30 % (survivors)
+
+[📄 Download Word table](../tables/carbo/sec8_ckd_c30_surv.docx)
+
+```{r}
+#| label: ritu-carbo-binsurv-ckd-c30
+fg_model("cmp_time_ckd_composite", "cmp_status_ckd_composite", "egfr_diff_pct_sens_cat30",
+         egfr_adj = "ckd_epi_idx", docx_name = "sec8_ckd_c30_surv")
+```
+
+```{r}
+#| label: ritu-carbo-binsurv-exit
+dat <- dat_full_cohort
+```
+
 # 9 Scatter Plots — Dose Discrepancy vs eGFR (Carboplatin)
 
 ## 9.1 Dose Discrepancy vs CKD-EPI Cr-Cys (unindexed)
