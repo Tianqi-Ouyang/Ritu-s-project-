@@ -27,6 +27,7 @@ library(ggplot2)
 library(tidycmprsk)
 library(ggsurvfit)
 library(gtsummary)
+library(tableone)
 library(flextable)
 library(rvg)
 library(officer)
@@ -157,6 +158,40 @@ local({
       ggplot2::theme_void())
 }
 
+# Table 1 via tableone. Factor-like columns (factor / character / logical and
+# 0-1 numeric indicators) are summarised as n (%); every other numeric column
+# as median [IQR], except the variables named in `normal_vars` (mean (SD)).
+# Categorical variables with any observed cell < 5 get Fisher's exact test.
+tableone_mat <- function(d, strata = NULL, normal_vars = "age") {
+  d     <- as.data.frame(d)
+  vars  <- setdiff(names(d), strata)
+  is_fl <- vapply(d[vars], function(x)
+    is.factor(x) || is.character(x) || is.logical(x) ||
+      (is.numeric(x) && all(stats::na.omit(unique(x)) %in% c(0, 1))),
+    logical(1))
+  fct_vars  <- vars[is_fl]
+  cont_vars <- vars[!is_fl]
+
+  if (is.null(strata)) {
+    tab   <- tableone::CreateTableOne(vars = vars, data = d,
+                                      factorVars = fct_vars, test = FALSE)
+    small <- NULL
+  } else {
+    tab <- tableone::CreateTableOne(
+      vars = vars, strata = strata, data = d, factorVars = fct_vars,
+      addOverall = TRUE, test = TRUE, argsExact = list(workspace = 2 * 10^7))
+    small <- fct_vars[vapply(fct_vars, function(v)
+      any(table(d[[v]], d[[strata]]) < 5), logical(1))]
+    if (!length(small)) small <- NULL
+  }
+
+  mat <- print(tab, nonnormal = setdiff(cont_vars, normal_vars), exact = small,
+               showAllLevels = TRUE, missing = TRUE, printToggle = FALSE,
+               noSpaces = TRUE, quote = FALSE)
+  tibble::as_tibble(cbind(Characteristic = rownames(mat), mat),
+                    .name_repair = "unique")
+}
+
 save_tbl_docx <- function(tbl, docx_name) {
   ft <- gtsummary::as_flex_table(tbl)
   flextable::save_as_docx(ft, path = file.path(docx_dir,
@@ -215,13 +250,13 @@ dat <- dat %>%
 
 # 2 Table 1: Baseline Characteristics (Overall + Cisplatin / Carboplatin)
 
-Table 1 is now stratified by `platin_group`. Columns show the overall cohort, the cisplatin subgroup, and the carboplatin subgroup side-by-side, with a between-group p-value in the final column (Wilcoxon rank-sum for continuous, Fisher exact for categorical with expected cell < 5, else χ²). The `platin_group`, `carbo_AUC`, and `cis_dose`-related variables are removed from the row list because they are collinear with the stratification column.
+Table 1 is now stratified by `platin_group`. Columns show the overall cohort and the two platinum subgroups side-by-side, with a between-group p-value (Wilcoxon rank-sum for continuous, Fisher exact for categorical with any observed cell < 5, else χ²). The `platin_group`, `carbo_AUC`, and `cis_dose`-related variables are removed from the row list because they are collinear with the stratification column.
 
-**Missing counts.** `missing = "ifany"` — each variable's Unknown row appears only when the variable actually has missing values in that column. In practice this cohort is complete on the entire adjuster / predictor set once record 911 is dropped upstream in `ritu_data.qmd`: `pre_HGB_45days`, `pre_PLT_45days`, `pre_ALB_45days`, and `pre_CRE_45days` all show 0/943 missing, and the age / sex / BMI / smoking / thyroid / steroids / RPDR-comorbidity / eGFR variables are also fully populated. The only NA-by-design variables in the row list are `carbo_AUC` / `carbo_AUC_cat` (NA for cisplatin patients) and `cis_dose` / `cis_dose_high` (NA for carboplatin patients). Consequently, the "Excluded (missing cov.)" column in the Section 4 / 7 / 11 summary tables is 0 for every outcome.
+**Missing counts.** The final `Missing` column gives each variable's percent missing in the full cohort. In practice this cohort is complete on the entire adjuster / predictor set once record 911 is dropped upstream in `ritu_data.qmd`: `pre_HGB_45days`, `pre_PLT_45days`, `pre_ALB_45days`, and `pre_CRE_45days` all show 0/943 missing, and the age / sex / BMI / smoking / thyroid / steroids / RPDR-comorbidity / eGFR variables are also fully populated. The only NA-by-design variables in the row list are `carbo_AUC` / `carbo_AUC_cat` (NA for cisplatin patients) and `cis_dose` / `cis_dose_high` (NA for carboplatin patients). Consequently, the "Excluded (missing cov.)" column in the Section 4 / 7 / 11 summary tables is 0 for every outcome.
 
 ```{r}
 #| label: ritu-entire-table1-entire
-dat %>%
+t1 <- dat %>%
   # Show the numeric KDIGO stage as a labelled factor for Table 1. get_ckd_stage()
   # collapses G3a/G3b into a single stage 3, unlike ckd_stage_cre / ckd_stage_cre_cys.
   mutate(ckd_stage_baseline = droplevels(
@@ -253,16 +288,24 @@ dat %>%
     delta_egfr_d90, delta_egfr_d180, delta_egfr_d365,
     delta_egfr_pct_d90, delta_egfr_pct_d180, delta_egfr_pct_d365
   ) %>%
-  tbl_summary(
-    by = platin_group,
-    statistic = list(age ~ "{mean} ({sd})"),
-    missing = "ifany"
-  ) %>%
-  add_overall(last = FALSE) %>%
-  add_p() %>%
-  modify_header(label ~ "**Characteristic**") %>%
-  modify_spanning_header(all_stat_cols() ~ "**Platinum group**")
+  tableone_mat(strata = "platin_group")
+
+cap_t1 <- sprintf(paste0(
+  "Table 1. Baseline characteristics by platinum group, N = %d. Continuous ",
+  "variables are median [IQR] except age, which is mean (SD); categorical ",
+  "variables are n (%%). Missing is the percent missing in the full cohort."),
+  nrow(dat))
+
+flextable::flextable(t1) |>
+  flextable::set_caption(cap_t1) |>
+  flextable::fontsize(size = 9, part = "all") |>
+  flextable::autofit() |>
+  flextable::save_as_docx(path = file.path(docx_dir, "table1.docx"))
+
+knitr::kable(t1, caption = cap_t1)
 ```
+
+[📄 Download Word table](../tables/entire/table1.docx)
 
 ## 2.1 Follow-up time (days from baseline to last known status)
 

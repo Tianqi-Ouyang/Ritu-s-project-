@@ -27,6 +27,7 @@ library(ggplot2)
 library(tidycmprsk)
 library(ggsurvfit)
 library(gtsummary)
+library(tableone)
 library(flextable)
 library(rvg)
 library(officer)
@@ -146,6 +147,40 @@ local({
                        strwrap(conditionMessage(e), width = 60,
                                prefix = "\n", initial = ""))) +
       ggplot2::theme_void())
+}
+
+# Table 1 via tableone. Factor-like columns (factor / character / logical and
+# 0-1 numeric indicators) are summarised as n (%); every other numeric column
+# as median [IQR], except the variables named in `normal_vars` (mean (SD)).
+# Categorical variables with any observed cell < 5 get Fisher's exact test.
+tableone_mat <- function(d, strata = NULL, normal_vars = "age") {
+  d     <- as.data.frame(d)
+  vars  <- setdiff(names(d), strata)
+  is_fl <- vapply(d[vars], function(x)
+    is.factor(x) || is.character(x) || is.logical(x) ||
+      (is.numeric(x) && all(stats::na.omit(unique(x)) %in% c(0, 1))),
+    logical(1))
+  fct_vars  <- vars[is_fl]
+  cont_vars <- vars[!is_fl]
+
+  if (is.null(strata)) {
+    tab   <- tableone::CreateTableOne(vars = vars, data = d,
+                                      factorVars = fct_vars, test = FALSE)
+    small <- NULL
+  } else {
+    tab <- tableone::CreateTableOne(
+      vars = vars, strata = strata, data = d, factorVars = fct_vars,
+      addOverall = TRUE, test = TRUE, argsExact = list(workspace = 2 * 10^7))
+    small <- fct_vars[vapply(fct_vars, function(v)
+      any(table(d[[v]], d[[strata]]) < 5), logical(1))]
+    if (!length(small)) small <- NULL
+  }
+
+  mat <- print(tab, nonnormal = setdiff(cont_vars, normal_vars), exact = small,
+               showAllLevels = TRUE, missing = TRUE, printToggle = FALSE,
+               noSpaces = TRUE, quote = FALSE)
+  tibble::as_tibble(cbind(Characteristic = rownames(mat), mat),
+                    .name_repair = "unique")
 }
 
 save_tbl_docx <- function(tbl, docx_name) {
@@ -317,7 +352,7 @@ ggplot() +
 
 ```{r}
 #| label: ritu-table1-carbo
-dat %>%
+t1 <- dat %>%
   # Show the numeric KDIGO stage as a labelled factor for Table 1. get_ckd_stage()
   # collapses G3a/G3b into a single stage 3, unlike ckd_stage_cre / ckd_stage_cre_cys.
   mutate(ckd_stage_baseline = droplevels(
@@ -349,10 +384,23 @@ dat %>%
     delta_egfr_d90, delta_egfr_d180, delta_egfr_d365,
     delta_egfr_pct_d90, delta_egfr_pct_d180, delta_egfr_pct_d365
   ) %>%
-  tbl_summary(
-    statistic = list(age ~ "{mean} ({sd})")
-  )
+  tableone_mat()
+
+cap_t1 <- sprintf(paste0(
+  "Table 1. Baseline characteristics, N = %d. Continuous variables are ",
+  "median [IQR] except age, which is mean (SD); categorical variables are ",
+  "n (%%). Missing is the percent missing in the cohort."), nrow(dat))
+
+flextable::flextable(t1) |>
+  flextable::set_caption(cap_t1) |>
+  flextable::fontsize(size = 9, part = "all") |>
+  flextable::autofit() |>
+  flextable::save_as_docx(path = file.path(docx_dir, "table1.docx"))
+
+knitr::kable(t1, caption = cap_t1)
 ```
+
+[📄 Download Word table](../tables/auc3/table1.docx)
 
 ## 3.1 Follow-up time (days from baseline to last known status)
 
