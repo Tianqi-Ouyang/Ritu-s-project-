@@ -915,8 +915,10 @@ knitr::kable(grp_tbl, caption = sprintf(paste0(
 ## 7.2 Linear model — 365-day delta eGFR on the binary exposure
 
 Adjusted for the same multivariable covariate set as the Fine-Gray models,
-Cockcroft-Gault included. Coefficients are mL/min/1.73m² of 365-day eGFR change:
-a negative coefficient on `< -10%` means that group declined further.
+including the same kidney adjuster — `ckd_epi_gfr_cre_cys`, CKD-EPI Cr-Cys
+indexed to body surface area (mL/min/1.73m²). Coefficients are mL/min/1.73m² of
+365-day eGFR change: a negative coefficient on `< -10%` means that group
+declined further.
 
 [📄 Download Word table](../tables/whole/sec7_lm_d365.docx)
 
@@ -929,7 +931,7 @@ a negative coefficient on `< -10%` means that group declined further.
   else .adj_set(NULL, egfr_adj)
 }
 
-lm_d365 <- function(pred_var, egfr_adj = "cockcroft", docx_name = NULL) {
+lm_d365 <- function(pred_var, egfr_adj = "ckd_epi_idx", docx_name = NULL) {
   adj  <- .adj_for(pred_var, egfr_adj)
   vars <- c(pred_var, adj)
   fmla <- as.formula(paste("delta_egfr_d365 ~", paste(vars, collapse = " + ")))
