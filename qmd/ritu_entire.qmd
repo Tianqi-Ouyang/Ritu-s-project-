@@ -870,166 +870,80 @@ fg_model("cmp_time_ckd_composite", "cmp_status_ckd_composite", "egfr_diff_pct_se
 dat <- dat_full_cohort
 ```
 
-# 7 Binary eGFR Difference (sens) and 365-Day Delta eGFR
+# 7 Binary eGFR Difference (sens) — AKI and CKD Composite
 
-> `egfr_diff_pct_sens_cat` splits the cohort at **− 10 %**: `< -10%` means the
-> cystatin C eGFR sits more than 10 % below the creatinine eGFR; `>= -10%` is the
-> reference level. The outcome is `delta_egfr_d365` — eGFR at day 365 minus
-> baseline, in mL/min/1.73m², **negative = decline** (§ Delta eGFR above).
+> The same two outcomes and the same adjusters as the Fine-Gray sections above,
+> with the exposure entered as a **binary split** rather than per 10
+> percentage-point decline.
 >
-> Only patients with a creatinine within ± 45 days of day 365 contribute, so the
-> analysis is complete-case on that variable and its n is well below the cohort.>
-> Two cuts are reported. The **primary** one splits at − 10 %; the **stricter**
-> one at − 30 % isolates a much smaller, more clearly discordant group. The
-> − 30 % analyses repeat §.1–§.3 exactly, changing only the exposure variable.
+> - `egfr_diff_pct_sens_cat` splits at **− 10 %** — `< -10%` means the cystatin C
+>   eGFR sits more than 10 % below the creatinine eGFR; `>= -10%` is the
+>   reference.
+> - `egfr_diff_pct_sens_cat30` splits at **− 30 %**, a smaller and more clearly
+>   discordant group.
+>
+> Each subdistribution hazard ratio is therefore for the exposed group **against
+> its reference group**, not per unit. Death at any time is the competing event
+> and the kidney adjuster is `ckd_epi_gfr_cre_cys` (indexed, mL/min/1.73m²), as
+> in the sections above.
 
-## 7.1 365-day delta eGFR by group
-
-```{r}
-#| label: ritu-entire-cat-groups
-.grp_row <- function(d, lab) {
-  v <- d$delta_egfr_d365[!is.na(d$delta_egfr_d365)]
-  p <- d$delta_egfr_pct_d365[!is.na(d$delta_egfr_pct_d365)]
-  tibble::tibble(
-    Group = lab, n = length(v),
-    `Delta eGFR, mean (SD)` = sprintf("%.1f (%.1f)", mean(v), sd(v)),
-    `Delta eGFR, median [IQR]` = sprintf("%.1f [%.1f, %.1f]",
-      median(v), quantile(v, .25), quantile(v, .75)),
-    `Delta eGFR %, median [IQR]` = sprintf("%.1f [%.1f, %.1f]",
-      median(p), quantile(p, .25), quantile(p, .75)))
-}
-d0 <- dat %>% filter(egfr_diff_pct_sens_cat == ">= -10%")
-d1 <- dat %>% filter(egfr_diff_pct_sens_cat == "< -10%")
-grp_tbl <- dplyr::bind_rows(.grp_row(d0, ">= -10% (reference)"), .grp_row(d1, "< -10%"))
-
-.wt <- tryCatch(wilcox.test(delta_egfr_d365 ~ egfr_diff_pct_sens_cat, data = dat),
-                error = function(e) NULL)
-.tt <- tryCatch(t.test(delta_egfr_d365 ~ egfr_diff_pct_sens_cat, data = dat),
-                error = function(e) NULL)
-knitr::kable(grp_tbl, caption = sprintf(paste0(
-  "365-day delta eGFR by binary eGFR difference (sens). Negative = decline. ",
-  "Wilcoxon p = %s; Welch t-test p = %s."),
-  if (is.null(.wt)) "—" else format.pval(.wt$p.value, digits = 3),
-  if (is.null(.tt)) "—" else format.pval(.tt$p.value, digits = 3)))
-```
-
-## 7.2 Linear model — 365-day delta eGFR on the binary exposure
-
-Adjusted for the same multivariable covariate set as the Fine-Gray models,
-including the same kidney adjuster — `ckd_epi_gfr_cre_cys`, CKD-EPI Cr-Cys
-indexed to body surface area (mL/min/1.73m²). Coefficients are mL/min/1.73m² of
-365-day eGFR change: a negative coefficient on `< -10%` means that group
-declined further.
-
-[📄 Download Word table](../tables/entire/sec7_lm_d365.docx)
+## 7.1 Prevalence of the two cuts
 
 ```{r}
-#| label: ritu-entire-cat-lm
-# .adj_set has three arguments on the whole/entire pages and two on the
-# carboplatin pages; call it with whichever this page defines.
-.adj_for <- function(pred_var, egfr_adj) {
-  if (length(formals(.adj_set)) == 3) .adj_set(pred_var, NULL, egfr_adj)
-  else .adj_set(NULL, egfr_adj)
-}
+#| label: ritu-entire-bin-prev
+.cut_row <- function(v, lab) tibble::tibble(
+  Cut = lab, Exposed = sum(v), Unexposed = sum(!v),
+  `% exposed` = round(100 * mean(v), 1),
+  `AKI events, exposed` = sum(dat$cmp_status_aki_365[v] == 1),
+  `CKD events, exposed` = sum(dat$cmp_status_ckd_composite[v] == 1))
 
-lm_d365 <- function(pred_var, egfr_adj = "ckd_epi_idx", docx_name = NULL) {
-  adj  <- .adj_for(pred_var, egfr_adj)
-  vars <- c(pred_var, adj)
-  fmla <- as.formula(paste("delta_egfr_d365 ~", paste(vars, collapse = " + ")))
-  tbl_mv <- lm(fmla, data = dat) %>%
-    tbl_regression(pvalue_fun = function(x) style_pvalue(x, digits = 3)) %>%
-    add_n()
-  tbl_uv <- tbl_uvregression(
-    data = dat %>% dplyr::select(dplyr::all_of(c("delta_egfr_d365", vars))),
-    method = lm, y = delta_egfr_d365,
-    pvalue_fun = function(x) style_pvalue(x, digits = 3))
-  out <- tbl_merge(tbls = list(tbl_uv, tbl_mv),
-                   tab_spanner = c("**Univariable**", "**Multivariable**"))
-  if (!is.null(docx_name)) save_tbl_docx(out, docx_name)
-  out
-}
-lm_d365 <- .wrap_tbl(lm_d365)
+cut_tbl <- dplyr::bind_rows(
+  .cut_row(dat$egfr_diff_pct_sens_cat   == "< -10%", "< -10% (primary)"),
+  .cut_row(dat$egfr_diff_pct_sens_cat30 == "< -30%", "< -30% (stricter)"))
 
-lm_d365("egfr_diff_pct_sens_cat", docx_name = "sec7_lm_d365")
-```
-
-## 7.3 The same model in the survivors cohort
-
-[📄 Download Word table](../tables/entire/sec7_lm_d365_surv.docx)
-
-```{r}
-#| label: ritu-entire-cat-lm-surv
-dat_full_cohort <- dat
-dat <- dat_full_cohort %>%
-  filter(!is.na(days_last_follow_up), days_last_follow_up > 365) %>%
-  mutate(across(where(is.factor) & !starts_with("cmp_status_"), droplevels))
-out <- lm_d365("egfr_diff_pct_sens_cat", docx_name = "sec7_lm_d365_surv")
-dat <- dat_full_cohort
-out
-```
-
-
-## 7.4 Prevalence of the two cuts
-
-```{r}
-#| label: ritu-entire-cat30-prev
-cut_tbl <- tibble::tibble(
-  Cut = c("< -10% (primary)", "< -30% (stricter)"),
-  Exposed = c(sum(dat$egfr_diff_pct_sens_cat  == "< -10%"),
-              sum(dat$egfr_diff_pct_sens_cat30 == "< -30%")),
-  Unexposed = c(sum(dat$egfr_diff_pct_sens_cat  == ">= -10%"),
-                sum(dat$egfr_diff_pct_sens_cat30 == ">= -30%"))
-) %>%
-  dplyr::mutate(`% exposed` = round(100 * Exposed / nrow(dat), 1),
-                `Exposed with a day-365 eGFR` = c(
-                  sum(dat$egfr_diff_pct_sens_cat  == "< -10%" & dat$dgfr_avail_d365 == 1),
-                  sum(dat$egfr_diff_pct_sens_cat30 == "< -30%" & dat$dgfr_avail_d365 == 1)))
 knitr::kable(cut_tbl, caption = sprintf(
   "Prevalence of the two binary cuts, N = %d. Median eGFR difference (sens) %.1f %%.",
   nrow(dat), median(dat$egfr_diff_pct_sens, na.rm = TRUE)))
 ```
 
-## 7.5 365-day delta eGFR by group — stricter cut at − 30 %
+## 7.2 AKI within 1 Year — exposure split at − 10 %
+
+[📄 Download Word table](../tables/entire/sec7_aki_c10.docx)
 
 ```{r}
-#| label: ritu-entire-cat30-groups
-e0 <- dat %>% filter(egfr_diff_pct_sens_cat30 == ">= -30%")
-e1 <- dat %>% filter(egfr_diff_pct_sens_cat30 == "< -30%")
-grp30 <- dplyr::bind_rows(.grp_row(e0, ">= -30% (reference)"), .grp_row(e1, "< -30%"))
-
-.wt30 <- tryCatch(wilcox.test(delta_egfr_d365 ~ egfr_diff_pct_sens_cat30, data = dat),
-                  error = function(e) NULL)
-.tt30 <- tryCatch(t.test(delta_egfr_d365 ~ egfr_diff_pct_sens_cat30, data = dat),
-                  error = function(e) NULL)
-knitr::kable(grp30, caption = sprintf(paste0(
-  "365-day delta eGFR by the stricter -30 %% cut. Negative = decline. ",
-  "Wilcoxon p = %s; Welch t-test p = %s."),
-  if (is.null(.wt30)) "—" else format.pval(.wt30$p.value, digits = 3),
-  if (is.null(.tt30)) "—" else format.pval(.tt30$p.value, digits = 3)))
+#| label: ritu-entire-bin-aki-c10
+fg_model("cmp_time_aki_365", "cmp_status_aki_365", "egfr_diff_pct_sens_cat",
+         egfr_adj = "ckd_epi_idx", docx_name = "sec7_aki_c10")
 ```
 
-## 7.6 Linear model — 365-day delta eGFR on the − 30 % exposure
+## 7.3 CKD Composite — exposure split at − 10 %
 
-[📄 Download Word table](../tables/entire/sec7_lm_d365_c30.docx)
+[📄 Download Word table](../tables/entire/sec7_ckd_c10.docx)
 
 ```{r}
-#| label: ritu-entire-cat30-lm
-lm_d365("egfr_diff_pct_sens_cat30", docx_name = "sec7_lm_d365_c30")
+#| label: ritu-entire-bin-ckd-c10
+fg_model("cmp_time_ckd_composite", "cmp_status_ckd_composite", "egfr_diff_pct_sens_cat",
+         egfr_adj = "ckd_epi_idx", docx_name = "sec7_ckd_c10")
 ```
 
-## 7.7 The same − 30 % model in the survivors cohort
+## 7.4 AKI within 1 Year — exposure split at − 30 %
 
-[📄 Download Word table](../tables/entire/sec7_lm_d365_c30_surv.docx)
+[📄 Download Word table](../tables/entire/sec7_aki_c30.docx)
 
 ```{r}
-#| label: ritu-entire-cat30-lm-surv
-dat_full_cohort <- dat
-dat <- dat_full_cohort %>%
-  filter(!is.na(days_last_follow_up), days_last_follow_up > 365) %>%
-  mutate(across(where(is.factor) & !starts_with("cmp_status_"), droplevels))
-out30 <- lm_d365("egfr_diff_pct_sens_cat30", docx_name = "sec7_lm_d365_c30_surv")
-dat <- dat_full_cohort
-out30
+#| label: ritu-entire-bin-aki-c30
+fg_model("cmp_time_aki_365", "cmp_status_aki_365", "egfr_diff_pct_sens_cat30",
+         egfr_adj = "ckd_epi_idx", docx_name = "sec7_aki_c30")
+```
+
+## 7.5 CKD Composite — exposure split at − 30 %
+
+[📄 Download Word table](../tables/entire/sec7_ckd_c30.docx)
+
+```{r}
+#| label: ritu-entire-bin-ckd-c30
+fg_model("cmp_time_ckd_composite", "cmp_status_ckd_composite", "egfr_diff_pct_sens_cat30",
+         egfr_adj = "ckd_epi_idx", docx_name = "sec7_ckd_c30")
 ```
 
 # 8 Scatter Plots — eGFR Discrepancy
@@ -1208,7 +1122,7 @@ ggplot(d_sex, aes(x = cockcroft, y = ckd_epi_gfr_cre_cys_unindex,
   theme(legend.position = "top")
 ```
 
-## 9.7 – 8.12 eGFR Difference (%) distribution by category
+## 9.7 – 9.12 eGFR Difference (%) distribution by category
 
 For each of the same six splits as 10.1 – 10.6, overlaid kernel density curves of the eGFR difference (%) = 100 × (CKD-EPI Cr-Cys unindexed − Cockcroft-Gault) / Cockcroft-Gault. Red = highlighted level (≥ threshold, or Female for the sex panel); grey = reference level. Dashed grey vertical line marks the 0 % concordance point; dotted verticals mark each group's median. Subtitle carries N and median for each level plus a two-sided Mann-Whitney U p-value (equivalent to Wilcoxon rank-sum) comparing the two distributions.
 
