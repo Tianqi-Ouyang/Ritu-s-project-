@@ -893,8 +893,10 @@ dat <- dat_full_cohort
 .cut_row <- function(v, lab) tibble::tibble(
   Cut = lab, Exposed = sum(v), Unexposed = sum(!v),
   `% exposed` = round(100 * mean(v), 1),
-  `AKI events, exposed` = sum(dat$cmp_status_aki_365[v] == 1),
-  `CKD events, exposed` = sum(dat$cmp_status_ckd_composite[v] == 1))
+  `AKI events, exposed`   = sum(dat$cmp_status_aki_365[v]  == 1),
+  `AKI events, unexposed` = sum(dat$cmp_status_aki_365[!v] == 1),
+  `CKD events, exposed`   = sum(dat$cmp_status_ckd_composite[v]  == 1),
+  `CKD events, unexposed` = sum(dat$cmp_status_ckd_composite[!v] == 1))
 
 cut_tbl <- dplyr::bind_rows(
   .cut_row(dat$egfr_diff_pct_sens_cat   == "< -10%", "< -10% (primary)"),
@@ -962,9 +964,12 @@ binsurv <- purrr::map_dfr(
   list(c("< -10%", "egfr_diff_pct_sens_cat"), c("< -30%", "egfr_diff_pct_sens_cat30")),
   function(z) {
     e <- dat[[z[2]]] == z[1]
-    tibble::tibble(Cut = z[1], `n survivors` = nrow(dat), Exposed = sum(e),
-                   `AKI events, exposed` = sum(dat$cmp_status_aki_365[e] == 1),
-                   `CKD events, exposed` = sum(dat$cmp_status_ckd_composite[e] == 1))
+    tibble::tibble(Cut = z[1], `n survivors` = nrow(dat),
+                   Exposed = sum(e), Unexposed = sum(!e),
+                   `AKI events, exposed`   = sum(dat$cmp_status_aki_365[e]  == 1),
+                   `AKI events, unexposed` = sum(dat$cmp_status_aki_365[!e] == 1),
+                   `CKD events, exposed`   = sum(dat$cmp_status_ckd_composite[e]  == 1),
+                   `CKD events, unexposed` = sum(dat$cmp_status_ckd_composite[!e] == 1))
   })
 knitr::kable(binsurv, caption = sprintf(
   "Survivors cohort: %d of %d patients. Exposed-group event counts behind the four models below.",
