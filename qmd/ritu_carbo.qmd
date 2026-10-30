@@ -680,7 +680,7 @@ ggplot(diffsens_hist, aes(x = egfr_diff_pct_sens, fill = side)) +
   theme_minimal(base_size = 14)
 ```
 
-# 5 Fine-Gray Models — eGFR Difference as (CysC − Cr) / Cr, adjusted for CKD-EPI Cr-Cys (unindexed, mL/min) (Carboplatin)
+# 5 Fine-Gray Models — eGFR Difference as (CysC − Cr) / Cr, adjusted for CKD-EPI 2021 creatinine eGFR (unindexed, mL/min) (Carboplatin)
 
 > **These are the only two outcomes modelled on this page.** Both run on the
 > long-horizon kidney outcomes built in Sections 5.16–5.19 of
@@ -698,7 +698,8 @@ ggplot(diffsens_hist, aes(x = egfr_diff_pct_sens, fill = side)) +
 > `100 × (eGFR_CysC − eGFR_Cr) / eGFR_Cr`, negated and divided by 10, so every
 > subdistribution hazard ratio reads per **10 percentage-point decline**.
 > Cystatin C against creatinine alone, both unindexed. The two sections differ
-> only in the kidney adjuster: CKD-EPI Cr-Cys here, Cockcroft-Gault in the next.
+> only in the kidney adjuster: creatinine eGFR in absolute mL/min here,
+> indexed to body surface area in the next.
 > All other adjusters are the project's standard set (Section 1).
 
 Each table shows univariable (one variable at a time) and multivariable Fine-Gray subdistribution hazard ratios side-by-side. A Word version of each table is saved during render — the download link sits under its heading.
@@ -714,6 +715,10 @@ Each table shows univariable (one variable at a time) and multivariable Fine-Gra
   if (egfr_adj == "ckd_epi")   adj <- c(adj, "ckd_epi_gfr_cre_cys_unindex")
   # Indexed to BSA (mL/min/1.73m2), as opposed to the absolute mL/min above.
   if (egfr_adj == "ckd_epi_idx") adj <- c(adj, "ckd_epi_gfr_cre_cys")
+  # Creatinine-only CKD-EPI 2021, race-free. Unlike the Cr-Cys forms above
+  # it shares no measurement with the exposure.
+  if (egfr_adj == "cre")     adj <- c(adj, "baseline_cre_egfr_unindexed")
+  if (egfr_adj == "cre_idx") adj <- c(adj, "baseline_cre_egfr")
   if (!is.null(pre_labs)) adj <- c(adj, pre_labs)
   adj
 }
@@ -721,7 +726,8 @@ Each table shows univariable (one variable at a time) and multivariable Fine-Gra
 # fg_model: returns univariable + multivariable merged Fine-Gray table.
 # If docx_name is supplied, also saves the table as a .docx in docx_dir.
 fg_model <- function(time_var, status_var, pred_var, pre_labs = NULL,
-                     egfr_adj = c("none", "cockcroft", "ckd_epi", "ckd_epi_idx"),
+                     egfr_adj = c("none", "cockcroft", "ckd_epi", "ckd_epi_idx",
+                                  "cre", "cre_idx"),
                      docx_name = NULL) {
   egfr_adj <- match.arg(egfr_adj)
   adj <- .adj_set(pre_labs, egfr_adj)
@@ -762,7 +768,8 @@ fg_model <- .wrap_tbl(fg_model)
 
 
 cox_model <- function(time_var, status_var, pred_var, pre_labs = NULL,
-                      egfr_adj = c("none", "cockcroft", "ckd_epi", "ckd_epi_idx"),
+                      egfr_adj = c("none", "cockcroft", "ckd_epi", "ckd_epi_idx",
+                                  "cre", "cre_idx"),
                       docx_name = NULL) {
   egfr_adj <- match.arg(egfr_adj)
   adj <- .adj_set(pre_labs, egfr_adj)
@@ -825,7 +832,7 @@ knitr::kable(lt_counts, caption = sprintf(
 ```{r}
 #| label: ritu-carbo-fg-crcys-aki365
 fg_model("cmp_time_aki_365", "cmp_status_aki_365", "egfr_diff_pct_sens_per10",
-         egfr_adj = "ckd_epi", docx_name = "sec5_aki_365")
+         egfr_adj = "cre", docx_name = "sec5_aki_365")
 ```
 
 ## 5.2 CKD Composite, Any Time Post-Baseline (Fine-Gray, death competing)
@@ -835,20 +842,20 @@ fg_model("cmp_time_aki_365", "cmp_status_aki_365", "egfr_diff_pct_sens_per10",
 ```{r}
 #| label: ritu-carbo-fg-crcys-ckdcomposite
 fg_model("cmp_time_ckd_composite", "cmp_status_ckd_composite", "egfr_diff_pct_sens_per10",
-         egfr_adj = "ckd_epi", docx_name = "sec5_ckd_composite")
+         egfr_adj = "cre", docx_name = "sec5_ckd_composite")
 ```
 
-# 6 Fine-Gray Models — eGFR Difference as (CysC − Cr) / Cr, adjusted for CKD-EPI Cr-Cys (indexed, mL/min/1.73m²) (Carboplatin)
+# 6 Fine-Gray Models — eGFR Difference as (CysC − Cr) / Cr, adjusted for CKD-EPI 2021 creatinine eGFR (indexed, mL/min/1.73m²) (Carboplatin)
 
 > Identical to the section above in every respect but one: the kidney adjuster
-> is **`ckd_epi_gfr_cre_cys`** — CKD-EPI 2012 creatinine + cystatin C **indexed
+> is **`baseline_cre_egfr`** — CKD-EPI 2021 race-free creatinine **indexed
 > to body surface area, mL/min/1.73m²** — where the section above uses
-> `ckd_epi_gfr_cre_cys_unindex`, the same estimate in absolute mL/min.
+> `baseline_cre_egfr_unindexed`, the same estimate in absolute mL/min.
 >
 > Same exposure (`egfr_diff_pct_sens_per10`, per 10 percentage-point decline),
 > same two outcomes, same competing event, same remaining covariates. The two
 > sections therefore isolate what the BSA indexing of the adjuster does. The two
-> forms correlate at 0.87, so they are related but not interchangeable.
+> forms correlate at 0.86, so they are related but not interchangeable.
 >
 > Cockcroft-Gault is no longer an adjuster in either section.
 
@@ -859,7 +866,7 @@ fg_model("cmp_time_ckd_composite", "cmp_status_ckd_composite", "egfr_diff_pct_se
 ```{r}
 #| label: ritu-carbo-fg-cysdiff-aki365
 fg_model("cmp_time_aki_365", "cmp_status_aki_365", "egfr_diff_pct_sens_per10",
-         egfr_adj = "ckd_epi_idx", docx_name = "sec6_aki_365")
+         egfr_adj = "cre_idx", docx_name = "sec6_aki_365")
 ```
 
 ## 6.2 CKD Composite, Any Time Post-Baseline (Fine-Gray, death competing)
@@ -869,13 +876,13 @@ fg_model("cmp_time_aki_365", "cmp_status_aki_365", "egfr_diff_pct_sens_per10",
 ```{r}
 #| label: ritu-carbo-fg-cysdiff-ckdcomposite
 fg_model("cmp_time_ckd_composite", "cmp_status_ckd_composite", "egfr_diff_pct_sens_per10",
-         egfr_adj = "ckd_epi_idx", docx_name = "sec6_ckd_composite")
+         egfr_adj = "cre_idx", docx_name = "sec6_ckd_composite")
 ```
 
 # 7 Survivors Cohort — Follow-up > 365 Days (Carboplatin)
 
 > The Fine-Gray models above, rerun on patients still in follow-up beyond one
-> year (`days_last_follow_up > 365`). Adjusted for **`ckd_epi_gfr_cre_cys`**
+> year (`days_last_follow_up > 365`). Adjusted for **`baseline_cre_egfr`**
 > (indexed, mL/min/1.73m²); same exposure and competing event, only the cohort
 > changes.
 >
@@ -910,7 +917,7 @@ knitr::kable(surv_counts, caption = sprintf(
 ```{r}
 #| label: ritu-carbo-surv-aki-crcys
 fg_model("cmp_time_aki_365", "cmp_status_aki_365", "egfr_diff_pct_sens_per10",
-         egfr_adj = "ckd_epi_idx", docx_name = "sec7_aki")
+         egfr_adj = "cre_idx", docx_name = "sec7_aki")
 ```
 
 ## 7.2 CKD Composite, Any Time Post-Baseline (Fine-Gray, death competing)
@@ -920,7 +927,7 @@ fg_model("cmp_time_aki_365", "cmp_status_aki_365", "egfr_diff_pct_sens_per10",
 ```{r}
 #| label: ritu-carbo-surv-ckd-crcys
 fg_model("cmp_time_ckd_composite", "cmp_status_ckd_composite", "egfr_diff_pct_sens_per10",
-         egfr_adj = "ckd_epi_idx", docx_name = "sec7_ckd")
+         egfr_adj = "cre_idx", docx_name = "sec7_ckd")
 ```
 
 ```{r}
@@ -942,7 +949,7 @@ dat <- dat_full_cohort
 >
 > Each subdistribution hazard ratio is therefore for the exposed group **against
 > its reference group**, not per unit. Death at any time is the competing event
-> and the kidney adjuster is `ckd_epi_gfr_cre_cys` (indexed, mL/min/1.73m²), as
+> and the kidney adjuster is `baseline_cre_egfr` (indexed, mL/min/1.73m²), as
 > in the sections above.
 
 ## 8.1 Prevalence of the two cuts
@@ -973,7 +980,7 @@ knitr::kable(cut_tbl, caption = sprintf(
 ```{r}
 #| label: ritu-carbo-bin-aki-c10
 fg_model("cmp_time_aki_365", "cmp_status_aki_365", "egfr_diff_pct_sens_cat",
-         egfr_adj = "ckd_epi_idx", docx_name = "sec8_aki_c10")
+         egfr_adj = "cre_idx", docx_name = "sec8_aki_c10")
 ```
 
 ## 8.3 CKD Composite — exposure split at − 10 %
@@ -983,7 +990,7 @@ fg_model("cmp_time_aki_365", "cmp_status_aki_365", "egfr_diff_pct_sens_cat",
 ```{r}
 #| label: ritu-carbo-bin-ckd-c10
 fg_model("cmp_time_ckd_composite", "cmp_status_ckd_composite", "egfr_diff_pct_sens_cat",
-         egfr_adj = "ckd_epi_idx", docx_name = "sec8_ckd_c10")
+         egfr_adj = "cre_idx", docx_name = "sec8_ckd_c10")
 ```
 
 ## 8.4 AKI within 1 Year — exposure split at − 30 %
@@ -993,7 +1000,7 @@ fg_model("cmp_time_ckd_composite", "cmp_status_ckd_composite", "egfr_diff_pct_se
 ```{r}
 #| label: ritu-carbo-bin-aki-c30
 fg_model("cmp_time_aki_365", "cmp_status_aki_365", "egfr_diff_pct_sens_cat30",
-         egfr_adj = "ckd_epi_idx", docx_name = "sec8_aki_c30")
+         egfr_adj = "cre_idx", docx_name = "sec8_aki_c30")
 ```
 
 ## 8.5 CKD Composite — exposure split at − 30 %
@@ -1003,7 +1010,7 @@ fg_model("cmp_time_aki_365", "cmp_status_aki_365", "egfr_diff_pct_sens_cat30",
 ```{r}
 #| label: ritu-carbo-bin-ckd-c30
 fg_model("cmp_time_ckd_composite", "cmp_status_ckd_composite", "egfr_diff_pct_sens_cat30",
-         egfr_adj = "ckd_epi_idx", docx_name = "sec8_ckd_c30")
+         egfr_adj = "cre_idx", docx_name = "sec8_ckd_c30")
 ```
 
 The four models above, repeated on the **survivors cohort**
@@ -1042,7 +1049,7 @@ knitr::kable(binsurv, caption = sprintf(
 ```{r}
 #| label: ritu-carbo-binsurv-aki-c10
 fg_model("cmp_time_aki_365", "cmp_status_aki_365", "egfr_diff_pct_sens_cat",
-         egfr_adj = "ckd_epi_idx", docx_name = "sec8_aki_c10_surv")
+         egfr_adj = "cre_idx", docx_name = "sec8_aki_c10_surv")
 ```
 
 ## 8.7 CKD Composite — exposure split at − 10 % (survivors)
@@ -1052,7 +1059,7 @@ fg_model("cmp_time_aki_365", "cmp_status_aki_365", "egfr_diff_pct_sens_cat",
 ```{r}
 #| label: ritu-carbo-binsurv-ckd-c10
 fg_model("cmp_time_ckd_composite", "cmp_status_ckd_composite", "egfr_diff_pct_sens_cat",
-         egfr_adj = "ckd_epi_idx", docx_name = "sec8_ckd_c10_surv")
+         egfr_adj = "cre_idx", docx_name = "sec8_ckd_c10_surv")
 ```
 
 ## 8.8 AKI within 1 Year — exposure split at − 30 % (survivors)
@@ -1062,7 +1069,7 @@ fg_model("cmp_time_ckd_composite", "cmp_status_ckd_composite", "egfr_diff_pct_se
 ```{r}
 #| label: ritu-carbo-binsurv-aki-c30
 fg_model("cmp_time_aki_365", "cmp_status_aki_365", "egfr_diff_pct_sens_cat30",
-         egfr_adj = "ckd_epi_idx", docx_name = "sec8_aki_c30_surv")
+         egfr_adj = "cre_idx", docx_name = "sec8_aki_c30_surv")
 ```
 
 ## 8.9 CKD Composite — exposure split at − 30 % (survivors)
@@ -1072,7 +1079,7 @@ fg_model("cmp_time_aki_365", "cmp_status_aki_365", "egfr_diff_pct_sens_cat30",
 ```{r}
 #| label: ritu-carbo-binsurv-ckd-c30
 fg_model("cmp_time_ckd_composite", "cmp_status_ckd_composite", "egfr_diff_pct_sens_cat30",
-         egfr_adj = "ckd_epi_idx", docx_name = "sec8_ckd_c30_surv")
+         egfr_adj = "cre_idx", docx_name = "sec8_ckd_c30_surv")
 ```
 
 ```{r}
@@ -1175,8 +1182,8 @@ knitr::kable(grp_tbl, caption = sprintf(paste0(
 ## 11.2 Linear model — cut at − 10 %
 
 Adjusted for the same multivariable covariate set as the Fine-Gray models,
-including the same kidney adjuster — `ckd_epi_gfr_cre_cys`, CKD-EPI Cr-Cys
-indexed to body surface area (mL/min/1.73m²). Coefficients are mL/min/1.73m² of
+including the same kidney adjuster — `baseline_cre_egfr`, CKD-EPI 2021
+race-free creatinine indexed to body surface area (mL/min/1.73m²). Coefficients are mL/min/1.73m² of
 365-day eGFR change: a negative coefficient on `< -10%` means that group
 declined further.
 
@@ -1191,7 +1198,7 @@ declined further.
   else .adj_set(NULL, egfr_adj)
 }
 
-lm_d365 <- function(pred_var, egfr_adj = "ckd_epi_idx", docx_name = NULL) {
+lm_d365 <- function(pred_var, egfr_adj = "cre_idx", docx_name = NULL) {
   adj  <- .adj_for(pred_var, egfr_adj)
   vars <- c(pred_var, adj)
   fmla <- as.formula(paste("delta_egfr_d365 ~", paste(vars, collapse = " + ")))
