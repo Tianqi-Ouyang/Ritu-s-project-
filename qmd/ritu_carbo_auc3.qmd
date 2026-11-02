@@ -239,6 +239,15 @@ dat <- dat %>%
     egfr_diff_pct_sens_cat30  = factor(
       ifelse(egfr_diff_pct_sens < -30, "< -30%", ">= -30%"),
       levels = c(">= -30%", "< -30%")),
+    # Intermediate cut, between the primary -10 % and the stricter -30 %.
+    egfr_diff_pct_sens_cat20  = factor(
+      ifelse(egfr_diff_pct_sens < -20, "< -20%", ">= -20%"),
+      levels = c(">= -20%", "< -20%")),
+    # Quartiles of the same continuous exposure. ntile() gives 1 to the most
+    # negative quartile; Q4 (least discordant) is set as the reference level.
+    egfr_diff_pct_sens_q4     = factor(
+      dplyr::ntile(egfr_diff_pct_sens, 4), levels = 4:1,
+      labels = c("Q4 (least discordant)", "Q3", "Q2", "Q1 (most discordant)")),
     # "Survivor": still in follow-up beyond one year.
     survivor_365              = days_last_follow_up > 365,
     # Dose discrepancy uses CAPPED eGFR (already computed in ritu_data.qmd)
@@ -651,8 +660,8 @@ ggplot(ratio_hist, aes(x = egfr_ratio, fill = side)) +
 Signed eGFR difference (sens) = 100 × (CKD-EPI 2012 cystatin C − CKD-EPI 2021
 creatinine) / CKD-EPI 2021 creatinine, both unindexed. Concordance sits at 0 %.
 Red bins are the negative side — cystatin C below creatinine, the
-muscle-wasting direction. The dashed line at **− 10 %** is the cut used for the
-binary exposure further down.
+muscle-wasting direction. The dotted line at **− 30 %** marks the strictest of
+the three cuts used for the binary exposures further down.
 
 ```{r}
 #| label: ritu-auc3-egfr-diffsens-hist
@@ -666,17 +675,151 @@ ggplot(diffsens_hist, aes(x = egfr_diff_pct_sens, fill = side)) +
   geom_histogram(aes(y = after_stat(count) / sum(after_stat(count)) * 100),
                  binwidth = 2, boundary = 0, color = "black", alpha = 0.85) +
   geom_vline(xintercept = 0, linetype = "dashed", color = "grey30") +
-  geom_vline(xintercept = -10, linetype = "dotted", color = "#1F78B4", linewidth = 1) +
+  geom_vline(xintercept = -30, linetype = "dotted", color = "#1F78B4", linewidth = 1) +
   scale_fill_manual(values = c(neg = "#E31A1C", pos = "grey60"), guide = "none") +
   labs(title = "Distribution of eGFR Difference (sens): 100 × (CysC − Cr) / Cr",
-       subtitle = sprintf("Median %.1f %%; %d of %d (%.1f %%) fall below -10 %%",
+       subtitle = sprintf(paste0(
+                          "Median %.1f %% of %d patients\n",
+                          "Below -10 %%: %d (%.1f %%)   |   below -20 %%: %d (%.1f %%)",
+                          "   |   below -30 %%: %d (%.1f %%)"),
                           median(diffsens_hist$egfr_diff_pct_sens),
-                          sum(diffsens_hist$egfr_diff_pct_sens < -10),
                           nrow(diffsens_hist),
-                          100 * mean(diffsens_hist$egfr_diff_pct_sens < -10)),
+                          sum(diffsens_hist$egfr_diff_pct_sens < -10),
+                          100 * mean(diffsens_hist$egfr_diff_pct_sens < -10),
+                          sum(diffsens_hist$egfr_diff_pct_sens < -20),
+                          100 * mean(diffsens_hist$egfr_diff_pct_sens < -20),
+                          sum(diffsens_hist$egfr_diff_pct_sens < -30),
+                          100 * mean(diffsens_hist$egfr_diff_pct_sens < -30)),
        x = "eGFR Difference (sens, %)", y = "Percent of Patients (%)") +
   scale_x_continuous(breaks = seq(-100, 200, 10)) +
   theme_minimal(base_size = 14)
+```
+
+## 3.5 CKD Stage Reclassification — Creatinine vs Creatinine + Cystatin C
+
+Every patient carries two KDIGO G-stages, both built in
+[Data Management](ritu_data.qmd): `ckd_stage_cre` from `baseline_cre_egfr`
+(CKD-EPI 2021 race-free creatinine) and `ckd_stage_cre_cys` from
+`ckd_epi_gfr_cre_cys` (CKD-EPI creatinine + cystatin C). Both are indexed to
+body surface area (mL/min/1.73m²), so the two stagings sit on the same scale
+and the move between them is read directly.
+
+```{r}
+#| label: ritu-auc3-ckd-stage-xtab
+stg <- dat %>%
+  filter(!is.na(ckd_stage_cre), !is.na(ckd_stage_cre_cys)) %>%
+  mutate(across(c(ckd_stage_cre, ckd_stage_cre_cys), droplevels))
+
+ct <- table(stg$ckd_stage_cre, stg$ckd_stage_cre_cys)
+knitr::kable(cbind(`Creatinine stage` = rownames(ct), as.data.frame.matrix(ct)),
+  row.names = FALSE, caption = sprintf(paste0(
+    "CKD stage by creatinine eGFR (rows) against creatinine + cystatin C eGFR ",
+    "(columns), N = %d. The diagonal is unchanged; right of it the cystatin C ",
+    "stage is worse, left of it better."), nrow(stg)))
+
+recl <- stg %>%
+  summarise(N = n(),
+    `Worse stage`  = sum(as.integer(ckd_stage_cre_cys) > as.integer(ckd_stage_cre)),
+    `Unchanged`    = sum(as.integer(ckd_stage_cre_cys) == as.integer(ckd_stage_cre)),
+    `Better stage` = sum(as.integer(ckd_stage_cre_cys) < as.integer(ckd_stage_cre))) %>%
+  mutate(across(c(`Worse stage`, Unchanged, `Better stage`),
+                ~sprintf("%d (%.1f%%)", .x, 100 * .x / N)))
+
+knitr::kable(recl, caption = paste(
+  "Direction of reclassification when cystatin C is added to the creatinine",
+  "equation. A worse stage means the cystatin C estimate puts the patient in a",
+  "lower eGFR band."))
+```
+
+```{r}
+#| label: ritu-auc3-ckd-stage-sankey
+#| fig-width: 9.5
+#| fig-height: 6.5
+.stage_pal <- c("G1 (>=90)" = "#2E7D32", "G2 (60-89)" = "#1565C0",
+                "G3a (45-59)" = "#EF6C00", "G3b (30-44)" = "#C62828",
+                "G4 (15-29)" = "#6A1B9A", "G5 (<15)" = "#37474F")
+
+.sk  <- stg %>% count(ckd_stage_cre, ckd_stage_cre_cys, name = "n")
+.N   <- sum(.sk$n)
+.gap <- 0.055 * .N
+
+# Node stacks: each stage a box, height proportional to n, separated by a gap.
+.nodes <- function(col) .sk %>%
+  group_by(stage = .data[[col]]) %>% summarise(tot = sum(n), .groups = "drop") %>%
+  arrange(stage) %>%
+  mutate(ntop = lag(cumsum(tot), default = 0) + .gap * (row_number() - 1),
+         nbot = ntop + tot)
+.ln <- .nodes("ckd_stage_cre"); .rn <- .nodes("ckd_stage_cre_cys")
+
+.left <- .sk %>% arrange(ckd_stage_cre, ckd_stage_cre_cys) %>%
+  group_by(ckd_stage_cre) %>%
+  mutate(l0 = lag(cumsum(n), default = 0), l1 = cumsum(n)) %>% ungroup() %>%
+  left_join(.ln %>% select(ckd_stage_cre = stage, b = ntop), by = "ckd_stage_cre") %>%
+  mutate(l0 = l0 + b, l1 = l1 + b)
+.right <- .sk %>% arrange(ckd_stage_cre_cys, ckd_stage_cre) %>%
+  group_by(ckd_stage_cre_cys) %>%
+  mutate(r0 = lag(cumsum(n), default = 0), r1 = cumsum(n)) %>% ungroup() %>%
+  left_join(.rn %>% select(ckd_stage_cre_cys = stage, b = ntop),
+            by = "ckd_stage_cre_cys") %>%
+  mutate(r0 = r0 + b, r1 = r1 + b)
+
+.fl <- .left %>% select(ckd_stage_cre, ckd_stage_cre_cys, n, l0, l1) %>%
+  left_join(.right %>% select(ckd_stage_cre, ckd_stage_cre_cys, r0, r1),
+            by = c("ckd_stage_cre", "ckd_stage_cre_cys")) %>%
+  mutate(flow = row_number(), pct = 100 * n / .N)
+
+.xlb <- 0.07; .xle <- 0.22; .xrb <- 0.78; .xre <- 0.93
+.tt <- seq(0, 1, length.out = 70); .ease <- 0.5 - 0.5 * cos(pi * .tt)
+
+# One polygon per flow: out along its top edge on a cosine ease, back along
+# the bottom. Tinted by the source stage so each origin stays traceable.
+.rib <- purrr::pmap_dfr(
+  list(.fl$flow, .fl$l0, .fl$l1, .fl$r0, .fl$r1, as.character(.fl$ckd_stage_cre)),
+  function(id, l0, l1, r0, r1, src) tibble::tibble(
+    flow = id, Stage = src,
+    x = c(.xle + (.xrb - .xle) * .tt, .xle + (.xrb - .xle) * rev(.tt)),
+    y = c(l0 + (r0 - l0) * .ease, rev(l1 + (r1 - l1) * .ease))))
+
+# Labels sit inside the box when it is tall enough, otherwise just outside it.
+.nd <- dplyr::bind_rows(.ln %>% mutate(xmin = .xlb, xmax = .xle),
+                        .rn %>% mutate(xmin = .xrb, xmax = .xre)) %>%
+  mutate(big = tot >= 0.07 * .N,
+         lab = ifelse(big, sprintf("%s\n%d (%.0f%%)", stage, tot, 100 * tot / .N),
+                           sprintf("%s  %d (%.0f%%)", stage, tot, 100 * tot / .N)),
+         tx = ifelse(big, (xmin + xmax) / 2,
+                     ifelse(xmin < 0.5, xmin - 0.012, xmax + 0.012)),
+         hj = ifelse(big, 0.5, ifelse(xmin < 0.5, 1, 0)))
+
+.fll <- .fl %>% filter(pct >= 2.5) %>%
+  mutate(lx = .xle + 0.015, ly = (l0 + l1) / 2,
+         rx = .xrb - 0.015, ry = (r0 + r1) / 2, txt = sprintf("%.0f%%", pct))
+
+ggplot() +
+  geom_polygon(data = .rib, aes(x, y, group = flow, fill = Stage),
+               alpha = 0.55, color = NA) +
+  geom_rect(data = .nd, aes(xmin = xmin, xmax = xmax, ymin = ntop, ymax = nbot,
+                            fill = stage), color = NA) +
+  geom_text(data = dplyr::filter(.nd, big),
+            aes(x = tx, y = (ntop + nbot) / 2, label = lab, hjust = hj),
+            color = "white", fontface = "bold", size = 3.1, lineheight = 0.95) +
+  geom_text(data = dplyr::filter(.nd, !big),
+            aes(x = tx, y = (ntop + nbot) / 2, label = lab, hjust = hj),
+            color = "grey15", size = 2.8) +
+  geom_text(data = .fll, aes(lx, ly, label = txt), hjust = 0, size = 2.9,
+            color = "grey20") +
+  geom_text(data = .fll, aes(rx, ry, label = txt), hjust = 1, size = 2.9,
+            color = "grey20") +
+  annotate("text", x = c((.xlb + .xle) / 2, (.xrb + .xre) / 2),
+           y = -0.055 * max(.nd$nbot), fontface = "bold", size = 4.1,
+           label = c("CKD-EPI creatinine", "CKD-EPI creatinine + cystatin C")) +
+  scale_fill_manual(values = .stage_pal, guide = "none") +
+  scale_y_reverse(expand = expansion(mult = c(0.11, 0.04))) +
+  scale_x_continuous(limits = c(-0.15, 1.15), expand = expansion(mult = 0.005)) +
+  labs(title = "CKD stage: creatinine eGFR vs creatinine + cystatin C eGFR",
+       subtitle = sprintf("Carboplatin AUC ≥ 3 cohort, N = %d", nrow(stg)), x = NULL, y = NULL) +
+  theme_minimal(base_size = 13) +
+  theme(panel.grid = element_blank(), axis.text = element_blank(),
+        plot.title = element_text(face = "bold"))
 ```
 
 # 5 Fine-Gray Models — eGFR Difference as (CysC − Cr) / Cr, adjusted for CKD-EPI 2021 creatinine eGFR (unindexed, mL/min) (Carboplatin AUC ≥ 3)
@@ -943,6 +1086,7 @@ dat <- dat_full_cohort
 > - `egfr_diff_pct_sens_cat` splits at **− 10 %** — `< -10%` means the cystatin C
 >   eGFR sits more than 10 % below the creatinine eGFR; `>= -10%` is the
 >   reference.
+> - `egfr_diff_pct_sens_cat20` splits at **− 20 %**, an intermediate cut.
 > - `egfr_diff_pct_sens_cat30` splits at **− 30 %**, a smaller and more clearly
 >   discordant group.
 >
@@ -951,7 +1095,7 @@ dat <- dat_full_cohort
 > and the kidney adjuster is `baseline_cre_egfr` (indexed, mL/min/1.73m²), as
 > in the sections above.
 
-## 8.1 Prevalence of the two cuts
+## 8.1 Prevalence of the three cuts
 
 ```{r}
 #| label: ritu-auc3-bin-prev
@@ -965,10 +1109,11 @@ dat <- dat_full_cohort
 
 cut_tbl <- dplyr::bind_rows(
   .cut_row(dat$egfr_diff_pct_sens_cat   == "< -10%", "< -10% (primary)"),
+  .cut_row(dat$egfr_diff_pct_sens_cat20 == "< -20%", "< -20% (intermediate)"),
   .cut_row(dat$egfr_diff_pct_sens_cat30 == "< -30%", "< -30% (stricter)"))
 
 knitr::kable(cut_tbl, caption = sprintf(
-  "Prevalence of the two binary cuts, N = %d. Median eGFR difference (sens) %.1f %%.",
+  "Prevalence of the three binary cuts, N = %d. Median eGFR difference (sens) %.1f %%.",
   nrow(dat), median(dat$egfr_diff_pct_sens, na.rm = TRUE)))
 ```
 
@@ -992,7 +1137,27 @@ fg_model("cmp_time_ckd_composite", "cmp_status_ckd_composite", "egfr_diff_pct_se
          egfr_adj = "cre_idx", docx_name = "sec8_ckd_c10")
 ```
 
-## 8.4 AKI within 1 Year — exposure split at − 30 %
+## 8.4 AKI within 1 Year — exposure split at − 20 %
+
+[📄 Download Word table](../tables/auc3/sec8_aki_c20.docx)
+
+```{r}
+#| label: ritu-auc3-bin-aki-c20
+fg_model("cmp_time_aki_365", "cmp_status_aki_365", "egfr_diff_pct_sens_cat20",
+         egfr_adj = "cre_idx", docx_name = "sec8_aki_c20")
+```
+
+## 8.5 CKD Composite — exposure split at − 20 %
+
+[📄 Download Word table](../tables/auc3/sec8_ckd_c20.docx)
+
+```{r}
+#| label: ritu-auc3-bin-ckd-c20
+fg_model("cmp_time_ckd_composite", "cmp_status_ckd_composite", "egfr_diff_pct_sens_cat20",
+         egfr_adj = "cre_idx", docx_name = "sec8_ckd_c20")
+```
+
+## 8.6 AKI within 1 Year — exposure split at − 30 %
 
 [📄 Download Word table](../tables/auc3/sec8_aki_c30.docx)
 
@@ -1002,7 +1167,7 @@ fg_model("cmp_time_aki_365", "cmp_status_aki_365", "egfr_diff_pct_sens_cat30",
          egfr_adj = "cre_idx", docx_name = "sec8_aki_c30")
 ```
 
-## 8.5 CKD Composite — exposure split at − 30 %
+## 8.7 CKD Composite — exposure split at − 30 %
 
 [📄 Download Word table](../tables/auc3/sec8_ckd_c30.docx)
 
@@ -1012,7 +1177,7 @@ fg_model("cmp_time_ckd_composite", "cmp_status_ckd_composite", "egfr_diff_pct_se
          egfr_adj = "cre_idx", docx_name = "sec8_ckd_c30")
 ```
 
-The four models above, repeated on the **survivors cohort**
+The six models above, repeated on the **survivors cohort**
 (`days_last_follow_up > 365`). Same exposures, outcomes, adjusters and competing
 event; only the cohort changes. As in the survivors section earlier, this
 conditions on a post-baseline characteristic, so these are a restriction
@@ -1026,7 +1191,9 @@ dat <- dat_full_cohort %>%
   mutate(across(where(is.factor) & !starts_with("cmp_status_"), droplevels))
 
 binsurv <- purrr::map_dfr(
-  list(c("< -10%", "egfr_diff_pct_sens_cat"), c("< -30%", "egfr_diff_pct_sens_cat30")),
+  list(c("< -10%", "egfr_diff_pct_sens_cat"),
+       c("< -20%", "egfr_diff_pct_sens_cat20"),
+       c("< -30%", "egfr_diff_pct_sens_cat30")),
   function(z) {
     e <- dat[[z[2]]] == z[1]
     tibble::tibble(Cut = z[1], `n survivors` = nrow(dat),
@@ -1037,11 +1204,11 @@ binsurv <- purrr::map_dfr(
                    `CKD events, unexposed` = sum(dat$cmp_status_ckd_composite[!e] == 1))
   })
 knitr::kable(binsurv, caption = sprintf(
-  "Survivors cohort: %d of %d patients. Exposed-group event counts behind the four models below.",
+  "Survivors cohort: %d of %d patients. Exposed-group event counts behind the six models below.",
   nrow(dat), nrow(dat_full_cohort)))
 ```
 
-## 8.6 AKI within 1 Year — exposure split at − 10 % (survivors)
+## 8.8 AKI within 1 Year — exposure split at − 10 % (survivors)
 
 [📄 Download Word table](../tables/auc3/sec8_aki_c10_surv.docx)
 
@@ -1051,7 +1218,7 @@ fg_model("cmp_time_aki_365", "cmp_status_aki_365", "egfr_diff_pct_sens_cat",
          egfr_adj = "cre_idx", docx_name = "sec8_aki_c10_surv")
 ```
 
-## 8.7 CKD Composite — exposure split at − 10 % (survivors)
+## 8.9 CKD Composite — exposure split at − 10 % (survivors)
 
 [📄 Download Word table](../tables/auc3/sec8_ckd_c10_surv.docx)
 
@@ -1061,7 +1228,27 @@ fg_model("cmp_time_ckd_composite", "cmp_status_ckd_composite", "egfr_diff_pct_se
          egfr_adj = "cre_idx", docx_name = "sec8_ckd_c10_surv")
 ```
 
-## 8.8 AKI within 1 Year — exposure split at − 30 % (survivors)
+## 8.10 AKI within 1 Year — exposure split at − 20 % (survivors)
+
+[📄 Download Word table](../tables/auc3/sec8_aki_c20_surv.docx)
+
+```{r}
+#| label: ritu-auc3-binsurv-aki-c20
+fg_model("cmp_time_aki_365", "cmp_status_aki_365", "egfr_diff_pct_sens_cat20",
+         egfr_adj = "cre_idx", docx_name = "sec8_aki_c20_surv")
+```
+
+## 8.11 CKD Composite — exposure split at − 20 % (survivors)
+
+[📄 Download Word table](../tables/auc3/sec8_ckd_c20_surv.docx)
+
+```{r}
+#| label: ritu-auc3-binsurv-ckd-c20
+fg_model("cmp_time_ckd_composite", "cmp_status_ckd_composite", "egfr_diff_pct_sens_cat20",
+         egfr_adj = "cre_idx", docx_name = "sec8_ckd_c20_surv")
+```
+
+## 8.12 AKI within 1 Year — exposure split at − 30 % (survivors)
 
 [📄 Download Word table](../tables/auc3/sec8_aki_c30_surv.docx)
 
@@ -1071,7 +1258,7 @@ fg_model("cmp_time_aki_365", "cmp_status_aki_365", "egfr_diff_pct_sens_cat30",
          egfr_adj = "cre_idx", docx_name = "sec8_aki_c30_surv")
 ```
 
-## 8.9 CKD Composite — exposure split at − 30 % (survivors)
+## 8.13 CKD Composite — exposure split at − 30 % (survivors)
 
 [📄 Download Word table](../tables/auc3/sec8_ckd_c30_surv.docx)
 
@@ -1233,7 +1420,50 @@ dat <- dat_full_cohort
 out
 ```
 
-## 11.4 365-day delta eGFR by group — stricter cut at − 30 %
+## 11.4 365-day delta eGFR by group — intermediate cut at − 20 %
+
+```{r}
+#| label: ritu-auc3-cat20-groups
+f0 <- dat %>% filter(egfr_diff_pct_sens_cat20 == ">= -20%")
+f1 <- dat %>% filter(egfr_diff_pct_sens_cat20 == "< -20%")
+grp20 <- dplyr::bind_rows(.grp_row(f0, ">= -20% (reference)"), .grp_row(f1, "< -20%"))
+
+.wt20 <- tryCatch(wilcox.test(delta_egfr_d365 ~ egfr_diff_pct_sens_cat20, data = dat),
+                  error = function(e) NULL)
+.tt20 <- tryCatch(t.test(delta_egfr_d365 ~ egfr_diff_pct_sens_cat20, data = dat),
+                  error = function(e) NULL)
+knitr::kable(grp20, caption = sprintf(paste0(
+  "365-day delta eGFR by the intermediate -20 %% cut. Negative = decline. ",
+  "Wilcoxon p = %s; Welch t-test p = %s."),
+  if (is.null(.wt20)) "—" else format.pval(.wt20$p.value, digits = 3),
+  if (is.null(.tt20)) "—" else format.pval(.tt20$p.value, digits = 3)))
+```
+
+## 11.5 Linear model — cut at − 20 %
+
+[📄 Download Word table](../tables/auc3/sec11_lm_d365_c20.docx)
+
+```{r}
+#| label: ritu-auc3-cat20-lm
+lm_d365("egfr_diff_pct_sens_cat20", docx_name = "sec11_lm_d365_c20")
+```
+
+## 11.6 Linear model — cut at − 20 %, survivors cohort
+
+[📄 Download Word table](../tables/auc3/sec11_lm_d365_c20_surv.docx)
+
+```{r}
+#| label: ritu-auc3-cat20-lm-surv
+dat_full_cohort <- dat
+dat <- dat_full_cohort %>%
+  filter(!is.na(days_last_follow_up), days_last_follow_up > 365) %>%
+  mutate(across(where(is.factor) & !starts_with("cmp_status_"), droplevels))
+out20 <- lm_d365("egfr_diff_pct_sens_cat20", docx_name = "sec11_lm_d365_c20_surv")
+dat <- dat_full_cohort
+out20
+```
+
+## 11.7 365-day delta eGFR by group — stricter cut at − 30 %
 
 ```{r}
 #| label: ritu-auc3-cat30-groups
@@ -1252,7 +1482,7 @@ knitr::kable(grp30, caption = sprintf(paste0(
   if (is.null(.tt30)) "—" else format.pval(.tt30$p.value, digits = 3)))
 ```
 
-## 11.5 Linear model — cut at − 30 %
+## 11.8 Linear model — cut at − 30 %
 
 [📄 Download Word table](../tables/auc3/sec11_lm_d365_c30.docx)
 
@@ -1261,7 +1491,7 @@ knitr::kable(grp30, caption = sprintf(paste0(
 lm_d365("egfr_diff_pct_sens_cat30", docx_name = "sec11_lm_d365_c30")
 ```
 
-## 11.6 Linear model — cut at − 30 %, survivors cohort
+## 11.9 Linear model — cut at − 30 %, survivors cohort
 
 [📄 Download Word table](../tables/auc3/sec11_lm_d365_c30_surv.docx)
 
@@ -1274,4 +1504,142 @@ dat <- dat_full_cohort %>%
 out30 <- lm_d365("egfr_diff_pct_sens_cat30", docx_name = "sec11_lm_d365_c30_surv")
 dat <- dat_full_cohort
 out30
+```
+
+
+# 12 Quartiles of eGFR Difference (sens) as the Exposure (Carboplatin AUC ≥ 3)
+
+> The same continuous exposure as the Fine-Gray sections above, entered as
+> **quartiles** instead of a binary cut or a per-10-point slope.
+> `egfr_diff_pct_sens_q4` is built with `dplyr::ntile()`, so Q1 holds the most
+> discordant quarter (cystatin C furthest below creatinine) and Q4 the least.
+> **Q4 is the reference level**, so each ratio reads against the least
+> discordant quarter and a value above 1 means more discordance carries more
+> risk.
+>
+> Same two outcomes, same competing event (death at any time), same
+> multivariable set and the same kidney adjuster `baseline_cre_egfr` as
+> everywhere else on this page. Three dummy terms replace one, so these models
+> spend two more degrees of freedom than the binary ones on the same events.
+
+## 12.1 Quartile boundaries and event counts
+
+```{r}
+#| label: ritu-auc3-q4-prev
+q_tbl <- dat %>%
+  filter(!is.na(egfr_diff_pct_sens_q4)) %>%
+  group_by(Quartile = egfr_diff_pct_sens_q4) %>%
+  summarise(n = n(),
+            `Range (%)` = sprintf("%.1f to %.1f",
+                                  min(egfr_diff_pct_sens), max(egfr_diff_pct_sens)),
+            `Median (%)` = sprintf("%.1f", median(egfr_diff_pct_sens)),
+            `AKI events` = sum(cmp_status_aki_365 == 1),
+            `CKD events` = sum(cmp_status_ckd_composite == 1),
+            .groups = "drop")
+
+knitr::kable(q_tbl, caption = sprintf(paste0(
+  "Quartiles of eGFR difference (sens), N = %d with a non-missing value. ",
+  "Q4 (least discordant) is the reference level in every model below."),
+  sum(!is.na(dat$egfr_diff_pct_sens_q4))))
+```
+
+## 12.2 AKI within 1 Year (Fine-Gray, death competing)
+
+[📄 Download Word table](../tables/auc3/sec12_aki_q4.docx)
+
+```{r}
+#| label: ritu-auc3-q4-aki
+fg_model("cmp_time_aki_365", "cmp_status_aki_365", "egfr_diff_pct_sens_q4",
+         egfr_adj = "cre_idx", docx_name = "sec12_aki_q4")
+```
+
+## 12.3 CKD Composite, Any Time Post-Baseline (Fine-Gray, death competing)
+
+[📄 Download Word table](../tables/auc3/sec12_ckd_q4.docx)
+
+```{r}
+#| label: ritu-auc3-q4-ckd
+fg_model("cmp_time_ckd_composite", "cmp_status_ckd_composite", "egfr_diff_pct_sens_q4",
+         egfr_adj = "cre_idx", docx_name = "sec12_ckd_q4")
+```
+
+## 12.4 AKI within 1 Year (survivors cohort)
+
+[📄 Download Word table](../tables/auc3/sec12_aki_q4_surv.docx)
+
+```{r}
+#| label: ritu-auc3-q4-aki-surv
+dat_full_cohort <- dat
+dat <- dat_full_cohort %>%
+  filter(!is.na(days_last_follow_up), days_last_follow_up > 365) %>%
+  mutate(across(where(is.factor) & !starts_with("cmp_status_"), droplevels))
+q_aki_surv <- fg_model("cmp_time_aki_365", "cmp_status_aki_365",
+                       "egfr_diff_pct_sens_q4", egfr_adj = "cre_idx",
+                       docx_name = "sec12_aki_q4_surv")
+dat <- dat_full_cohort
+q_aki_surv
+```
+
+## 12.5 CKD Composite (survivors cohort)
+
+[📄 Download Word table](../tables/auc3/sec12_ckd_q4_surv.docx)
+
+```{r}
+#| label: ritu-auc3-q4-ckd-surv
+dat_full_cohort <- dat
+dat <- dat_full_cohort %>%
+  filter(!is.na(days_last_follow_up), days_last_follow_up > 365) %>%
+  mutate(across(where(is.factor) & !starts_with("cmp_status_"), droplevels))
+q_ckd_surv <- fg_model("cmp_time_ckd_composite", "cmp_status_ckd_composite",
+                       "egfr_diff_pct_sens_q4", egfr_adj = "cre_idx",
+                       docx_name = "sec12_ckd_q4_surv")
+dat <- dat_full_cohort
+q_ckd_surv
+```
+
+## 12.6 365-Day Delta eGFR by Quartile
+
+```{r}
+#| label: ritu-auc3-q4-groups
+qd <- dat %>%
+  filter(!is.na(egfr_diff_pct_sens_q4), !is.na(delta_egfr_d365)) %>%
+  group_by(Quartile = egfr_diff_pct_sens_q4) %>%
+  summarise(n = n(),
+            `Delta eGFR, mean (SD)` = sprintf("%.1f (%.1f)",
+                                              mean(delta_egfr_d365), sd(delta_egfr_d365)),
+            `Delta eGFR, median [IQR]` = sprintf("%.1f [%.1f, %.1f]",
+              median(delta_egfr_d365), quantile(delta_egfr_d365, .25),
+              quantile(delta_egfr_d365, .75)),
+            .groups = "drop")
+
+.kw <- tryCatch(kruskal.test(delta_egfr_d365 ~ egfr_diff_pct_sens_q4, data = dat),
+                error = function(e) NULL)
+knitr::kable(qd, caption = sprintf(paste0(
+  "365-day delta eGFR by quartile of eGFR difference (sens). Negative = ",
+  "decline. Kruskal-Wallis p = %s."),
+  if (is.null(.kw)) "—" else format.pval(.kw$p.value, digits = 3)))
+```
+
+## 12.7 Linear model — 365-day delta eGFR on quartiles
+
+[📄 Download Word table](../tables/auc3/sec12_lm_d365_q4.docx)
+
+```{r}
+#| label: ritu-auc3-q4-lm
+lm_d365("egfr_diff_pct_sens_q4", docx_name = "sec12_lm_d365_q4")
+```
+
+## 12.8 Linear model — 365-day delta eGFR on quartiles, survivors cohort
+
+[📄 Download Word table](../tables/auc3/sec12_lm_d365_q4_surv.docx)
+
+```{r}
+#| label: ritu-auc3-q4-lm-surv
+dat_full_cohort <- dat
+dat <- dat_full_cohort %>%
+  filter(!is.na(days_last_follow_up), days_last_follow_up > 365) %>%
+  mutate(across(where(is.factor) & !starts_with("cmp_status_"), droplevels))
+q_lm_surv <- lm_d365("egfr_diff_pct_sens_q4", docx_name = "sec12_lm_d365_q4_surv")
+dat <- dat_full_cohort
+q_lm_surv
 ```
