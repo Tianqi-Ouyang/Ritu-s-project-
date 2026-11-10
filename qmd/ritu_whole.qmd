@@ -996,7 +996,7 @@ knitr::kable(lt_counts, caption = sprintf(
   nrow(dat)))
 ```
 
-## 4.1 AKI within 1 Year (Fine-Gray, death competing)
+## 4.1 AKI within 1 Year (Fine-Gray, death competing) (Local/Early, all patients)
 
 [📄 Download Word table](../tables/whole/sec4_aki_365.docx)
 
@@ -1006,7 +1006,7 @@ fg_model("cmp_time_aki_365", "cmp_status_aki_365", "egfr_diff_pct_sens_per10",
          egfr_adj = "cre", docx_name = "sec4_aki_365")
 ```
 
-## 4.2 CKD Composite, Any Time Post-Baseline (Fine-Gray, death competing)
+## 4.2 CKD Composite, Any Time Post-Baseline (Fine-Gray, death competing) (Local/Early, all patients)
 
 [📄 Download Word table](../tables/whole/sec4_ckd_composite.docx)
 
@@ -1030,7 +1030,7 @@ fg_model("cmp_time_ckd_composite", "cmp_status_ckd_composite", "egfr_diff_pct_se
 >
 > Cockcroft-Gault is no longer an adjuster in either section.
 
-## 5.1 AKI within 1 Year (Fine-Gray, death competing)
+## 5.1 AKI within 1 Year (Fine-Gray, death competing) (Local/Early, all patients)
 
 [📄 Download Word table](../tables/whole/sec5_aki_365.docx)
 
@@ -1040,7 +1040,7 @@ fg_model("cmp_time_aki_365", "cmp_status_aki_365", "egfr_diff_pct_sens_per10",
          egfr_adj = "cre_idx", docx_name = "sec5_aki_365")
 ```
 
-## 5.2 CKD Composite, Any Time Post-Baseline (Fine-Gray, death competing)
+## 5.2 CKD Composite, Any Time Post-Baseline (Fine-Gray, death competing) (Local/Early, all patients)
 
 [📄 Download Word table](../tables/whole/sec5_ckd_composite.docx)
 
@@ -1081,7 +1081,7 @@ knitr::kable(surv_counts, caption = sprintf(
   nrow(dat), nrow(dat_full_cohort), 100 * nrow(dat) / nrow(dat_full_cohort)))
 ```
 
-## 6.1 AKI within 1 Year (Fine-Gray, death competing)
+## 6.1 AKI within 1 Year (Fine-Gray, death competing) (Local/Early, survivors)
 
 [📄 Download Word table](../tables/whole/sec6_aki.docx)
 
@@ -1091,7 +1091,7 @@ fg_model("cmp_time_aki_365", "cmp_status_aki_365", "egfr_diff_pct_sens_per10",
          egfr_adj = "cre_idx", docx_name = "sec6_aki")
 ```
 
-## 6.2 CKD Composite, Any Time Post-Baseline (Fine-Gray, death competing)
+## 6.2 CKD Composite, Any Time Post-Baseline (Fine-Gray, death competing) (Local/Early, survivors)
 
 [📄 Download Word table](../tables/whole/sec6_ckd.docx)
 
@@ -1146,7 +1146,7 @@ knitr::kable(cut_tbl, caption = sprintf(
   nrow(dat), median(dat$egfr_diff_pct_sens, na.rm = TRUE)))
 ```
 
-## 7.2 AKI within 1 Year — exposure split at − 10 %
+## 7.2 AKI within 1 Year — exposure split at − 10 % (Local/Early, all patients)
 
 [📄 Download Word table](../tables/whole/sec7_aki_c10.docx)
 
@@ -1156,7 +1156,7 @@ fg_model("cmp_time_aki_365", "cmp_status_aki_365", "egfr_diff_pct_sens_cat",
          egfr_adj = "cre_idx", docx_name = "sec7_aki_c10")
 ```
 
-## 7.3 CKD Composite — exposure split at − 10 %
+## 7.3 CKD Composite — exposure split at − 10 % (Local/Early, all patients)
 
 [📄 Download Word table](../tables/whole/sec7_ckd_c10.docx)
 
@@ -1166,7 +1166,7 @@ fg_model("cmp_time_ckd_composite", "cmp_status_ckd_composite", "egfr_diff_pct_se
          egfr_adj = "cre_idx", docx_name = "sec7_ckd_c10")
 ```
 
-## 7.4 AKI within 1 Year — exposure split at − 20 %
+## 7.4 AKI within 1 Year — exposure split at − 20 % (Local/Early, all patients)
 
 [📄 Download Word table](../tables/whole/sec7_aki_c20.docx)
 
@@ -1176,7 +1176,7 @@ fg_model("cmp_time_aki_365", "cmp_status_aki_365", "egfr_diff_pct_sens_cat20",
          egfr_adj = "cre_idx", docx_name = "sec7_aki_c20")
 ```
 
-## 7.5 CKD Composite — exposure split at − 20 %
+## 7.5 CKD Composite — exposure split at − 20 % (Local/Early, all patients)
 
 [📄 Download Word table](../tables/whole/sec7_ckd_c20.docx)
 
@@ -1186,7 +1186,7 @@ fg_model("cmp_time_ckd_composite", "cmp_status_ckd_composite", "egfr_diff_pct_se
          egfr_adj = "cre_idx", docx_name = "sec7_ckd_c20")
 ```
 
-## 7.6 AKI within 1 Year — exposure split at − 30 %
+## 7.6 AKI within 1 Year — exposure split at − 30 % (Local/Early, all patients)
 
 [📄 Download Word table](../tables/whole/sec7_aki_c30.docx)
 
@@ -1196,7 +1196,7 @@ fg_model("cmp_time_aki_365", "cmp_status_aki_365", "egfr_diff_pct_sens_cat30",
          egfr_adj = "cre_idx", docx_name = "sec7_aki_c30")
 ```
 
-## 7.7 CKD Composite — exposure split at − 30 %
+## 7.7 CKD Composite — exposure split at − 30 % (Local/Early, all patients)
 
 [📄 Download Word table](../tables/whole/sec7_ckd_c30.docx)
 
@@ -1237,7 +1237,7 @@ knitr::kable(binsurv, caption = sprintf(
   nrow(dat), nrow(dat_full_cohort)))
 ```
 
-## 7.8 AKI within 1 Year — exposure split at − 10 % (survivors)
+## 7.8 AKI within 1 Year — exposure split at − 10 % (Local/Early, survivors)
 
 [📄 Download Word table](../tables/whole/sec7_aki_c10_surv.docx)
 
@@ -1247,7 +1247,7 @@ fg_model("cmp_time_aki_365", "cmp_status_aki_365", "egfr_diff_pct_sens_cat",
          egfr_adj = "cre_idx", docx_name = "sec7_aki_c10_surv")
 ```
 
-## 7.9 CKD Composite — exposure split at − 10 % (survivors)
+## 7.9 CKD Composite — exposure split at − 10 % (Local/Early, survivors)
 
 [📄 Download Word table](../tables/whole/sec7_ckd_c10_surv.docx)
 
@@ -1257,7 +1257,7 @@ fg_model("cmp_time_ckd_composite", "cmp_status_ckd_composite", "egfr_diff_pct_se
          egfr_adj = "cre_idx", docx_name = "sec7_ckd_c10_surv")
 ```
 
-## 7.10 AKI within 1 Year — exposure split at − 20 % (survivors)
+## 7.10 AKI within 1 Year — exposure split at − 20 % (Local/Early, survivors)
 
 [📄 Download Word table](../tables/whole/sec7_aki_c20_surv.docx)
 
@@ -1267,7 +1267,7 @@ fg_model("cmp_time_aki_365", "cmp_status_aki_365", "egfr_diff_pct_sens_cat20",
          egfr_adj = "cre_idx", docx_name = "sec7_aki_c20_surv")
 ```
 
-## 7.11 CKD Composite — exposure split at − 20 % (survivors)
+## 7.11 CKD Composite — exposure split at − 20 % (Local/Early, survivors)
 
 [📄 Download Word table](../tables/whole/sec7_ckd_c20_surv.docx)
 
@@ -1277,7 +1277,7 @@ fg_model("cmp_time_ckd_composite", "cmp_status_ckd_composite", "egfr_diff_pct_se
          egfr_adj = "cre_idx", docx_name = "sec7_ckd_c20_surv")
 ```
 
-## 7.12 AKI within 1 Year — exposure split at − 30 % (survivors)
+## 7.12 AKI within 1 Year — exposure split at − 30 % (Local/Early, survivors)
 
 [📄 Download Word table](../tables/whole/sec7_aki_c30_surv.docx)
 
@@ -1287,7 +1287,7 @@ fg_model("cmp_time_aki_365", "cmp_status_aki_365", "egfr_diff_pct_sens_cat30",
          egfr_adj = "cre_idx", docx_name = "sec7_aki_c30_surv")
 ```
 
-## 7.13 CKD Composite — exposure split at − 30 % (survivors)
+## 7.13 CKD Composite — exposure split at − 30 % (Local/Early, survivors)
 
 [📄 Download Word table](../tables/whole/sec7_ckd_c30_surv.docx)
 
@@ -1666,7 +1666,7 @@ knitr::kable(grp_tbl, caption = sprintf(paste0(
   if (is.null(.tt)) "—" else format.pval(.tt$p.value, digits = 3)))
 ```
 
-## 10.2 Linear model — cut at − 10 %
+## 10.2 Linear model — cut at − 10 % (Local/Early, all patients)
 
 Adjusted for the same multivariable covariate set as the Fine-Gray models,
 including the same kidney adjuster — `baseline_cre_egfr`, CKD-EPI 2021
@@ -1706,7 +1706,7 @@ lm_d360 <- .wrap_tbl(lm_d360)
 lm_d360("egfr_diff_pct_sens_cat", docx_name = "sec10_lm_d360")
 ```
 
-## 10.3 Linear model — cut at − 10 %, survivors cohort
+## 10.3 Linear model — cut at − 10 % (Local/Early, survivors)
 
 [📄 Download Word table](../tables/whole/sec10_lm_d360_surv.docx)
 
@@ -1740,7 +1740,7 @@ knitr::kable(grp20, caption = sprintf(paste0(
   if (is.null(.tt20)) "—" else format.pval(.tt20$p.value, digits = 3)))
 ```
 
-## 10.5 Linear model — cut at − 20 %
+## 10.5 Linear model — cut at − 20 % (Local/Early, all patients)
 
 [📄 Download Word table](../tables/whole/sec10_lm_d360_c20.docx)
 
@@ -1749,7 +1749,7 @@ knitr::kable(grp20, caption = sprintf(paste0(
 lm_d360("egfr_diff_pct_sens_cat20", docx_name = "sec10_lm_d360_c20")
 ```
 
-## 10.6 Linear model — cut at − 20 %, survivors cohort
+## 10.6 Linear model — cut at − 20 % (Local/Early, survivors)
 
 [📄 Download Word table](../tables/whole/sec10_lm_d360_c20_surv.docx)
 
@@ -1783,7 +1783,7 @@ knitr::kable(grp30, caption = sprintf(paste0(
   if (is.null(.tt30)) "—" else format.pval(.tt30$p.value, digits = 3)))
 ```
 
-## 10.8 Linear model — cut at − 30 %
+## 10.8 Linear model — cut at − 30 % (Local/Early, all patients)
 
 [📄 Download Word table](../tables/whole/sec10_lm_d360_c30.docx)
 
@@ -1792,7 +1792,7 @@ knitr::kable(grp30, caption = sprintf(paste0(
 lm_d360("egfr_diff_pct_sens_cat30", docx_name = "sec10_lm_d360_c30")
 ```
 
-## 10.9 Linear model — cut at − 30 %, survivors cohort
+## 10.9 Linear model — cut at − 30 % (Local/Early, survivors)
 
 [📄 Download Word table](../tables/whole/sec10_lm_d360_c30_surv.docx)
 
@@ -1844,7 +1844,7 @@ knitr::kable(q_tbl, caption = sprintf(paste0(
   sum(!is.na(dat$egfr_diff_pct_sens_q4))))
 ```
 
-## 11.2 AKI within 1 Year (Fine-Gray, death competing)
+## 11.2 AKI within 1 Year (Fine-Gray, death competing) (Local/Early, all patients)
 
 [📄 Download Word table](../tables/whole/sec11_aki_q4.docx)
 
@@ -1854,7 +1854,7 @@ fg_model("cmp_time_aki_365", "cmp_status_aki_365", "egfr_diff_pct_sens_q4",
          egfr_adj = "cre_idx", docx_name = "sec11_aki_q4")
 ```
 
-## 11.3 CKD Composite, Any Time Post-Baseline (Fine-Gray, death competing)
+## 11.3 CKD Composite, Any Time Post-Baseline (Fine-Gray, death competing) (Local/Early, all patients)
 
 [📄 Download Word table](../tables/whole/sec11_ckd_q4.docx)
 
@@ -1864,7 +1864,7 @@ fg_model("cmp_time_ckd_composite", "cmp_status_ckd_composite", "egfr_diff_pct_se
          egfr_adj = "cre_idx", docx_name = "sec11_ckd_q4")
 ```
 
-## 11.4 AKI within 1 Year (survivors cohort)
+## 11.4 AKI within 1 Year (Local/Early, survivors)
 
 [📄 Download Word table](../tables/whole/sec11_aki_q4_surv.docx)
 
@@ -1881,7 +1881,7 @@ dat <- dat_full_cohort
 q_aki_surv
 ```
 
-## 11.5 CKD Composite (survivors cohort)
+## 11.5 CKD Composite (Local/Early, survivors)
 
 [📄 Download Word table](../tables/whole/sec11_ckd_q4_surv.docx)
 
@@ -1921,7 +1921,7 @@ knitr::kable(qd, caption = sprintf(paste0(
   if (is.null(.kw)) "—" else format.pval(.kw$p.value, digits = 3)))
 ```
 
-## 11.7 Linear model — 360-day delta eGFR on quartiles
+## 11.7 Linear model — 360-day delta eGFR on quartiles (Local/Early, all patients)
 
 [📄 Download Word table](../tables/whole/sec11_lm_d360_q4.docx)
 
@@ -1930,7 +1930,7 @@ knitr::kable(qd, caption = sprintf(paste0(
 lm_d360("egfr_diff_pct_sens_q4", docx_name = "sec11_lm_d360_q4")
 ```
 
-## 11.8 Linear model — 360-day delta eGFR on quartiles, survivors cohort
+## 11.8 Linear model — 360-day delta eGFR on quartiles (Local/Early, survivors)
 
 [📄 Download Word table](../tables/whole/sec11_lm_d360_q4_surv.docx)
 
@@ -2105,7 +2105,7 @@ knitr::kable(tibble::tibble(
                    "so a fitted N can be slightly lower."))
 ```
 
-## 12.2 Observed trajectories and fitted slopes — cut at − 10 %
+## 12.2 Observed trajectories and fitted slopes — cut at − 10 % (Local/Early, all patients)
 
 Points are raw mean creatinine eGFR in 60-day bins (day 0 shown on its own),
 with ± 1 SE; bins holding fewer than 11 values are suppressed. Lines are the
@@ -2159,7 +2159,7 @@ points are only there to show the raw data behind it.
                "Creatinine eGFR over the first year, by eGFR difference (sens)")
 ```
 
-## 12.3 Mixed model — cut at − 10 %
+## 12.3 Mixed model — cut at − 10 % (Local/Early, all patients)
 
 [📄 Download Word table](../tables/whole/sec12_lmm_cat10.docx)
 
@@ -2170,7 +2170,7 @@ m <- lmm_slope("egfr_diff_pct_sens_cat", docx_name = "sec12_lmm_cat10")
 m
 ```
 
-## 12.4 Mixed model — cut at − 10 %, survivors cohort
+## 12.4 Mixed model — cut at − 10 % (Local/Early, survivors)
 
 [📄 Download Word table](../tables/whole/sec12_lmm_cat10_surv.docx)
 
@@ -2186,7 +2186,7 @@ dat <- dat_full_cohort
 m
 ```
 
-## 12.5 Mixed model — cut at − 20 %
+## 12.5 Mixed model — cut at − 20 % (Local/Early, all patients)
 
 [📄 Download Word table](../tables/whole/sec12_lmm_cat20.docx)
 
@@ -2197,7 +2197,7 @@ m <- lmm_slope("egfr_diff_pct_sens_cat20", docx_name = "sec12_lmm_cat20")
 m
 ```
 
-## 12.6 Mixed model — cut at − 20 %, survivors cohort
+## 12.6 Mixed model — cut at − 20 % (Local/Early, survivors)
 
 [📄 Download Word table](../tables/whole/sec12_lmm_cat20_surv.docx)
 
@@ -2213,7 +2213,7 @@ dat <- dat_full_cohort
 m
 ```
 
-## 12.7 Mixed model — cut at − 30 %
+## 12.7 Mixed model — cut at − 30 % (Local/Early, all patients)
 
 [📄 Download Word table](../tables/whole/sec12_lmm_cat30.docx)
 
@@ -2224,7 +2224,7 @@ m <- lmm_slope("egfr_diff_pct_sens_cat30", docx_name = "sec12_lmm_cat30")
 m
 ```
 
-## 12.8 Mixed model — cut at − 30 %, survivors cohort
+## 12.8 Mixed model — cut at − 30 % (Local/Early, survivors)
 
 [📄 Download Word table](../tables/whole/sec12_lmm_cat30_surv.docx)
 
@@ -2240,7 +2240,7 @@ dat <- dat_full_cohort
 m
 ```
 
-## 12.9 Mixed model — quartiles of eGFR difference (sens)
+## 12.9 Mixed model — quartiles of eGFR difference (sens) (Local/Early, all patients)
 
 [📄 Download Word table](../tables/whole/sec12_lmm_q4.docx)
 
@@ -2251,7 +2251,7 @@ m <- lmm_slope("egfr_diff_pct_sens_q4", docx_name = "sec12_lmm_q4")
 m
 ```
 
-## 12.10 Mixed model — quartiles, survivors cohort
+## 12.10 Mixed model — quartiles (Local/Early, survivors)
 
 [📄 Download Word table](../tables/whole/sec12_lmm_q4_surv.docx)
 
@@ -2267,7 +2267,7 @@ dat <- dat_full_cohort
 m
 ```
 
-## 12.11 Mixed model — continuous exposure
+## 12.11 Mixed model — continuous exposure (Local/Early, all patients)
 
 `egfr_diff_pct_sens_per10` is the continuous exposure on the per-10-percentage-point
 **decline** scale, the same one the Fine-Gray models use. The `time_yr ×

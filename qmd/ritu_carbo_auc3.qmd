@@ -1011,7 +1011,7 @@ knitr::kable(lt_counts, caption = sprintf(
   nrow(dat)))
 ```
 
-## 5.1 AKI within 1 Year (Fine-Gray, death competing)
+## 5.1 AKI within 1 Year (Fine-Gray, death competing) (Carboplatin AUC ≥ 3, all patients)
 
 [📄 Download Word table](../tables/auc3/sec5_aki_365.docx)
 
@@ -1021,7 +1021,7 @@ fg_model("cmp_time_aki_365", "cmp_status_aki_365", "egfr_diff_pct_sens_per10",
          egfr_adj = "cre", docx_name = "sec5_aki_365")
 ```
 
-## 5.2 CKD Composite, Any Time Post-Baseline (Fine-Gray, death competing)
+## 5.2 CKD Composite, Any Time Post-Baseline (Fine-Gray, death competing) (Carboplatin AUC ≥ 3, all patients)
 
 [📄 Download Word table](../tables/auc3/sec5_ckd_composite.docx)
 
@@ -1045,7 +1045,7 @@ fg_model("cmp_time_ckd_composite", "cmp_status_ckd_composite", "egfr_diff_pct_se
 >
 > Cockcroft-Gault is no longer an adjuster in either section.
 
-## 6.1 AKI within 1 Year (Fine-Gray, death competing)
+## 6.1 AKI within 1 Year (Fine-Gray, death competing) (Carboplatin AUC ≥ 3, all patients)
 
 [📄 Download Word table](../tables/auc3/sec6_aki_365.docx)
 
@@ -1055,7 +1055,7 @@ fg_model("cmp_time_aki_365", "cmp_status_aki_365", "egfr_diff_pct_sens_per10",
          egfr_adj = "cre_idx", docx_name = "sec6_aki_365")
 ```
 
-## 6.2 CKD Composite, Any Time Post-Baseline (Fine-Gray, death competing)
+## 6.2 CKD Composite, Any Time Post-Baseline (Fine-Gray, death competing) (Carboplatin AUC ≥ 3, all patients)
 
 [📄 Download Word table](../tables/auc3/sec6_ckd_composite.docx)
 
@@ -1096,7 +1096,7 @@ knitr::kable(surv_counts, caption = sprintf(
   nrow(dat), nrow(dat_full_cohort), 100 * nrow(dat) / nrow(dat_full_cohort)))
 ```
 
-## 7.1 AKI within 1 Year (Fine-Gray, death competing)
+## 7.1 AKI within 1 Year (Fine-Gray, death competing) (Carboplatin AUC ≥ 3, survivors)
 
 [📄 Download Word table](../tables/auc3/sec7_aki.docx)
 
@@ -1106,7 +1106,7 @@ fg_model("cmp_time_aki_365", "cmp_status_aki_365", "egfr_diff_pct_sens_per10",
          egfr_adj = "cre_idx", docx_name = "sec7_aki")
 ```
 
-## 7.2 CKD Composite, Any Time Post-Baseline (Fine-Gray, death competing)
+## 7.2 CKD Composite, Any Time Post-Baseline (Fine-Gray, death competing) (Carboplatin AUC ≥ 3, survivors)
 
 [📄 Download Word table](../tables/auc3/sec7_ckd.docx)
 
@@ -1161,7 +1161,7 @@ knitr::kable(cut_tbl, caption = sprintf(
   nrow(dat), median(dat$egfr_diff_pct_sens, na.rm = TRUE)))
 ```
 
-## 8.2 AKI within 1 Year — exposure split at − 10 %
+## 8.2 AKI within 1 Year — exposure split at − 10 % (Carboplatin AUC ≥ 3, all patients)
 
 [📄 Download Word table](../tables/auc3/sec8_aki_c10.docx)
 
@@ -1171,7 +1171,7 @@ fg_model("cmp_time_aki_365", "cmp_status_aki_365", "egfr_diff_pct_sens_cat",
          egfr_adj = "cre_idx", docx_name = "sec8_aki_c10")
 ```
 
-## 8.3 CKD Composite — exposure split at − 10 %
+## 8.3 CKD Composite — exposure split at − 10 % (Carboplatin AUC ≥ 3, all patients)
 
 [📄 Download Word table](../tables/auc3/sec8_ckd_c10.docx)
 
@@ -1181,7 +1181,7 @@ fg_model("cmp_time_ckd_composite", "cmp_status_ckd_composite", "egfr_diff_pct_se
          egfr_adj = "cre_idx", docx_name = "sec8_ckd_c10")
 ```
 
-## 8.4 AKI within 1 Year — exposure split at − 20 %
+## 8.4 AKI within 1 Year — exposure split at − 20 % (Carboplatin AUC ≥ 3, all patients)
 
 [📄 Download Word table](../tables/auc3/sec8_aki_c20.docx)
 
@@ -1191,7 +1191,7 @@ fg_model("cmp_time_aki_365", "cmp_status_aki_365", "egfr_diff_pct_sens_cat20",
          egfr_adj = "cre_idx", docx_name = "sec8_aki_c20")
 ```
 
-## 8.5 CKD Composite — exposure split at − 20 %
+## 8.5 CKD Composite — exposure split at − 20 % (Carboplatin AUC ≥ 3, all patients)
 
 [📄 Download Word table](../tables/auc3/sec8_ckd_c20.docx)
 
@@ -1201,7 +1201,7 @@ fg_model("cmp_time_ckd_composite", "cmp_status_ckd_composite", "egfr_diff_pct_se
          egfr_adj = "cre_idx", docx_name = "sec8_ckd_c20")
 ```
 
-## 8.6 AKI within 1 Year — exposure split at − 30 %
+## 8.6 AKI within 1 Year — exposure split at − 30 % (Carboplatin AUC ≥ 3, all patients)
 
 [📄 Download Word table](../tables/auc3/sec8_aki_c30.docx)
 
@@ -1211,7 +1211,7 @@ fg_model("cmp_time_aki_365", "cmp_status_aki_365", "egfr_diff_pct_sens_cat30",
          egfr_adj = "cre_idx", docx_name = "sec8_aki_c30")
 ```
 
-## 8.7 CKD Composite — exposure split at − 30 %
+## 8.7 CKD Composite — exposure split at − 30 % (Carboplatin AUC ≥ 3, all patients)
 
 [📄 Download Word table](../tables/auc3/sec8_ckd_c30.docx)
 
@@ -1252,7 +1252,7 @@ knitr::kable(binsurv, caption = sprintf(
   nrow(dat), nrow(dat_full_cohort)))
 ```
 
-## 8.8 AKI within 1 Year — exposure split at − 10 % (survivors)
+## 8.8 AKI within 1 Year — exposure split at − 10 % (Carboplatin AUC ≥ 3, survivors)
 
 [📄 Download Word table](../tables/auc3/sec8_aki_c10_surv.docx)
 
@@ -1262,7 +1262,7 @@ fg_model("cmp_time_aki_365", "cmp_status_aki_365", "egfr_diff_pct_sens_cat",
          egfr_adj = "cre_idx", docx_name = "sec8_aki_c10_surv")
 ```
 
-## 8.9 CKD Composite — exposure split at − 10 % (survivors)
+## 8.9 CKD Composite — exposure split at − 10 % (Carboplatin AUC ≥ 3, survivors)
 
 [📄 Download Word table](../tables/auc3/sec8_ckd_c10_surv.docx)
 
@@ -1272,7 +1272,7 @@ fg_model("cmp_time_ckd_composite", "cmp_status_ckd_composite", "egfr_diff_pct_se
          egfr_adj = "cre_idx", docx_name = "sec8_ckd_c10_surv")
 ```
 
-## 8.10 AKI within 1 Year — exposure split at − 20 % (survivors)
+## 8.10 AKI within 1 Year — exposure split at − 20 % (Carboplatin AUC ≥ 3, survivors)
 
 [📄 Download Word table](../tables/auc3/sec8_aki_c20_surv.docx)
 
@@ -1282,7 +1282,7 @@ fg_model("cmp_time_aki_365", "cmp_status_aki_365", "egfr_diff_pct_sens_cat20",
          egfr_adj = "cre_idx", docx_name = "sec8_aki_c20_surv")
 ```
 
-## 8.11 CKD Composite — exposure split at − 20 % (survivors)
+## 8.11 CKD Composite — exposure split at − 20 % (Carboplatin AUC ≥ 3, survivors)
 
 [📄 Download Word table](../tables/auc3/sec8_ckd_c20_surv.docx)
 
@@ -1292,7 +1292,7 @@ fg_model("cmp_time_ckd_composite", "cmp_status_ckd_composite", "egfr_diff_pct_se
          egfr_adj = "cre_idx", docx_name = "sec8_ckd_c20_surv")
 ```
 
-## 8.12 AKI within 1 Year — exposure split at − 30 % (survivors)
+## 8.12 AKI within 1 Year — exposure split at − 30 % (Carboplatin AUC ≥ 3, survivors)
 
 [📄 Download Word table](../tables/auc3/sec8_aki_c30_surv.docx)
 
@@ -1302,7 +1302,7 @@ fg_model("cmp_time_aki_365", "cmp_status_aki_365", "egfr_diff_pct_sens_cat30",
          egfr_adj = "cre_idx", docx_name = "sec8_aki_c30_surv")
 ```
 
-## 8.13 CKD Composite — exposure split at − 30 % (survivors)
+## 8.13 CKD Composite — exposure split at − 30 % (Carboplatin AUC ≥ 3, survivors)
 
 [📄 Download Word table](../tables/auc3/sec8_ckd_c30_surv.docx)
 
@@ -1409,7 +1409,7 @@ knitr::kable(grp_tbl, caption = sprintf(paste0(
   if (is.null(.tt)) "—" else format.pval(.tt$p.value, digits = 3)))
 ```
 
-## 11.2 Linear model — cut at − 10 %
+## 11.2 Linear model — cut at − 10 % (Carboplatin AUC ≥ 3, all patients)
 
 Adjusted for the same multivariable covariate set as the Fine-Gray models,
 including the same kidney adjuster — `baseline_cre_egfr`, CKD-EPI 2021
@@ -1449,7 +1449,7 @@ lm_d360 <- .wrap_tbl(lm_d360)
 lm_d360("egfr_diff_pct_sens_cat", docx_name = "sec11_lm_d360")
 ```
 
-## 11.3 Linear model — cut at − 10 %, survivors cohort
+## 11.3 Linear model — cut at − 10 % (Carboplatin AUC ≥ 3, survivors)
 
 [📄 Download Word table](../tables/auc3/sec11_lm_d360_surv.docx)
 
@@ -1483,7 +1483,7 @@ knitr::kable(grp20, caption = sprintf(paste0(
   if (is.null(.tt20)) "—" else format.pval(.tt20$p.value, digits = 3)))
 ```
 
-## 11.5 Linear model — cut at − 20 %
+## 11.5 Linear model — cut at − 20 % (Carboplatin AUC ≥ 3, all patients)
 
 [📄 Download Word table](../tables/auc3/sec11_lm_d360_c20.docx)
 
@@ -1492,7 +1492,7 @@ knitr::kable(grp20, caption = sprintf(paste0(
 lm_d360("egfr_diff_pct_sens_cat20", docx_name = "sec11_lm_d360_c20")
 ```
 
-## 11.6 Linear model — cut at − 20 %, survivors cohort
+## 11.6 Linear model — cut at − 20 % (Carboplatin AUC ≥ 3, survivors)
 
 [📄 Download Word table](../tables/auc3/sec11_lm_d360_c20_surv.docx)
 
@@ -1526,7 +1526,7 @@ knitr::kable(grp30, caption = sprintf(paste0(
   if (is.null(.tt30)) "—" else format.pval(.tt30$p.value, digits = 3)))
 ```
 
-## 11.8 Linear model — cut at − 30 %
+## 11.8 Linear model — cut at − 30 % (Carboplatin AUC ≥ 3, all patients)
 
 [📄 Download Word table](../tables/auc3/sec11_lm_d360_c30.docx)
 
@@ -1535,7 +1535,7 @@ knitr::kable(grp30, caption = sprintf(paste0(
 lm_d360("egfr_diff_pct_sens_cat30", docx_name = "sec11_lm_d360_c30")
 ```
 
-## 11.9 Linear model — cut at − 30 %, survivors cohort
+## 11.9 Linear model — cut at − 30 % (Carboplatin AUC ≥ 3, survivors)
 
 [📄 Download Word table](../tables/auc3/sec11_lm_d360_c30_surv.docx)
 
@@ -1587,7 +1587,7 @@ knitr::kable(q_tbl, caption = sprintf(paste0(
   sum(!is.na(dat$egfr_diff_pct_sens_q4))))
 ```
 
-## 12.2 AKI within 1 Year (Fine-Gray, death competing)
+## 12.2 AKI within 1 Year (Fine-Gray, death competing) (Carboplatin AUC ≥ 3, all patients)
 
 [📄 Download Word table](../tables/auc3/sec12_aki_q4.docx)
 
@@ -1597,7 +1597,7 @@ fg_model("cmp_time_aki_365", "cmp_status_aki_365", "egfr_diff_pct_sens_q4",
          egfr_adj = "cre_idx", docx_name = "sec12_aki_q4")
 ```
 
-## 12.3 CKD Composite, Any Time Post-Baseline (Fine-Gray, death competing)
+## 12.3 CKD Composite, Any Time Post-Baseline (Fine-Gray, death competing) (Carboplatin AUC ≥ 3, all patients)
 
 [📄 Download Word table](../tables/auc3/sec12_ckd_q4.docx)
 
@@ -1607,7 +1607,7 @@ fg_model("cmp_time_ckd_composite", "cmp_status_ckd_composite", "egfr_diff_pct_se
          egfr_adj = "cre_idx", docx_name = "sec12_ckd_q4")
 ```
 
-## 12.4 AKI within 1 Year (survivors cohort)
+## 12.4 AKI within 1 Year (Carboplatin AUC ≥ 3, survivors)
 
 [📄 Download Word table](../tables/auc3/sec12_aki_q4_surv.docx)
 
@@ -1624,7 +1624,7 @@ dat <- dat_full_cohort
 q_aki_surv
 ```
 
-## 12.5 CKD Composite (survivors cohort)
+## 12.5 CKD Composite (Carboplatin AUC ≥ 3, survivors)
 
 [📄 Download Word table](../tables/auc3/sec12_ckd_q4_surv.docx)
 
@@ -1664,7 +1664,7 @@ knitr::kable(qd, caption = sprintf(paste0(
   if (is.null(.kw)) "—" else format.pval(.kw$p.value, digits = 3)))
 ```
 
-## 12.7 Linear model — 360-day delta eGFR on quartiles
+## 12.7 Linear model — 360-day delta eGFR on quartiles (Carboplatin AUC ≥ 3, all patients)
 
 [📄 Download Word table](../tables/auc3/sec12_lm_d360_q4.docx)
 
@@ -1673,7 +1673,7 @@ knitr::kable(qd, caption = sprintf(paste0(
 lm_d360("egfr_diff_pct_sens_q4", docx_name = "sec12_lm_d360_q4")
 ```
 
-## 12.8 Linear model — 360-day delta eGFR on quartiles, survivors cohort
+## 12.8 Linear model — 360-day delta eGFR on quartiles (Carboplatin AUC ≥ 3, survivors)
 
 [📄 Download Word table](../tables/auc3/sec12_lm_d360_q4_surv.docx)
 
@@ -1848,7 +1848,7 @@ knitr::kable(tibble::tibble(
                    "so a fitted N can be slightly lower."))
 ```
 
-## 13.2 Observed trajectories and fitted slopes — cut at − 10 %
+## 13.2 Observed trajectories and fitted slopes — cut at − 10 % (Carboplatin AUC ≥ 3, all patients)
 
 Points are raw mean creatinine eGFR in 60-day bins (day 0 shown on its own),
 with ± 1 SE; bins holding fewer than 11 values are suppressed. Lines are the
@@ -1902,7 +1902,7 @@ points are only there to show the raw data behind it.
                "Creatinine eGFR over the first year, by eGFR difference (sens)")
 ```
 
-## 13.3 Mixed model — cut at − 10 %
+## 13.3 Mixed model — cut at − 10 % (Carboplatin AUC ≥ 3, all patients)
 
 [📄 Download Word table](../tables/auc3/sec13_lmm_cat10.docx)
 
@@ -1913,7 +1913,7 @@ m <- lmm_slope("egfr_diff_pct_sens_cat", docx_name = "sec13_lmm_cat10")
 m
 ```
 
-## 13.4 Mixed model — cut at − 10 %, survivors cohort
+## 13.4 Mixed model — cut at − 10 % (Carboplatin AUC ≥ 3, survivors)
 
 [📄 Download Word table](../tables/auc3/sec13_lmm_cat10_surv.docx)
 
@@ -1929,7 +1929,7 @@ dat <- dat_full_cohort
 m
 ```
 
-## 13.5 Mixed model — cut at − 20 %
+## 13.5 Mixed model — cut at − 20 % (Carboplatin AUC ≥ 3, all patients)
 
 [📄 Download Word table](../tables/auc3/sec13_lmm_cat20.docx)
 
@@ -1940,7 +1940,7 @@ m <- lmm_slope("egfr_diff_pct_sens_cat20", docx_name = "sec13_lmm_cat20")
 m
 ```
 
-## 13.6 Mixed model — cut at − 20 %, survivors cohort
+## 13.6 Mixed model — cut at − 20 % (Carboplatin AUC ≥ 3, survivors)
 
 [📄 Download Word table](../tables/auc3/sec13_lmm_cat20_surv.docx)
 
@@ -1956,7 +1956,7 @@ dat <- dat_full_cohort
 m
 ```
 
-## 13.7 Mixed model — cut at − 30 %
+## 13.7 Mixed model — cut at − 30 % (Carboplatin AUC ≥ 3, all patients)
 
 [📄 Download Word table](../tables/auc3/sec13_lmm_cat30.docx)
 
@@ -1967,7 +1967,7 @@ m <- lmm_slope("egfr_diff_pct_sens_cat30", docx_name = "sec13_lmm_cat30")
 m
 ```
 
-## 13.8 Mixed model — cut at − 30 %, survivors cohort
+## 13.8 Mixed model — cut at − 30 % (Carboplatin AUC ≥ 3, survivors)
 
 [📄 Download Word table](../tables/auc3/sec13_lmm_cat30_surv.docx)
 
@@ -1983,7 +1983,7 @@ dat <- dat_full_cohort
 m
 ```
 
-## 13.9 Mixed model — quartiles of eGFR difference (sens)
+## 13.9 Mixed model — quartiles of eGFR difference (sens) (Carboplatin AUC ≥ 3, all patients)
 
 [📄 Download Word table](../tables/auc3/sec13_lmm_q4.docx)
 
@@ -1994,7 +1994,7 @@ m <- lmm_slope("egfr_diff_pct_sens_q4", docx_name = "sec13_lmm_q4")
 m
 ```
 
-## 13.10 Mixed model — quartiles, survivors cohort
+## 13.10 Mixed model — quartiles (Carboplatin AUC ≥ 3, survivors)
 
 [📄 Download Word table](../tables/auc3/sec13_lmm_q4_surv.docx)
 
@@ -2010,7 +2010,7 @@ dat <- dat_full_cohort
 m
 ```
 
-## 13.11 Mixed model — continuous exposure
+## 13.11 Mixed model — continuous exposure (Carboplatin AUC ≥ 3, all patients)
 
 `egfr_diff_pct_sens_per10` is the continuous exposure on the per-10-percentage-point
 **decline** scale, the same one the Fine-Gray models use. The `time_yr ×
