@@ -391,8 +391,8 @@ t1 <- dat %>%
     eskd_defination_1, esrd_kt_after_ici, eskd_composite, ckd_composite,
     # Delta eGFR vs baseline at fixed marks (Section 5.16b). Negative =
     # decline. Closest creatinine within +/- 45 days of each mark.
-    delta_egfr_d90, delta_egfr_d180, delta_egfr_d365,
-    delta_egfr_pct_d90, delta_egfr_pct_d180, delta_egfr_pct_d365
+    delta_egfr_d90, delta_egfr_d180, delta_egfr_d360,
+    delta_egfr_pct_d90, delta_egfr_pct_d180, delta_egfr_pct_d360
   ) %>%
   tableone_mat()
 
@@ -528,43 +528,45 @@ cat("\nSerial-creatinine AKI (rows) vs 90-day KDIGO AKI (columns):\n")
 print(table(`serial aki` = dat$aki, `AKI_kdigo_90days` = dat$AKI_kdigo_90days))
 ```
 
-## 3.3 Delta eGFR (creatinine) vs Baseline at 90 / 180 / 365 Days
+## 3.3 Delta eGFR (creatinine) vs Baseline over Days 1-90 / 91-180 / 181-270 / 271-360
 
-Change in creatinine eGFR from `eGFR_CRE_baseline`, using the creatinine
-**closest to each mark** and taking it only when it falls within **± 45 days**
-of that mark. Days run from `baseline_sample_date`. Built in Section 5.16b of
+Change in creatinine eGFR from `eGFR_CRE_baseline`, using the **median of
+every creatinine eGFR inside each window** — days 1-90, 91-180, 181-270 and
+271-360. Days run from `baseline_sample_date`. Built in Section 5.16b of
 [Data Management](ritu_data.qmd).
 
 > **Negative means decline.** `delta_egfr_d90` is eGFR at day 90 minus eGFR at
 > baseline, so a fall in kidney function is a negative number — the opposite sign
 > to `pct_drop` in the data-management pipeline.
 >
-> The ± 45-day window matches the window used for every other baseline lab in
-> this pipeline (`pre_CRE_45days`), and it is the widest window that stops the
-> 90-day and 180-day marks drawing on the same measurement. It costs coverage at
-> the later marks — the `n` column below shows how much.
+> The windows are fixed and non-overlapping, so no measurement feeds two marks
+> and every value drawn in a window counts toward it. A patient contributes to a
+> window whenever they have at least one creatinine in it — the `n` column below
+> shows how coverage falls off at the later windows.
 
 [📄 Download Word table](../tables/carbo/sec3_3_delta_egfr.docx)
 
 ```{r}
 #| label: ritu-carbo-delta-egfr
-dgfr_marks <- c(90, 180, 365)
+dgfr_marks <- c(90, 180, 270, 360)
 
 dgfr_tbl <- purrr::map_dfr(dgfr_marks, function(mk) {
   d  <- dat[[paste0("delta_egfr_d", mk)]]
   dp <- dat[[paste0("delta_egfr_pct_d", mk)]]
-  dy <- dat[[paste0("cre_day_d", mk)]]
+  nv <- dat[[paste0("n_cre_d", mk)]]
   g  <- dat[[paste0("eGFR_CRE_d", mk)]]
   ok <- !is.na(d)
   q3 <- function(x) sprintf("%.1f [%.1f, %.1f]",
          median(x), quantile(x, .25), quantile(x, .75))
+  wl <- c("90" = "Days 1-90", "180" = "Days 91-180",
+          "270" = "Days 181-270", "360" = "Days 271-360")
   tibble::tibble(
-    Mark = paste0("Day ", mk),
+    Window = unname(wl[as.character(mk)]),
     n = sum(ok),
     `% with a value in window` = round(100 * sum(ok) / nrow(dat), 1),
-    `Actual day` = sprintf("%.0f [%.0f, %.0f]",
-      median(dy[ok]), quantile(dy[ok], .25), quantile(dy[ok], .75)),
-    `eGFR at mark` = q3(g[ok]),
+    `Creatinines in window` = sprintf("%.0f [%.0f, %.0f]",
+      median(nv[ok]), quantile(nv[ok], .25), quantile(nv[ok], .75)),
+    `Median eGFR in window` = q3(g[ok]),
     `Delta eGFR` = q3(d[ok]),
     `Delta eGFR (%)` = q3(dp[ok])
   )
@@ -579,29 +581,33 @@ flextable::save_as_docx(ft_dgfr, path = file.path(docx_dir, "sec3_3_delta_egfr.d
 ft_dgfr
 ```
 
-**Who is missing, and why.** The marks are only as good as the creatinine
-follow-up behind them. The first table below shows which of the three marks each
-patient covers; the second shows how many creatinines those patients had and how
-far their follow-up reached.
+**Who is missing, and why.** The windows are only as good as the creatinine
+follow-up behind them. The first two tables below show how many windows each
+patient covers and which ones; the last shows how many creatinines those
+patients had and how far their follow-up reached.
 
 ```{r}
 #| label: ritu-carbo-delta-egfr-coverage
-.pat <- paste0(dat$dgfr_avail_d90, dat$dgfr_avail_d180, dat$dgfr_avail_d365)
-.k   <- dat$dgfr_avail_d90 + dat$dgfr_avail_d180 + dat$dgfr_avail_d365
-
-pat_lv <- c("111", "110", "101", "011", "100", "010", "001", "000")
-pat_lb <- c("All three", "Day 90 + 180", "Day 90 + 365", "Day 180 + 365",
-            "Day 90 only", "Day 180 only", "Day 365 only", "None of the three")
-
+.k <- dat$dgfr_avail_d90 + dat$dgfr_avail_d180 +
+      dat$dgfr_avail_d270 + dat$dgfr_avail_d360
 cov_tbl <- tibble::tibble(
-  `Marks with a value` = pat_lb,
-  n = as.integer(table(factor(.pat, levels = pat_lv)))
-) %>%
+  `Windows with a value` = factor(.k, levels = 4:0,
+    labels = c("All four", "Three", "Two", "One", "None"))) %>%
+  dplyr::count(`Windows with a value`, .drop = FALSE) %>%
   dplyr::mutate(`% of cohort` = round(100 * n / nrow(dat), 1))
 
 knitr::kable(cov_tbl, caption = sprintf(paste0(
-  "Which of the three marks each patient has a creatinine for, N = %d. ",
-  "A mark counts only when a creatinine falls within ± 45 days of it."), nrow(dat)))
+  "How many of the four windows each patient has at least one creatinine in, ",
+  "N = %d."), nrow(dat)))
+
+per_window <- tibble::tibble(
+  Window = c("Days 1-90", "Days 91-180", "Days 181-270", "Days 271-360"),
+  n = c(sum(dat$dgfr_avail_d90), sum(dat$dgfr_avail_d180),
+        sum(dat$dgfr_avail_d270), sum(dat$dgfr_avail_d360))) %>%
+  dplyr::mutate(`% of cohort` = round(100 * n / nrow(dat), 1))
+
+knitr::kable(per_window, caption = sprintf(paste0(
+  "Patients with at least one creatinine in each window, N = %d."), nrow(dat)))
 ```
 
 ```{r}
@@ -696,7 +702,45 @@ ggplot(diffsens_hist, aes(x = egfr_diff_pct_sens, fill = side)) +
   theme_minimal(base_size = 14)
 ```
 
-## 3.5 CKD Stage Reclassification — Creatinine vs Creatinine + Cystatin C
+## 4.3 eGFR Difference (sens) distribution — survivors cohort
+
+The same distribution as above, restricted to patients still in follow-up beyond
+one year (`days_last_follow_up > 365`) — the cohort the survivors models run on.
+
+```{r}
+#| label: ritu-carbo-egfr-diffsens-hist-surv
+#| fig-width: 8
+#| fig-height: 5
+diffsens_surv <- dat %>%
+  filter(!is.na(egfr_diff_pct_sens), !is.na(days_last_follow_up),
+         days_last_follow_up > 365) %>%
+  mutate(side = ifelse(egfr_diff_pct_sens < 0, "neg", "pos"))
+
+ggplot(diffsens_surv, aes(x = egfr_diff_pct_sens, fill = side)) +
+  geom_histogram(aes(y = after_stat(count) / sum(after_stat(count)) * 100),
+                 binwidth = 2, boundary = 0, color = "black", alpha = 0.85) +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "grey30") +
+  geom_vline(xintercept = -30, linetype = "dotted", color = "#1F78B4", linewidth = 1) +
+  scale_fill_manual(values = c(neg = "#E31A1C", pos = "grey60"), guide = "none") +
+  labs(title = "eGFR Difference (sens), survivors only (follow-up > 365 days)",
+       subtitle = sprintf(paste0(
+         "Median %.1f %% of %d survivors\n",
+         "Below -10 %%: %d (%.1f %%)   |   below -20 %%: %d (%.1f %%)",
+         "   |   below -30 %%: %d (%.1f %%)"),
+         median(diffsens_surv$egfr_diff_pct_sens),
+         nrow(diffsens_surv),
+         sum(diffsens_surv$egfr_diff_pct_sens < -10),
+         100 * mean(diffsens_surv$egfr_diff_pct_sens < -10),
+         sum(diffsens_surv$egfr_diff_pct_sens < -20),
+         100 * mean(diffsens_surv$egfr_diff_pct_sens < -20),
+         sum(diffsens_surv$egfr_diff_pct_sens < -30),
+         100 * mean(diffsens_surv$egfr_diff_pct_sens < -30)),
+       x = "eGFR Difference (sens, %)", y = "Percent of Patients (%)") +
+  scale_x_continuous(breaks = seq(-100, 200, 10)) +
+  theme_minimal(base_size = 14)
+```
+
+## 4.4 CKD Stage Reclassification — Creatinine vs Creatinine + Cystatin C
 
 Every patient carries two KDIGO G-stages, both built in
 [Data Management](ritu_data.qmd): `ckd_stage_cre` from `baseline_cre_egfr`
@@ -1324,25 +1368,25 @@ A total of `r n_excess` (`r pct_excess`%) patients received an excess dose of ca
 (Denominator: `r n_with_dx` carboplatin patients with a computable predicted dose.)
 
 
-# 11 365-Day Delta eGFR on the Binary eGFR Difference (sens) (Carboplatin)
+# 11 360-Day Delta eGFR on the Binary eGFR Difference (sens) (Carboplatin)
 
-> The outcome is `delta_egfr_d365` — eGFR at day 365 minus baseline, in
-> mL/min/1.73m², **negative = decline** (see the Delta eGFR table above). Only
-> patients with a creatinine within ± 45 days of day 365 contribute, so every
-> model in this section is complete-case on that variable and its n is well
-> below the cohort.
+> The outcome is `delta_egfr_d360` — the median creatinine eGFR over days
+> 271-360 minus baseline, in mL/min/1.73m², **negative = decline** (see the
+> Delta eGFR table above). Only patients with at least one creatinine in that
+> window contribute, so every model in this section is complete-case on that
+> variable and its n is well below the cohort.
 >
 > Both cuts of `egfr_diff_pct_sens` are reported: the primary one at **− 10 %**
 > and the stricter one at **− 30 %**. `< -10%` means the cystatin C eGFR sits
 > more than 10 % below the creatinine eGFR; `>= -10%` is the reference level.
 
-## 11.1 365-day delta eGFR by group — cut at − 10 %
+## 11.1 360-day delta eGFR by group — cut at − 10 %
 
 ```{r}
 #| label: ritu-carbo-cat-groups
 .grp_row <- function(d, lab) {
-  v <- d$delta_egfr_d365[!is.na(d$delta_egfr_d365)]
-  p <- d$delta_egfr_pct_d365[!is.na(d$delta_egfr_pct_d365)]
+  v <- d$delta_egfr_d360[!is.na(d$delta_egfr_d360)]
+  p <- d$delta_egfr_pct_d360[!is.na(d$delta_egfr_pct_d360)]
   tibble::tibble(
     Group = lab, n = length(v),
     `Delta eGFR, mean (SD)` = sprintf("%.1f (%.1f)", mean(v), sd(v)),
@@ -1355,12 +1399,12 @@ d0 <- dat %>% filter(egfr_diff_pct_sens_cat == ">= -10%")
 d1 <- dat %>% filter(egfr_diff_pct_sens_cat == "< -10%")
 grp_tbl <- dplyr::bind_rows(.grp_row(d0, ">= -10% (reference)"), .grp_row(d1, "< -10%"))
 
-.wt <- tryCatch(wilcox.test(delta_egfr_d365 ~ egfr_diff_pct_sens_cat, data = dat),
+.wt <- tryCatch(wilcox.test(delta_egfr_d360 ~ egfr_diff_pct_sens_cat, data = dat),
                 error = function(e) NULL)
-.tt <- tryCatch(t.test(delta_egfr_d365 ~ egfr_diff_pct_sens_cat, data = dat),
+.tt <- tryCatch(t.test(delta_egfr_d360 ~ egfr_diff_pct_sens_cat, data = dat),
                 error = function(e) NULL)
 knitr::kable(grp_tbl, caption = sprintf(paste0(
-  "365-day delta eGFR by binary eGFR difference (sens). Negative = decline. ",
+  "360-day delta eGFR by binary eGFR difference (sens). Negative = decline. ",
   "Wilcoxon p = %s; Welch t-test p = %s."),
   if (is.null(.wt)) "—" else format.pval(.wt$p.value, digits = 3),
   if (is.null(.tt)) "—" else format.pval(.tt$p.value, digits = 3)))
@@ -1374,7 +1418,7 @@ race-free creatinine indexed to body surface area (mL/min/1.73m²). Coefficients
 365-day eGFR change: a negative coefficient on `< -10%` means that group
 declined further.
 
-[📄 Download Word table](../tables/carbo/sec11_lm_d365.docx)
+[📄 Download Word table](../tables/carbo/sec11_lm_d360.docx)
 
 ```{r}
 #| label: ritu-carbo-cat-lm
@@ -1385,30 +1429,30 @@ declined further.
   else .adj_set(NULL, egfr_adj)
 }
 
-lm_d365 <- function(pred_var, egfr_adj = "cre_idx", docx_name = NULL) {
+lm_d360 <- function(pred_var, egfr_adj = "cre_idx", docx_name = NULL) {
   adj  <- .adj_for(pred_var, egfr_adj)
   vars <- c(pred_var, adj)
-  fmla <- as.formula(paste("delta_egfr_d365 ~", paste(vars, collapse = " + ")))
+  fmla <- as.formula(paste("delta_egfr_d360 ~", paste(vars, collapse = " + ")))
   tbl_mv <- lm(fmla, data = dat) %>%
     tbl_regression(pvalue_fun = function(x) style_pvalue(x, digits = 3)) %>%
     add_n()
   tbl_uv <- tbl_uvregression(
-    data = dat %>% dplyr::select(dplyr::all_of(c("delta_egfr_d365", vars))),
-    method = lm, y = delta_egfr_d365,
+    data = dat %>% dplyr::select(dplyr::all_of(c("delta_egfr_d360", vars))),
+    method = lm, y = delta_egfr_d360,
     pvalue_fun = function(x) style_pvalue(x, digits = 3))
   out <- tbl_merge(tbls = list(tbl_uv, tbl_mv),
                    tab_spanner = c("**Univariable**", "**Multivariable**"))
   if (!is.null(docx_name)) save_tbl_docx(out, docx_name)
   out
 }
-lm_d365 <- .wrap_tbl(lm_d365)
+lm_d360 <- .wrap_tbl(lm_d360)
 
-lm_d365("egfr_diff_pct_sens_cat", docx_name = "sec11_lm_d365")
+lm_d360("egfr_diff_pct_sens_cat", docx_name = "sec11_lm_d360")
 ```
 
 ## 11.3 Linear model — cut at − 10 %, survivors cohort
 
-[📄 Download Word table](../tables/carbo/sec11_lm_d365_surv.docx)
+[📄 Download Word table](../tables/carbo/sec11_lm_d360_surv.docx)
 
 ```{r}
 #| label: ritu-carbo-cat-lm-surv
@@ -1416,12 +1460,12 @@ dat_full_cohort <- dat
 dat <- dat_full_cohort %>%
   filter(!is.na(days_last_follow_up), days_last_follow_up > 365) %>%
   mutate(across(where(is.factor) & !starts_with("cmp_status_"), droplevels))
-out <- lm_d365("egfr_diff_pct_sens_cat", docx_name = "sec11_lm_d365_surv")
+out <- lm_d360("egfr_diff_pct_sens_cat", docx_name = "sec11_lm_d360_surv")
 dat <- dat_full_cohort
 out
 ```
 
-## 11.4 365-day delta eGFR by group — intermediate cut at − 20 %
+## 11.4 360-day delta eGFR by group — intermediate cut at − 20 %
 
 ```{r}
 #| label: ritu-carbo-cat20-groups
@@ -1429,12 +1473,12 @@ f0 <- dat %>% filter(egfr_diff_pct_sens_cat20 == ">= -20%")
 f1 <- dat %>% filter(egfr_diff_pct_sens_cat20 == "< -20%")
 grp20 <- dplyr::bind_rows(.grp_row(f0, ">= -20% (reference)"), .grp_row(f1, "< -20%"))
 
-.wt20 <- tryCatch(wilcox.test(delta_egfr_d365 ~ egfr_diff_pct_sens_cat20, data = dat),
+.wt20 <- tryCatch(wilcox.test(delta_egfr_d360 ~ egfr_diff_pct_sens_cat20, data = dat),
                   error = function(e) NULL)
-.tt20 <- tryCatch(t.test(delta_egfr_d365 ~ egfr_diff_pct_sens_cat20, data = dat),
+.tt20 <- tryCatch(t.test(delta_egfr_d360 ~ egfr_diff_pct_sens_cat20, data = dat),
                   error = function(e) NULL)
 knitr::kable(grp20, caption = sprintf(paste0(
-  "365-day delta eGFR by the intermediate -20 %% cut. Negative = decline. ",
+  "360-day delta eGFR by the intermediate -20 %% cut. Negative = decline. ",
   "Wilcoxon p = %s; Welch t-test p = %s."),
   if (is.null(.wt20)) "—" else format.pval(.wt20$p.value, digits = 3),
   if (is.null(.tt20)) "—" else format.pval(.tt20$p.value, digits = 3)))
@@ -1442,16 +1486,16 @@ knitr::kable(grp20, caption = sprintf(paste0(
 
 ## 11.5 Linear model — cut at − 20 %
 
-[📄 Download Word table](../tables/carbo/sec11_lm_d365_c20.docx)
+[📄 Download Word table](../tables/carbo/sec11_lm_d360_c20.docx)
 
 ```{r}
 #| label: ritu-carbo-cat20-lm
-lm_d365("egfr_diff_pct_sens_cat20", docx_name = "sec11_lm_d365_c20")
+lm_d360("egfr_diff_pct_sens_cat20", docx_name = "sec11_lm_d360_c20")
 ```
 
 ## 11.6 Linear model — cut at − 20 %, survivors cohort
 
-[📄 Download Word table](../tables/carbo/sec11_lm_d365_c20_surv.docx)
+[📄 Download Word table](../tables/carbo/sec11_lm_d360_c20_surv.docx)
 
 ```{r}
 #| label: ritu-carbo-cat20-lm-surv
@@ -1459,12 +1503,12 @@ dat_full_cohort <- dat
 dat <- dat_full_cohort %>%
   filter(!is.na(days_last_follow_up), days_last_follow_up > 365) %>%
   mutate(across(where(is.factor) & !starts_with("cmp_status_"), droplevels))
-out20 <- lm_d365("egfr_diff_pct_sens_cat20", docx_name = "sec11_lm_d365_c20_surv")
+out20 <- lm_d360("egfr_diff_pct_sens_cat20", docx_name = "sec11_lm_d360_c20_surv")
 dat <- dat_full_cohort
 out20
 ```
 
-## 11.7 365-day delta eGFR by group — stricter cut at − 30 %
+## 11.7 360-day delta eGFR by group — stricter cut at − 30 %
 
 ```{r}
 #| label: ritu-carbo-cat30-groups
@@ -1472,12 +1516,12 @@ e0 <- dat %>% filter(egfr_diff_pct_sens_cat30 == ">= -30%")
 e1 <- dat %>% filter(egfr_diff_pct_sens_cat30 == "< -30%")
 grp30 <- dplyr::bind_rows(.grp_row(e0, ">= -30% (reference)"), .grp_row(e1, "< -30%"))
 
-.wt30 <- tryCatch(wilcox.test(delta_egfr_d365 ~ egfr_diff_pct_sens_cat30, data = dat),
+.wt30 <- tryCatch(wilcox.test(delta_egfr_d360 ~ egfr_diff_pct_sens_cat30, data = dat),
                   error = function(e) NULL)
-.tt30 <- tryCatch(t.test(delta_egfr_d365 ~ egfr_diff_pct_sens_cat30, data = dat),
+.tt30 <- tryCatch(t.test(delta_egfr_d360 ~ egfr_diff_pct_sens_cat30, data = dat),
                   error = function(e) NULL)
 knitr::kable(grp30, caption = sprintf(paste0(
-  "365-day delta eGFR by the stricter -30 %% cut. Negative = decline. ",
+  "360-day delta eGFR by the stricter -30 %% cut. Negative = decline. ",
   "Wilcoxon p = %s; Welch t-test p = %s."),
   if (is.null(.wt30)) "—" else format.pval(.wt30$p.value, digits = 3),
   if (is.null(.tt30)) "—" else format.pval(.tt30$p.value, digits = 3)))
@@ -1485,16 +1529,16 @@ knitr::kable(grp30, caption = sprintf(paste0(
 
 ## 11.8 Linear model — cut at − 30 %
 
-[📄 Download Word table](../tables/carbo/sec11_lm_d365_c30.docx)
+[📄 Download Word table](../tables/carbo/sec11_lm_d360_c30.docx)
 
 ```{r}
 #| label: ritu-carbo-cat30-lm
-lm_d365("egfr_diff_pct_sens_cat30", docx_name = "sec11_lm_d365_c30")
+lm_d360("egfr_diff_pct_sens_cat30", docx_name = "sec11_lm_d360_c30")
 ```
 
 ## 11.9 Linear model — cut at − 30 %, survivors cohort
 
-[📄 Download Word table](../tables/carbo/sec11_lm_d365_c30_surv.docx)
+[📄 Download Word table](../tables/carbo/sec11_lm_d360_c30_surv.docx)
 
 ```{r}
 #| label: ritu-carbo-cat30-lm-surv
@@ -1502,7 +1546,7 @@ dat_full_cohort <- dat
 dat <- dat_full_cohort %>%
   filter(!is.na(days_last_follow_up), days_last_follow_up > 365) %>%
   mutate(across(where(is.factor) & !starts_with("cmp_status_"), droplevels))
-out30 <- lm_d365("egfr_diff_pct_sens_cat30", docx_name = "sec11_lm_d365_c30_surv")
+out30 <- lm_d360("egfr_diff_pct_sens_cat30", docx_name = "sec11_lm_d360_c30_surv")
 dat <- dat_full_cohort
 out30
 ```
@@ -1598,41 +1642,41 @@ dat <- dat_full_cohort
 q_ckd_surv
 ```
 
-## 12.6 365-Day Delta eGFR by Quartile
+## 12.6 360-Day Delta eGFR by Quartile
 
 ```{r}
 #| label: ritu-carbo-q4-groups
 qd <- dat %>%
-  filter(!is.na(egfr_diff_pct_sens_q4), !is.na(delta_egfr_d365)) %>%
+  filter(!is.na(egfr_diff_pct_sens_q4), !is.na(delta_egfr_d360)) %>%
   group_by(Quartile = egfr_diff_pct_sens_q4) %>%
   summarise(n = n(),
             `Delta eGFR, mean (SD)` = sprintf("%.1f (%.1f)",
-                                              mean(delta_egfr_d365), sd(delta_egfr_d365)),
+                                              mean(delta_egfr_d360), sd(delta_egfr_d360)),
             `Delta eGFR, median [IQR]` = sprintf("%.1f [%.1f, %.1f]",
-              median(delta_egfr_d365), quantile(delta_egfr_d365, .25),
-              quantile(delta_egfr_d365, .75)),
+              median(delta_egfr_d360), quantile(delta_egfr_d360, .25),
+              quantile(delta_egfr_d360, .75)),
             .groups = "drop")
 
-.kw <- tryCatch(kruskal.test(delta_egfr_d365 ~ egfr_diff_pct_sens_q4, data = dat),
+.kw <- tryCatch(kruskal.test(delta_egfr_d360 ~ egfr_diff_pct_sens_q4, data = dat),
                 error = function(e) NULL)
 knitr::kable(qd, caption = sprintf(paste0(
-  "365-day delta eGFR by quartile of eGFR difference (sens). Negative = ",
+  "360-day delta eGFR by quartile of eGFR difference (sens). Negative = ",
   "decline. Kruskal-Wallis p = %s."),
   if (is.null(.kw)) "—" else format.pval(.kw$p.value, digits = 3)))
 ```
 
-## 12.7 Linear model — 365-day delta eGFR on quartiles
+## 12.7 Linear model — 360-day delta eGFR on quartiles
 
-[📄 Download Word table](../tables/carbo/sec12_lm_d365_q4.docx)
+[📄 Download Word table](../tables/carbo/sec12_lm_d360_q4.docx)
 
 ```{r}
 #| label: ritu-carbo-q4-lm
-lm_d365("egfr_diff_pct_sens_q4", docx_name = "sec12_lm_d365_q4")
+lm_d360("egfr_diff_pct_sens_q4", docx_name = "sec12_lm_d360_q4")
 ```
 
-## 12.8 Linear model — 365-day delta eGFR on quartiles, survivors cohort
+## 12.8 Linear model — 360-day delta eGFR on quartiles, survivors cohort
 
-[📄 Download Word table](../tables/carbo/sec12_lm_d365_q4_surv.docx)
+[📄 Download Word table](../tables/carbo/sec12_lm_d360_q4_surv.docx)
 
 ```{r}
 #| label: ritu-carbo-q4-lm-surv
@@ -1640,7 +1684,7 @@ dat_full_cohort <- dat
 dat <- dat_full_cohort %>%
   filter(!is.na(days_last_follow_up), days_last_follow_up > 365) %>%
   mutate(across(where(is.factor) & !starts_with("cmp_status_"), droplevels))
-q_lm_surv <- lm_d365("egfr_diff_pct_sens_q4", docx_name = "sec12_lm_d365_q4_surv")
+q_lm_surv <- lm_d360("egfr_diff_pct_sens_q4", docx_name = "sec12_lm_d360_q4_surv")
 dat <- dat_full_cohort
 q_lm_surv
 ```

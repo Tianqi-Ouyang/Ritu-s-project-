@@ -225,12 +225,14 @@ the full length of RPDR creatinine follow-up.
 | `ckd_composite` | `eskd_composite == 1 \| ckd_incidence == 1 \| ckd_progression == 1` |
 | `time_to_ckd_incidence` / `_progression` / `_eskd_composite` / `_ckd_composite` | Days from `baseline_sample_date` to each event |
 | `aki_before_ckd` | 1 if `aki_days <= time_to_ckd_composite` |
-| `eGFR_CRE_d90` / `_d180` / `_d365` | CKD-EPI creatinine eGFR from the creatinine closest to that day, within +/- 45 days (Section 5.16b) |
-| `cre_day_d90` / `_d180` / `_d365` | The actual day of the creatinine used, so the gap from the nominal mark is auditable |
-| `delta_egfr_d90` / `_d180` / `_d365` | `eGFR at the mark - eGFR_CRE_baseline`, mL/min/1.73m². **Negative = decline** |
-| `delta_egfr_pct_d90` / `_d180` / `_d365` | The same change as a percentage of baseline. **Negative = decline** |
-| `dgfr_avail_d90` / `_d180` / `_d365` | 1 if the patient had a creatinine within +/- 45 days of that mark — the denominator behind each delta |
-| `n_cre_post` | Number of post-baseline creatinine measurements, 0 if none. Separates "no creatinine at all" from "creatinine drawn, but not near a mark" |
+| `eGFR_CRE_d90` / `_d180` / `_d270` / `_d360` | Median CKD-EPI creatinine eGFR over every value in days 1-90 / 91-180 / 181-270 / 271-360 (Section 5.16b) |
+| `cre_day_d90` / `_d180` / `_d270` / `_d360` | Median day of the values that window median is built from |
+| `n_cre_d90` / `_d180` / `_d270` / `_d360` | How many creatinine values went into that window median |
+| `delta_egfr_d90` / `_d180` / `_d270` / `_d360` | `window median - eGFR_CRE_baseline`, mL/min/1.73m². **Negative = decline** |
+| `delta_egfr_pct_d90` / `_d180` / `_d270` / `_d360` | The same change as a percentage of baseline. **Negative = decline** |
+| `dgfr_avail_d90` / `_d180` / `_d270` / `_d360` | 1 if the patient had at least one creatinine inside that window — the denominator behind each delta |
+| `n_cre_post` | Number of post-baseline creatinine measurements, 0 if none |
+| `n_cre_0_360` | Number of post-baseline creatinine measurements falling in days 1-360 |
 | `death_lt` / `death_days_lt` | Death at any time with a date from the RPDR `Date_Of_Death`. An input to `death_days_any`, not used directly as a competing event |
 | `rpdr_deceased` | RPDR `Vital_status` is not "Not reported as deceased". Exceeds `death_lt` because some deaths are recorded without a date |
 | `cmp_time_aki_365` / `cmp_status_aki_365` | Competing-risk pair for AKI, administratively censored at 365 days |
@@ -2126,14 +2128,17 @@ date used by every other time variable here. The baseline eGFR is
 `eGFR_CRE_baseline`, the same baseline the CKD outcomes are referenced to.
 
 **Sign convention: negative means decline.** `delta_egfr_d90` is
-`eGFR at day 90 - eGFR at baseline`, so a fall in kidney function is a negative
-number. This is the opposite sign to `pct_drop` in Section 5.16, which is
+`median eGFR over days 1-90 - eGFR at baseline`, so a fall in kidney function is
+a negative number. This is the opposite sign to `pct_drop` in Section 5.16, which is
 positive for a drop.
 
 ```{r}
 #| label: clean-delta-egfr
-DGFR_WINDOW <- 45
-DGFR_MARKS  <- c(90, 180, 365)
+# Fixed, non-overlapping windows. Each mark is the MEDIAN of every creatinine
+# eGFR inside its window, not the single value nearest a nominal day.
+DGFR_WINDOWS <- list("90"  = c(1, 90),    "180" = c(91, 180),
+                     "270" = c(181, 270), "360" = c(271, 360))
+DGFR_MARKS   <- names(DGFR_WINDOWS)
 
 # Day offsets for the trajectory, measured from baseline_sample_date rather than
 # from the pre-baseline creatinine draw that anchors egfr_traj.
@@ -2142,30 +2147,33 @@ dgfr_traj <- egfr_traj %>%
   mutate(cre_day = as.numeric(eGFR_CRE_date - baseline_sample_date)) %>%
   filter(!is.na(cre_day), cre_day > 0)
 
-dgfr_at_mark <- function(traj, mark, window = DGFR_WINDOW) {
+dgfr_in_window <- function(traj, mark, lo, hi) {
   traj %>%
-    mutate(.gap = abs(cre_day - mark)) %>%
-    filter(.gap <= window) %>%
+    filter(cre_day >= lo, cre_day <= hi) %>%
     group_by(EMPI) %>%
-    slice_min(.gap, n = 1, with_ties = FALSE) %>%
-    ungroup() %>%
+    # Names must not start with .d / .b / .g: summarise() partial-matches those
+    # to its own .data / .by formals and evaluates them outside the data mask.
+    summarise(g_med = median(eGFR_CRE), d_med = median(cre_day),
+              n_val = dplyr::n(), b_val = dplyr::first(eGFR_CRE_baseline),
+              .groups = "drop") %>%
     transmute(
       EMPI,
-      !!paste0("eGFR_CRE_d", mark)       := round(eGFR_CRE, 1),
-      !!paste0("cre_day_d", mark)        := cre_day,
-      !!paste0("delta_egfr_d", mark)     := round(eGFR_CRE - eGFR_CRE_baseline, 1),
-      !!paste0("delta_egfr_pct_d", mark) := round(
-        100 * (eGFR_CRE - eGFR_CRE_baseline) / eGFR_CRE_baseline, 1)
+      !!paste0("eGFR_CRE_d", mark)       := round(g_med, 1),
+      !!paste0("cre_day_d", mark)        := round(d_med),
+      !!paste0("n_cre_d", mark)          := as.integer(n_val),
+      !!paste0("delta_egfr_d", mark)     := round(g_med - b_val, 1),
+      !!paste0("delta_egfr_pct_d", mark) := round(100 * (g_med - b_val) / b_val, 1)
     )
 }
 
 for (mk in DGFR_MARKS) {
+  .w <- DGFR_WINDOWS[[mk]]
   final_master <- final_master %>%
-    left_join(dgfr_at_mark(dgfr_traj, mk), by = "EMPI")
+    left_join(dgfr_in_window(dgfr_traj, mk, .w[1], .w[2]), by = "EMPI")
 }
 
-# Availability indicator per mark: 1 if the patient had a creatinine within
-# DGFR_WINDOW days of it, 0 otherwise. Carried as its own variable so Table 1
+# Availability indicator per mark: 1 if the patient had at least one creatinine
+# inside that window, 0 otherwise. Carried as its own variable so Table 1
 # reports the denominator as n (%) next to the delta it belongs to, rather than
 # leaving it in a gtsummary "Unknown" row.
 for (mk in DGFR_MARKS) {
@@ -2173,31 +2181,39 @@ for (mk in DGFR_MARKS) {
     as.integer(!is.na(final_master[[paste0("delta_egfr_d", mk)]]))
 }
 
-# Count of post-baseline creatinine measurements per patient. Needed by the
-# coverage table on the analysis pages, which has to separate "no creatinine at
-# all" from "creatinine drawn, but never near one of these marks".
+# Counts of post-baseline creatinine measurements per patient: over the whole
+# record, and restricted to the day 1-360 span the four windows cover.
 final_master <- final_master %>%
   left_join(dgfr_traj %>% count(EMPI, name = "n_cre_post"), by = "EMPI") %>%
-  mutate(n_cre_post = ifelse(is.na(n_cre_post), 0L, n_cre_post))
+  left_join(dgfr_traj %>% filter(cre_day <= 360) %>%
+              count(EMPI, name = "n_cre_0_360"), by = "EMPI") %>%
+  mutate(n_cre_post  = ifelse(is.na(n_cre_post), 0L, n_cre_post),
+         n_cre_0_360 = ifelse(is.na(n_cre_0_360), 0L, n_cre_0_360))
 
-cat("Creatinine available within +/-", DGFR_WINDOW, "days of each mark:\n")
+cat("Creatinine available inside each window:\n")
 for (mk in DGFR_MARKS) {
+  .w   <- DGFR_WINDOWS[[mk]]
   n_ok <- sum(final_master[[paste0("dgfr_avail_d", mk)]] == 1)
-  cat(sprintf("  day %3d: %3d / %3d (%.1f%%)\n", mk, n_ok, nrow(final_master),
-              100 * n_ok / nrow(final_master)))
+  cat(sprintf("  days %3d-%3d: %3d / %3d (%.1f%%)\n", .w[1], .w[2], n_ok,
+              nrow(final_master), 100 * n_ok / nrow(final_master)))
 }
+cat(sprintf("Creatinines per patient in days 1-360: median %.0f [IQR %.0f, %.0f]\n",
+            median(final_master$n_cre_0_360),
+            quantile(final_master$n_cre_0_360, .25),
+            quantile(final_master$n_cre_0_360, .75)))
 
 dgfr_summary <- purrr::map_dfr(DGFR_MARKS, function(mk) {
   d  <- final_master[[paste0("delta_egfr_d", mk)]]
   dp <- final_master[[paste0("delta_egfr_pct_d", mk)]]
-  dy <- final_master[[paste0("cre_day_d", mk)]]
+  nv <- final_master[[paste0("n_cre_d", mk)]]
   ok <- !is.na(d)
+  .w <- DGFR_WINDOWS[[mk]]
   tibble::tibble(
-    Mark = paste0("Day ", mk),
+    Window = sprintf("Days %d-%d", .w[1], .w[2]),
     `n with a value` = sum(ok),
     `% with a value in window` = round(100 * sum(ok) / nrow(final_master), 1),
-    `Actual day, median [IQR]` = sprintf("%.0f [%.0f, %.0f]",
-      median(dy[ok]), quantile(dy[ok], .25), quantile(dy[ok], .75)),
+    `Creatinines in window, median [IQR]` = sprintf("%.0f [%.0f, %.0f]",
+      median(nv[ok]), quantile(nv[ok], .25), quantile(nv[ok], .75)),
     `Delta eGFR, median [IQR]` = sprintf("%.1f [%.1f, %.1f]",
       median(d[ok]), quantile(d[ok], .25), quantile(d[ok], .75)),
     `Delta eGFR %, median [IQR]` = sprintf("%.1f [%.1f, %.1f]",
@@ -2207,8 +2223,8 @@ dgfr_summary <- purrr::map_dfr(DGFR_MARKS, function(mk) {
 
 knitr::kable(dgfr_summary, caption = paste0(
   "Delta eGFR (creatinine) vs baseline, full pipeline cohort (N = ",
-  nrow(final_master), "), closest creatinine within +/- ", DGFR_WINDOW,
-  " days of each mark. Negative = decline from baseline."))
+  nrow(final_master), "), median of every creatinine eGFR inside each window. ",
+  "Negative = decline from baseline."))
 ```
 
 ## 5.17 AKI from serial creatinine (KDIGO-style)
