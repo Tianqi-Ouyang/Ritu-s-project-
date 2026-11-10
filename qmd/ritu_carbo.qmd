@@ -1688,3 +1688,340 @@ q_lm_surv <- lm_d360("egfr_diff_pct_sens_q4", docx_name = "sec12_lm_d360_q4_surv
 dat <- dat_full_cohort
 q_lm_surv
 ```
+
+# 13 Linear Mixed Model — Creatinine eGFR Slope over Days 0-360 (Carboplatin)
+
+> **What this section adds.** The 360-Day Delta eGFR section compares one number
+> per patient: the median creatinine eGFR over days 271-360 minus baseline. That
+> needs a creatinine in the final window, which only part of the cohort has, so
+> those models are complete-case on a single difference. This section instead
+> fits a **linear mixed model** to every creatinine eGFR in days 0-360, so each
+> patient contributes whatever measurements they have and nobody is dropped for
+> missing the last window. Both are kept — they answer related but different
+> questions, and it is worth seeing whether they agree.
+>
+> **Data.** One row per creatinine eGFR. Day 0 is `eGFR_CRE_baseline`; every
+> later row is a post-baseline creatinine inside days 1-360, read from
+> `ritu_cre_traj.rds` (Section 5.16b of [Data Management](ritu_data.qmd)).
+> Patients with no post-baseline creatinine in that span are not in the model.
+> Time is in **years** (`time_yr = day / 365`), so every coefficient below is
+> mL/min/1.73m² **per year** and **negative means decline**.
+>
+> **Model.** `eGFR_CRE ~ time_yr * group + covariates + (1 + time_yr | EMPI)`
+>
+> - `time_yr × group` is the estimand — the difference in annual eGFR slope
+>   between each exposure level and the reference level.
+> - `group` on its own is the day-0 difference between the levels.
+> - `(1 + time_yr | EMPI)` gives each patient a random intercept **and** a random
+>   slope, with an unstructured 2 × 2 covariance so the model can let patients who
+>   start lower decline faster or slower. Residuals are independent (σ²I); the
+>   random slope already induces within-patient correlation that grows with time
+>   separation. Fitted by REML in `lme4`, p-values by Satterthwaite from
+>   `lmerTest`.
+> - **Covariates are main effects only.** They adjust the day-0 level, not the
+>   slope; only the exposure is allowed to interact with time. The covariate set
+>   is otherwise the same one the Fine-Gray models use.
+> - **`baseline_cre_egfr` is deliberately left out.** Day 0 of the outcome *is*
+>   the baseline creatinine eGFR, so adjusting for it would mean conditioning on
+>   the outcome's own first observation; the random intercept already absorbs
+>   where each patient starts. Everywhere else on this page the kidney adjuster
+>   is still `baseline_cre_egfr`.
+> - The slope is **one straight line** across days 0-360. The observed group
+>   means are close to flat for the first six months and then fall (Section
+>   3.3), so a single line averages an early plateau with a later decline.
+>   Read it as the average rate over the year, not as a constant one.
+>
+> The **Unadjusted** column fits the same model with no covariates, on the same
+> patients as the adjusted model, so the two columns are directly comparable.
+
+## 13.1 Trajectory data behind these models
+
+```{r}
+#| label: ritu-carbo-lmm-setup
+# Long-format creatinine eGFR, one row per post-baseline value in days 1-360.
+# Written by ritu_data.qmd, which keeps it out of the one-row-per-patient
+# masters. Keyed by EMPI only, so this page joins its own cohort to it.
+lmm_traj_all <- readRDS("ritu_cre_traj.rds")
+
+LMM_CTL <- lme4::lmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 2e5))
+
+# Build the long frame for one model: the cohort's patient-level columns, a
+# day-0 row carrying eGFR_CRE_baseline, then every post-baseline value. The
+# day-0 anchor is eGFR_CRE_baseline, not baseline_cre_egfr -- the latter comes
+# off a different creatinine draw and is not on this trajectory's scale.
+.lmm_data <- function(d, vars) {
+  pat <- d %>%
+    dplyr::select(dplyr::all_of(unique(c("EMPI", "eGFR_CRE_baseline", vars)))) %>%
+    filter(!is.na(eGFR_CRE_baseline)) %>%
+    dplyr::semi_join(lmm_traj_all, by = "EMPI")
+  post <- pat %>%
+    dplyr::inner_join(lmm_traj_all %>% dplyr::select(EMPI, cre_day, eGFR_CRE),
+                      by = "EMPI")
+  dplyr::bind_rows(pat %>% mutate(cre_day = 0, eGFR_CRE = eGFR_CRE_baseline),
+                   post) %>%
+    dplyr::select(-eGFR_CRE_baseline) %>%
+    mutate(time_yr = cre_day / 365) %>%
+    arrange(EMPI, cre_day)
+}
+
+# egfr_adj = "none" leaves every kidney term out of the adjuster set.
+.lmm_fits <- function(pred_var) {
+  adj <- .adj_for(pred_var, "none")
+  d   <- .lmm_data(dat, c(pred_var, adj))
+  rhs <- paste0("eGFR_CRE ~ time_yr * ", pred_var)
+  list(pred = pred_var,
+       un = lmerTest::lmer(as.formula(paste0(rhs, " + (1 + time_yr | EMPI)")),
+                           data = d, control = LMM_CTL),
+       ad = lmerTest::lmer(as.formula(paste0(rhs, " + ",
+              paste(adj, collapse = " + "), " + (1 + time_yr | EMPI)")),
+              data = d, control = LMM_CTL))
+}
+
+lmm_slope <- function(pred_var, docx_name = NULL) {
+  m  <- .lmm_fits(pred_var)
+  tb <- function(x) tbl_regression(
+    x, pvalue_fun = function(p) style_pvalue(p, digits = 3))
+  out <- tbl_merge(tbls = list(tb(m$un), tb(m$ad)),
+                   tab_spanner = c("**Unadjusted**", "**Adjusted**"))
+  if (!is.null(docx_name)) save_tbl_docx(out, docx_name)
+  attr(out, "lmm") <- m
+  out
+}
+lmm_slope <- .wrap_tbl(lmm_slope)
+
+# Group-specific annual slopes implied by the adjusted fixed effects: the
+# reference slope is b[time_yr], each other level's is b[time_yr] plus its
+# interaction term. SEs come from the fixed-effect covariance matrix; the
+# p-value is the Satterthwaite test on the interaction. Returns nothing for a
+# continuous exposure (no groups) or when the fit failed and .wrap_tbl caught it.
+.lmm_slope_tbl <- function(x) {
+  m <- attr(x, "lmm")
+  if (is.null(m)) return(invisible(NULL))
+  fit <- m$ad; pred <- m$pred
+  mf  <- stats::model.frame(fit)
+  if (!is.factor(mf[[pred]])) return(invisible(NULL))
+  b  <- lme4::fixef(fit); V <- as.matrix(stats::vcov(fit)); nm <- names(b)
+  cf <- summary(fit)$coefficients
+  it <- which(startsWith(nm, paste0("time_yr:", pred)))
+  fmt <- function(cv) {
+    e <- sum(cv * b); s <- sqrt(as.numeric(t(cv) %*% V %*% cv))
+    sprintf("%.2f (%.2f, %.2f)", e, e - 1.96 * s, e + 1.96 * s)
+  }
+  t0 <- as.numeric(nm == "time_yr"); lv <- levels(mf[[pred]])
+  rows <- list(tibble::tibble(
+    Group = paste0(lv[1], " (reference)"),
+    `eGFR slope, mL/min/1.73m² per year` = fmt(t0),
+    `Difference vs reference` = "—", `p-value` = "—"))
+  for (k in seq_along(it)) {
+    cv <- t0; cv[it[k]] <- 1
+    dv <- as.numeric(seq_along(nm) == it[k])
+    rows[[k + 1]] <- tibble::tibble(
+      Group = sub(paste0("^time_yr:", pred), "", nm[it[k]]),
+      `eGFR slope, mL/min/1.73m² per year` = fmt(cv),
+      `Difference vs reference` = fmt(dv),
+      `p-value` = style_pvalue(cf[nm[it[k]], "Pr(>|t|)"], digits = 3))
+  }
+  knitr::kable(dplyr::bind_rows(rows), caption = sprintf(paste0(
+    "Adjusted annual creatinine eGFR slope by group. Negative = decline. ",
+    "N = %d patients, %d eGFR values including the day-0 baseline. ",
+    "The p-value tests the time x group interaction (Satterthwaite)."),
+    as.integer(lme4::ngrps(fit)), stats::nobs(fit)))
+}
+
+# How much data the models actually see, next to the cohort they come from.
+.lmm_n <- .lmm_data(dat, "egfr_diff_pct_sens_cat")
+.lmm_k <- as.integer(table(.lmm_n$EMPI)) - 1L   # minus the day-0 row
+knitr::kable(tibble::tibble(
+  Quantity = c("Patients in this cohort",
+               "Patients with >= 1 creatinine in days 1-360",
+               "eGFR values in the model (incl. day 0)",
+               "Post-baseline values per patient, median [IQR]",
+               "Patients with >= 4 post-baseline values"),
+  Value = c(
+    as.character(nrow(dat)),
+    as.character(dplyr::n_distinct(.lmm_n$EMPI)),
+    as.character(nrow(.lmm_n)),
+    sprintf("%.0f [%.0f, %.0f]", median(.lmm_k),
+            quantile(.lmm_k, .25), quantile(.lmm_k, .75)),
+    sprintf("%d (%.1f %%)", sum(.lmm_k >= 4), 100 * mean(.lmm_k >= 4)))),
+  caption = paste0("Repeated creatinine eGFR available to the mixed models. ",
+                   "Models are additionally complete-case on the covariates, ",
+                   "so a fitted N can be slightly lower."))
+```
+
+## 13.2 Observed trajectories and fitted slopes — cut at − 10 %
+
+Points are raw mean creatinine eGFR in 60-day bins (day 0 shown on its own),
+with ± 1 SE; bins holding fewer than 11 values are suppressed. Lines are the
+fitted population slopes from the **unadjusted** mixed model. The points are
+cross-sectional means, so which patients contribute changes from bin to bin —
+the lines, which use each patient's whole trajectory, are the estimate; the
+points are only there to show the raw data behind it.
+
+```{r}
+#| label: ritu-carbo-lmm-traj
+#| fig-width: 8
+#| fig-height: 5
+.lmm_traj_plot <- function(pred_var, ttl) {
+  adj <- .adj_for(pred_var, "none")
+  d   <- .lmm_data(dat, c(pred_var, adj)) %>% filter(!is.na(.data[[pred_var]]))
+  fit <- lmerTest::lmer(as.formula(paste0("eGFR_CRE ~ time_yr * ", pred_var,
+           " + (1 + time_yr | EMPI)")), data = d, control = LMM_CTL)
+  b  <- lme4::fixef(fit); lv <- levels(d[[pred_var]])
+  ln <- dplyr::bind_rows(lapply(seq_along(lv), function(k) {
+    a <- b[["(Intercept)"]]; s <- b[["time_yr"]]
+    if (k > 1) {
+      a <- a + b[[paste0(pred_var, lv[k])]]
+      s <- s + b[[paste0("time_yr:", pred_var, lv[k])]]
+    }
+    tibble::tibble(grp = factor(lv[k], levels = lv), cre_day = c(0, 360),
+                   fit = a + s * c(0, 360) / 365)
+  }))
+  obs <- d %>%
+    mutate(grp = .data[[pred_var]],
+           mid = ifelse(cre_day == 0, 0,
+                        pmin(floor(cre_day / 60), 5) * 60 + 30)) %>%
+    group_by(grp, mid) %>%
+    summarise(m = mean(eGFR_CRE), se = sd(eGFR_CRE) / sqrt(dplyr::n()),
+              k = dplyr::n(), .groups = "drop") %>%
+    filter(k >= 11)   # small-cell suppression
+  ggplot() +
+    geom_line(data = ln, aes(cre_day, fit, color = grp), linewidth = 1.1) +
+    geom_errorbar(data = obs, aes(mid, ymin = m - se, ymax = m + se,
+                                  color = grp), width = 8, linewidth = 0.5) +
+    geom_point(data = obs, aes(mid, m, color = grp), size = 2.2) +
+    scale_color_manual(values = c("grey35", "#E31A1C", "#1F78B4", "#33A02C"),
+                       name = NULL) +
+    scale_x_continuous(breaks = seq(0, 360, 60)) +
+    labs(title = ttl, x = "Days from baseline",
+         y = "Creatinine eGFR (mL/min/1.73m²)") +
+    theme_minimal(base_size = 14) + theme(legend.position = "top")
+}
+.lmm_traj_plot <- .wrap_plot(.lmm_traj_plot)
+
+.lmm_traj_plot("egfr_diff_pct_sens_cat",
+               "Creatinine eGFR over the first year, by eGFR difference (sens)")
+```
+
+## 13.3 Mixed model — cut at − 10 %
+
+[📄 Download Word table](../tables/carbo/sec13_lmm_cat10.docx)
+
+```{r}
+#| label: ritu-carbo-lmm-cat10
+m <- lmm_slope("egfr_diff_pct_sens_cat", docx_name = "sec13_lmm_cat10")
+.lmm_slope_tbl(m)
+m
+```
+
+## 13.4 Mixed model — cut at − 10 %, survivors cohort
+
+[📄 Download Word table](../tables/carbo/sec13_lmm_cat10_surv.docx)
+
+```{r}
+#| label: ritu-carbo-lmm-cat10-surv
+dat_full_cohort <- dat
+dat <- dat_full_cohort %>%
+  filter(!is.na(days_last_follow_up), days_last_follow_up > 365) %>%
+  mutate(across(where(is.factor) & !starts_with("cmp_status_"), droplevels))
+m <- lmm_slope("egfr_diff_pct_sens_cat", docx_name = "sec13_lmm_cat10_surv")
+dat <- dat_full_cohort
+.lmm_slope_tbl(m)
+m
+```
+
+## 13.5 Mixed model — cut at − 20 %
+
+[📄 Download Word table](../tables/carbo/sec13_lmm_cat20.docx)
+
+```{r}
+#| label: ritu-carbo-lmm-cat20
+m <- lmm_slope("egfr_diff_pct_sens_cat20", docx_name = "sec13_lmm_cat20")
+.lmm_slope_tbl(m)
+m
+```
+
+## 13.6 Mixed model — cut at − 20 %, survivors cohort
+
+[📄 Download Word table](../tables/carbo/sec13_lmm_cat20_surv.docx)
+
+```{r}
+#| label: ritu-carbo-lmm-cat20-surv
+dat_full_cohort <- dat
+dat <- dat_full_cohort %>%
+  filter(!is.na(days_last_follow_up), days_last_follow_up > 365) %>%
+  mutate(across(where(is.factor) & !starts_with("cmp_status_"), droplevels))
+m <- lmm_slope("egfr_diff_pct_sens_cat20", docx_name = "sec13_lmm_cat20_surv")
+dat <- dat_full_cohort
+.lmm_slope_tbl(m)
+m
+```
+
+## 13.7 Mixed model — cut at − 30 %
+
+[📄 Download Word table](../tables/carbo/sec13_lmm_cat30.docx)
+
+```{r}
+#| label: ritu-carbo-lmm-cat30
+m <- lmm_slope("egfr_diff_pct_sens_cat30", docx_name = "sec13_lmm_cat30")
+.lmm_slope_tbl(m)
+m
+```
+
+## 13.8 Mixed model — cut at − 30 %, survivors cohort
+
+[📄 Download Word table](../tables/carbo/sec13_lmm_cat30_surv.docx)
+
+```{r}
+#| label: ritu-carbo-lmm-cat30-surv
+dat_full_cohort <- dat
+dat <- dat_full_cohort %>%
+  filter(!is.na(days_last_follow_up), days_last_follow_up > 365) %>%
+  mutate(across(where(is.factor) & !starts_with("cmp_status_"), droplevels))
+m <- lmm_slope("egfr_diff_pct_sens_cat30", docx_name = "sec13_lmm_cat30_surv")
+dat <- dat_full_cohort
+.lmm_slope_tbl(m)
+m
+```
+
+## 13.9 Mixed model — quartiles of eGFR difference (sens)
+
+[📄 Download Word table](../tables/carbo/sec13_lmm_q4.docx)
+
+```{r}
+#| label: ritu-carbo-lmm-q4
+m <- lmm_slope("egfr_diff_pct_sens_q4", docx_name = "sec13_lmm_q4")
+.lmm_slope_tbl(m)
+m
+```
+
+## 13.10 Mixed model — quartiles, survivors cohort
+
+[📄 Download Word table](../tables/carbo/sec13_lmm_q4_surv.docx)
+
+```{r}
+#| label: ritu-carbo-lmm-q4-surv
+dat_full_cohort <- dat
+dat <- dat_full_cohort %>%
+  filter(!is.na(days_last_follow_up), days_last_follow_up > 365) %>%
+  mutate(across(where(is.factor) & !starts_with("cmp_status_"), droplevels))
+m <- lmm_slope("egfr_diff_pct_sens_q4", docx_name = "sec13_lmm_q4_surv")
+dat <- dat_full_cohort
+.lmm_slope_tbl(m)
+m
+```
+
+## 13.11 Mixed model — continuous exposure
+
+`egfr_diff_pct_sens_per10` is the continuous exposure on the per-10-percentage-point
+**decline** scale, the same one the Fine-Gray models use. The `time_yr ×
+egfr_diff_pct_sens_per10` coefficient is the change in annual eGFR slope per 10
+percentage points further the cystatin C eGFR sits below the creatinine eGFR.
+There is no group table for a continuous exposure.
+
+[📄 Download Word table](../tables/carbo/sec13_lmm_cont.docx)
+
+```{r}
+#| label: ritu-carbo-lmm-cont
+lmm_slope("egfr_diff_pct_sens_per10", docx_name = "sec13_lmm_cont")
+```

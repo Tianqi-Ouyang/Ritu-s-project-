@@ -56,7 +56,7 @@ Inherited from the Jiaxuan pipeline:
 2. Patients with no matching RPDR lab records excluded (2) → 944
 3. Missing baseline cystatin C (`cys_c_baseline` = NA) excluded
 4. Missing platinum group (`platin_group` = NA) excluded
-5. Record 911 dropped (all RPDR pre-baseline labs fall outside the 45-day window) → **943 = entire cohort**
+5. One record dropped (all its RPDR pre-baseline labs fall outside the 45-day window) → **943 = entire cohort**
 6. `tumor_stage != "Local/Early"` excluded (621) → **322 = Local/Early cohort**
 
 `ritu_data.qmd` saves after both step 5 (`ritu_full_master.rds`) and step 6
@@ -283,9 +283,10 @@ status, and the 2026-03-19 pull supplies everything else. Both cover the same
 973 EMPIs.
 
 It replaced an earlier creatinine pull in October 2026 and is a strict extension
-of it: 50,046 creatinine values against 48,843, with follow-up running to
-2026-08-30 instead of 2026-06-28 and no changed values. Its `Dem` file is also
-newer — 288 dated deaths against 262, latest 2026-10-06 — and those 26 extra
+of it: 50,046 creatinine values against 48,843, with follow-up running about
+two months further and no changed values. Its `Dem` file is also newer — 288
+dated deaths against 262, the most recent roughly three months later — and
+those 26 extra
 dates are additions, not corrections. The extra follow-up is what the
 longitudinal eGFR, CKD and AKI outcomes are built from, and it added 9 CKD
 composite events in the entire cohort (70 → 79) and 28 more patients with a

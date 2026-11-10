@@ -233,6 +233,12 @@ the full length of RPDR creatinine follow-up.
 | `dgfr_avail_d90` / `_d180` / `_d270` / `_d360` | 1 if the patient had at least one creatinine inside that window — the denominator behind each delta |
 | `n_cre_post` | Number of post-baseline creatinine measurements, 0 if none |
 | `n_cre_0_360` | Number of post-baseline creatinine measurements falling in days 1-360 |
+
+Section 5.16b also writes **`ritu_cre_traj.rds`**, a long-format companion to the
+two masters: one row per post-baseline creatinine eGFR inside days 1-360, keyed
+by `EMPI`, with `cre_day`, `eGFR_CRE` and `eGFR_CRE_baseline`. The masters stay
+one row per patient; the analysis pages read this file to fit linear mixed-model
+eGFR slopes, adding a day-0 row per patient from `eGFR_CRE_baseline`.
 | `death_lt` / `death_days_lt` | Death at any time with a date from the RPDR `Date_Of_Death`. An input to `death_days_any`, not used directly as a competing event |
 | `rpdr_deceased` | RPDR `Vital_status` is not "Not reported as deceased". Exceeds `death_lt` because some deaths are recorded without a date |
 | `cmp_time_aki_365` / `cmp_status_aki_365` | Competing-risk pair for AKI, administratively censored at 365 days |
@@ -1010,8 +1016,9 @@ dia$Date <- as.Date(dia$Date, "%m/%d/%Y")
 #
 # CREATININE comes from the Ritu_project pull (mes98_1008261634..., Oct 2026),
 # a creatinine-only extract: 50,046 CRE rows over the same 973 EMPIs, running
-# 1989-12-04 to 2026-08-30. It supersedes the 2022P001091 pull it was compared
-# against (48,843 rows, ending 2026-06-28) and is a strict extension of it --
+# from the late 1980s to late 2026. It supersedes the 2022P001091 pull it was
+# compared against (48,843 rows, two months less follow-up) and is a strict
+# extension of it --
 # +1,203 rows, two further months of follow-up, no changed values. The extra
 # rows matter because the longitudinal eGFR / CKD / AKI outcomes below are built
 # from serial creatinine.
@@ -1053,9 +1060,9 @@ med$Medication_Date <- as.Date(med$Medication_Date, "%m/%d/%Y")
 # carries Date_of_Birth, MRN and Zip_code; those columns are dropped at read time
 # and never enter final_master, any table or any figure.
 # The Oct 2026 pull ships its own Dem file and supersedes the one it replaces:
-# 306 deceased vs 280, 288 with a usable date vs 262, latest death 2026-10-06 vs
-# 2026-07-23. The 26 extra dates are additions, not corrections -- no death date
-# present in both files disagrees.
+# 306 deceased vs 280, 288 with a usable date vs 262, and the most recent death
+# roughly three months later. The 26 extra dates are additions, not corrections
+# -- no death date present in both files disagrees.
 dem <- read.table(paste0('/Users/to909/Partners HealthCare Dropbox/Tianqi Ouyang/',
                          'Thoracic Oncology Spreadsheets/Ritu_project/RPDR/',
                          'mes98_100826163401502663_Dem.txt'),
@@ -2202,6 +2209,23 @@ cat(sprintf("Creatinines per patient in days 1-360: median %.0f [IQR %.0f, %.0f]
             quantile(final_master$n_cre_0_360, .25),
             quantile(final_master$n_cre_0_360, .75)))
 
+# Long-format trajectory for the linear mixed-model slope analysis. The masters
+# are one row per patient, so the repeated creatinines have to travel in their
+# own file. Saved once, keyed by EMPI only and NOT restricted to Local/Early, so
+# each analysis page inner-joins whichever cohort it loads. Day-0 rows are added
+# there from eGFR_CRE_baseline -- keep that anchor rather than baseline_cre_egfr,
+# which comes off a different creatinine draw and is not on this trajectory's
+# scale. Local file: *.rds is gitignored and is never published.
+ritu_cre_traj <- dgfr_traj %>%
+  filter(cre_day <= 360) %>%
+  select(EMPI, cre_day, eGFR_CRE, eGFR_CRE_baseline) %>%
+  arrange(EMPI, cre_day)
+
+saveRDS(ritu_cre_traj, "ritu_cre_traj.rds")
+cat(sprintf("ritu_cre_traj.rds: %d rows, %d patients, median %.0f rows/patient\n",
+            nrow(ritu_cre_traj), dplyr::n_distinct(ritu_cre_traj$EMPI),
+            median(table(ritu_cre_traj$EMPI))))
+
 dgfr_summary <- purrr::map_dfr(DGFR_MARKS, function(mk) {
   d  <- final_master[[paste0("delta_egfr_d", mk)]]
   dp <- final_master[[paste0("delta_egfr_pct_d", mk)]]
@@ -2512,16 +2536,14 @@ bind_rows(shared_missing, platin_missing) %>%
   knitr::kable(caption = "Missing data — Table 1 variables (non-zero only)")
 ```
 
-## 6.1 Note: Record 911 — All RPDR Pre-Baseline Labs Missing
+## 6.1 Note: One Patient Has All RPDR Pre-Baseline Labs Missing
 
-Record 911 (`baseline_sample_date` = 2025-08-19) has valid REDCap baseline labs
-(`baseline_cre` = 0.93, `baseline_cys_c` = 0.88, `cockcroft` = 83.4) but **all
-RPDR pre-baseline labs are NA** (`pre_HGB_45days`, `pre_PLT_45days`,
-`pre_ALB_45days`, `pre_CRE_45days`).
+One patient has valid REDCap baseline labs but **all RPDR pre-baseline labs are
+NA** (`pre_HGB_45days`, `pre_PLT_45days`, `pre_ALB_45days`, `pre_CRE_45days`).
 
-**Root cause:** This patient has 73 RPDR lab records, but the closest labs before
-baseline were drawn on 2025-02-11 — **189 days before baseline**, well outside the
-45-day `pre_lab()` window. No RPDR labs exist between 2025-07-05 and 2025-08-19.
+**Root cause:** they have plenty of RPDR lab records, but none of them falls
+inside the 45-day `pre_lab()` window — their nearest earlier draw is many months
+before baseline, with no RPDR lab at all in the months either side of it.
 
 **Impact:** This patient is dropped from Fine-Gray models via complete-case
 analysis whenever `pre_HGB_45days`, `pre_PLT_45days`, or `pre_CRE_45days` appears

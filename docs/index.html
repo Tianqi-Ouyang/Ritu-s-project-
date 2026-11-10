@@ -321,7 +321,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li>Patients with no matching RPDR lab records excluded (2) → 944</li>
 <li>Missing baseline cystatin C (<code>cys_c_baseline</code> = NA) excluded</li>
 <li>Missing platinum group (<code>platin_group</code> = NA) excluded</li>
-<li>Record 911 dropped (all RPDR pre-baseline labs fall outside the 45-day window) → <strong>943 = entire cohort</strong></li>
+<li>One record dropped (all its RPDR pre-baseline labs fall outside the 45-day window) → <strong>943 = entire cohort</strong></li>
 <li><code>tumor_stage != "Local/Early"</code> excluded (621) → <strong>322 = Local/Early cohort</strong></li>
 </ol>
 <p><code>ritu_data.qmd</code> saves after both step 5 (<code>ritu_full_master.rds</code>) and step 6 (<code>ritu_final_master.rds</code>), so the two cohort levels come from one pipeline run and are identical in every variable definition.</p>
@@ -673,7 +673,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </table>
 <p>The REDCap export was refreshed on 2026-10-09 with updated follow-up: median follow-up rose from 378 to 539 days, recorded deaths from 207 to 272, and one patient was reclassified Local/Early → Advanced/Metastatic (so the Local/Early cohort is 322, not 323). That export also carries <code>name</code>, <code>mgh_mrn</code> and <code>dob</code> columns, which are dropped at read time and never enter the dataset or this site.</p>
 <p>The Ritu_project RPDR pull is a creatinine-only extract — it has no <code>Dia</code> or <code>Med</code> file and no HGB/PLT/ALB/GHBA1C — so it supplies creatinine plus vital status, and the 2026-03-19 pull supplies everything else. Both cover the same 973 EMPIs.</p>
-<p>It replaced an earlier creatinine pull in October 2026 and is a strict extension of it: 50,046 creatinine values against 48,843, with follow-up running to 2026-08-30 instead of 2026-06-28 and no changed values. Its <code>Dem</code> file is also newer — 288 dated deaths against 262, latest 2026-10-06 — and those 26 extra dates are additions, not corrections. The extra follow-up is what the longitudinal eGFR, CKD and AKI outcomes are built from, and it added 9 CKD composite events in the entire cohort (70 → 79) and 28 more patients with a day-365 eGFR.</p>
+<p>It replaced an earlier creatinine pull in October 2026 and is a strict extension of it: 50,046 creatinine values against 48,843, with follow-up running about two months further and no changed values. Its <code>Dem</code> file is also newer — 288 dated deaths against 262, the most recent roughly three months later — and those 26 extra dates are additions, not corrections. The extra follow-up is what the longitudinal eGFR, CKD and AKI outcomes are built from, and it added 9 CKD composite events in the entire cohort (70 → 79) and 28 more patients with a day-365 eGFR.</p>
 </section>
 <section id="key-variables" class="level1">
 <h1>Key Variables</h1>
