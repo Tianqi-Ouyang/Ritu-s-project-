@@ -2906,23 +2906,29 @@ Thoracic   Breast       GI       GU      GYN    HEENT    Other
 <span id="cb72-7"><a href="#cb72-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">Result =</span> <span class="fu">as.numeric</span>(Result)) <span class="sc">%&gt;%</span></span>
 <span id="cb72-8"><a href="#cb72-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(EMPI, Seq_Date_Time, Result) <span class="sc">%&gt;%</span></span>
 <span id="cb72-9"><a href="#cb72-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">inner_join</span>(final_master <span class="sc">%&gt;%</span></span>
-<span id="cb72-10"><a href="#cb72-10" aria-hidden="true" tabindex="-1"></a>               <span class="fu">select</span>(EMPI, male, age, pre_CRE_45days, pre_CRE_45days_date),</span>
-<span id="cb72-11"><a href="#cb72-11" aria-hidden="true" tabindex="-1"></a>             <span class="at">by =</span> <span class="st">"EMPI"</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb72-12"><a href="#cb72-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(pre_CRE_45days_date), Seq_Date_Time <span class="sc">&gt;</span> pre_CRE_45days_date) <span class="sc">%&gt;%</span></span>
-<span id="cb72-13"><a href="#cb72-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span>(<span class="at">cre =</span> Result, <span class="at">eGFR_CRE_date =</span> Seq_Date_Time,</span>
-<span id="cb72-14"><a href="#cb72-14" aria-hidden="true" tabindex="-1"></a>         <span class="at">eGFR_CRE_baseline_date =</span> pre_CRE_45days_date)</span>
-<span id="cb72-15"><a href="#cb72-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb72-16"><a href="#cb72-16" aria-hidden="true" tabindex="-1"></a>cre_long<span class="sc">$</span>eGFR_CRE_baseline <span class="ot">&lt;-</span> <span class="fu">gfr_calc</span>(cre_long<span class="sc">$</span>pre_CRE_45days,</span>
-<span id="cb72-17"><a href="#cb72-17" aria-hidden="true" tabindex="-1"></a>                                       cre_long<span class="sc">$</span>male, cre_long<span class="sc">$</span>age)</span>
-<span id="cb72-18"><a href="#cb72-18" aria-hidden="true" tabindex="-1"></a>cre_long<span class="sc">$</span>eGFR_CRE          <span class="ot">&lt;-</span> <span class="fu">gfr_calc</span>(cre_long<span class="sc">$</span>cre, cre_long<span class="sc">$</span>male, cre_long<span class="sc">$</span>age)</span>
-<span id="cb72-19"><a href="#cb72-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb72-20"><a href="#cb72-20" aria-hidden="true" tabindex="-1"></a>egfr_traj <span class="ot">&lt;-</span> cre_long <span class="sc">%&gt;%</span></span>
-<span id="cb72-21"><a href="#cb72-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(EMPI, eGFR_CRE_baseline, eGFR_CRE_baseline_date,</span>
-<span id="cb72-22"><a href="#cb72-22" aria-hidden="true" tabindex="-1"></a>         eGFR_CRE, eGFR_CRE_date) <span class="sc">%&gt;%</span></span>
-<span id="cb72-23"><a href="#cb72-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">pct_drop =</span> <span class="fu">round</span>((eGFR_CRE_baseline <span class="sc">-</span> eGFR_CRE) <span class="sc">/</span> eGFR_CRE_baseline, <span class="dv">3</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb72-24"><a href="#cb72-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(EMPI, eGFR_CRE_date)</span>
+<span id="cb72-10"><a href="#cb72-10" aria-hidden="true" tabindex="-1"></a>               <span class="fu">select</span>(EMPI, male, age, pre_CRE_45days, pre_CRE_45days_date,</span>
+<span id="cb72-11"><a href="#cb72-11" aria-hidden="true" tabindex="-1"></a>                      baseline_cre_egfr),</span>
+<span id="cb72-12"><a href="#cb72-12" aria-hidden="true" tabindex="-1"></a>             <span class="at">by =</span> <span class="st">"EMPI"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb72-13"><a href="#cb72-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(pre_CRE_45days_date), Seq_Date_Time <span class="sc">&gt;</span> pre_CRE_45days_date) <span class="sc">%&gt;%</span></span>
+<span id="cb72-14"><a href="#cb72-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span>(<span class="at">cre =</span> Result, <span class="at">eGFR_CRE_date =</span> Seq_Date_Time,</span>
+<span id="cb72-15"><a href="#cb72-15" aria-hidden="true" tabindex="-1"></a>         <span class="at">eGFR_CRE_baseline_date =</span> pre_CRE_45days_date)</span>
+<span id="cb72-16"><a href="#cb72-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb72-17"><a href="#cb72-17" aria-hidden="true" tabindex="-1"></a><span class="co"># One baseline creatinine eGFR for the whole project. baseline_cre_egfr is the</span></span>
+<span id="cb72-18"><a href="#cb72-18" aria-hidden="true" tabindex="-1"></a><span class="co"># canonical one -- it is the kidney adjuster, the exposure denominator, the CKD</span></span>
+<span id="cb72-19"><a href="#cb72-19" aria-hidden="true" tabindex="-1"></a><span class="co"># stage and Table 1 -- so the longitudinal series anchors to it rather than</span></span>
+<span id="cb72-20"><a href="#cb72-20" aria-hidden="true" tabindex="-1"></a><span class="co"># recomputing from pre_CRE_45days. The two use the same CKD-EPI 2021 equation</span></span>
+<span id="cb72-21"><a href="#cb72-21" aria-hidden="true" tabindex="-1"></a><span class="co"># and the same draw for 98.3 % of patients (median difference 0.0, CKD stage</span></span>
+<span id="cb72-22"><a href="#cb72-22" aria-hidden="true" tabindex="-1"></a><span class="co"># differs for 1 of 936). pre_CRE_45days_date still sets where follow-up starts.</span></span>
+<span id="cb72-23"><a href="#cb72-23" aria-hidden="true" tabindex="-1"></a>cre_long<span class="sc">$</span>eGFR_CRE_baseline <span class="ot">&lt;-</span> cre_long<span class="sc">$</span>baseline_cre_egfr</span>
+<span id="cb72-24"><a href="#cb72-24" aria-hidden="true" tabindex="-1"></a>cre_long<span class="sc">$</span>eGFR_CRE          <span class="ot">&lt;-</span> <span class="fu">gfr_calc</span>(cre_long<span class="sc">$</span>cre, cre_long<span class="sc">$</span>male, cre_long<span class="sc">$</span>age)</span>
 <span id="cb72-25"><a href="#cb72-25" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb72-26"><a href="#cb72-26" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Patients with &gt;=1 post-baseline creatinine:"</span>, dplyr<span class="sc">::</span><span class="fu">n_distinct</span>(egfr_traj<span class="sc">$</span>EMPI), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb72-26"><a href="#cb72-26" aria-hidden="true" tabindex="-1"></a>egfr_traj <span class="ot">&lt;-</span> cre_long <span class="sc">%&gt;%</span></span>
+<span id="cb72-27"><a href="#cb72-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(EMPI, eGFR_CRE_baseline, eGFR_CRE_baseline_date,</span>
+<span id="cb72-28"><a href="#cb72-28" aria-hidden="true" tabindex="-1"></a>         eGFR_CRE, eGFR_CRE_date) <span class="sc">%&gt;%</span></span>
+<span id="cb72-29"><a href="#cb72-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">pct_drop =</span> <span class="fu">round</span>((eGFR_CRE_baseline <span class="sc">-</span> eGFR_CRE) <span class="sc">/</span> eGFR_CRE_baseline, <span class="dv">3</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb72-30"><a href="#cb72-30" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(EMPI, eGFR_CRE_date)</span>
+<span id="cb72-31"><a href="#cb72-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb72-32"><a href="#cb72-32" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Patients with &gt;=1 post-baseline creatinine:"</span>, dplyr<span class="sc">::</span><span class="fu">n_distinct</span>(egfr_traj<span class="sc">$</span>EMPI), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>Patients with &gt;=1 post-baseline creatinine: 936 </code></pre>
@@ -3163,31 +3169,31 @@ Thoracic   Breast       GI       GU      GYN    HEENT    Other
 <td style="text-align: right;">98.7</td>
 <td style="text-align: left;">7 [5, 10]</td>
 <td style="text-align: left;">1.4 [-2.9, 7.0]</td>
-<td style="text-align: left;">1.6 [-3.1, 9.0]</td>
+<td style="text-align: left;">1.6 [-3.2, 8.6]</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">Days 91-180</td>
 <td style="text-align: right;">782</td>
 <td style="text-align: right;">82.9</td>
 <td style="text-align: left;">4 [2, 8]</td>
-<td style="text-align: left;">0.0 [-7.8, 6.5]</td>
-<td style="text-align: left;">0.0 [-9.1, 8.0]</td>
+<td style="text-align: left;">0.0 [-8.0, 6.4]</td>
+<td style="text-align: left;">0.0 [-9.3, 7.9]</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">Days 181-270</td>
 <td style="text-align: right;">634</td>
 <td style="text-align: right;">67.2</td>
 <td style="text-align: left;">4 [2, 6]</td>
-<td style="text-align: left;">-2.8 [-12.3, 4.4]</td>
-<td style="text-align: left;">-3.0 [-14.9, 5.1]</td>
+<td style="text-align: left;">-2.8 [-12.4, 4.3]</td>
+<td style="text-align: left;">-3.1 [-15.0, 5.1]</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">Days 271-360</td>
 <td style="text-align: right;">569</td>
 <td style="text-align: right;">60.3</td>
 <td style="text-align: left;">3 [1, 5]</td>
-<td style="text-align: left;">-4.6 [-14.3, 2.4]</td>
-<td style="text-align: left;">-5.1 [-17.0, 3.0]</td>
+<td style="text-align: left;">-4.6 [-14.3, 2.2]</td>
+<td style="text-align: left;">-5.1 [-17.0, 2.9]</td>
 </tr>
 </tbody>
 </table>

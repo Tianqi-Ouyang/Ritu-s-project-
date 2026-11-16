@@ -2043,14 +2043,20 @@ cre_long <- master_lab %>%
   mutate(Result = as.numeric(Result)) %>%
   select(EMPI, Seq_Date_Time, Result) %>%
   inner_join(final_master %>%
-               select(EMPI, male, age, pre_CRE_45days, pre_CRE_45days_date),
+               select(EMPI, male, age, pre_CRE_45days, pre_CRE_45days_date,
+                      baseline_cre_egfr),
              by = "EMPI") %>%
   filter(!is.na(pre_CRE_45days_date), Seq_Date_Time > pre_CRE_45days_date) %>%
   rename(cre = Result, eGFR_CRE_date = Seq_Date_Time,
          eGFR_CRE_baseline_date = pre_CRE_45days_date)
 
-cre_long$eGFR_CRE_baseline <- gfr_calc(cre_long$pre_CRE_45days,
-                                       cre_long$male, cre_long$age)
+# One baseline creatinine eGFR for the whole project. baseline_cre_egfr is the
+# canonical one -- it is the kidney adjuster, the exposure denominator, the CKD
+# stage and Table 1 -- so the longitudinal series anchors to it rather than
+# recomputing from pre_CRE_45days. The two use the same CKD-EPI 2021 equation
+# and the same draw for 98.3 % of patients (median difference 0.0, CKD stage
+# differs for 1 of 936). pre_CRE_45days_date still sets where follow-up starts.
+cre_long$eGFR_CRE_baseline <- cre_long$baseline_cre_egfr
 cre_long$eGFR_CRE          <- gfr_calc(cre_long$cre, cre_long$male, cre_long$age)
 
 egfr_traj <- cre_long %>%

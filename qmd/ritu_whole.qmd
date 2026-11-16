@@ -2108,7 +2108,8 @@ knitr::kable(tibble::tibble(
 ## 12.2 Observed trajectories and fitted slopes — cut at − 10 % (Local/Early, all patients)
 
 Points are raw mean creatinine eGFR in 60-day bins (day 0 shown on its own),
-with ± 1 SE; bins holding fewer than 11 values are suppressed. Lines are the
+with a 95 % CI (mean ± 1.96 × SE); bins holding fewer than 11 values are
+suppressed. Lines are the
 fitted population slopes from the **unadjusted** mixed model. The points are
 cross-sectional means, so which patients contribute changes from bin to bin —
 the lines, which use each patient's whole trajectory, are the estimate; the
@@ -2143,8 +2144,9 @@ points are only there to show the raw data behind it.
     filter(k >= 11)   # small-cell suppression
   ggplot() +
     geom_line(data = ln, aes(cre_day, fit, color = grp), linewidth = 1.1) +
-    geom_errorbar(data = obs, aes(mid, ymin = m - se, ymax = m + se,
-                                  color = grp), width = 8, linewidth = 0.5) +
+    geom_errorbar(data = obs, aes(mid, ymin = m - 1.96 * se,
+                                  ymax = m + 1.96 * se, color = grp),
+                  width = 8, linewidth = 0.5) +
     geom_point(data = obs, aes(mid, m, color = grp), size = 2.2) +
     scale_color_manual(values = c("grey35", "#E31A1C", "#1F78B4", "#33A02C"),
                        name = NULL) +
@@ -2300,7 +2302,8 @@ lmm_slope("egfr_diff_pct_sens_per10", docx_name = "sec12_lmm_cont")
 > 2. **Two groups**, across every creatinine stage — **same or better** by
 >    Cr-Cys against **reclassified worse** by Cr-Cys.
 >
-> **What is plotted.** Mean creatinine eGFR with ± 1 standard error at baseline
+> **What is plotted.** Mean creatinine eGFR with a 95 % confidence interval
+> (mean ± 1.96 × SE) at baseline
 > and at each of the four windows — `eGFR_CRE_baseline`, then the medians over
 > days 1-90, 91-180, 181-270 and 271-360 built in Section 2.3. The y axis is
 > the creatinine eGFR throughout; serial cystatin C is not available, so the
@@ -2394,7 +2397,8 @@ trend_plot <- function(grp_var, ttl, by_stage = FALSE) {
                         r$thin, TREND_MIN_N))
   key <- if (by_stage) "cre" else "grp"
   p <- ggplot(st, aes(day, m, group = grp, colour = .data[[key]])) +
-    geom_errorbar(aes(ymin = m - se, ymax = m + se), width = .12, linewidth = .5) +
+    geom_errorbar(aes(ymin = m - 1.96 * se, ymax = m + 1.96 * se),
+                  width = .12, linewidth = .5) +
     {if (by_stage) geom_line(aes(linetype = shift), linewidth = .9)
      else geom_line(linewidth = .9)} +
     geom_point(size = 2.2) +
