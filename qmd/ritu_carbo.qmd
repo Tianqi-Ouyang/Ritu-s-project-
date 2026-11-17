@@ -1353,7 +1353,7 @@ ggplot(dat %>% filter(!is.na(dose_discrepancy)),
 ```
 
 
-# 10 Paper
+# 10 Paper (Carboplatin)
 
 ```{r}
 #| label: ritu-carbo-paper-stats
@@ -2120,7 +2120,7 @@ TREND_MARKS <- c(BL = "eGFR_CRE_baseline", "90" = "eGFR_CRE_d90",
 }
 
 PAL8 <- c(G1 = "#1F78B4", G2 = "#33A02C", G3a = "#FF7F00", G3b = "#E31A1C")
-PAL2 <- c("Same or better by Cr-Cys" = "grey35",
+PAL2 <- c("Same or better by Cr-Cys" = "#1F78B4",
           "Reclassified worse by Cr-Cys" = "#E31A1C")
 
 # by_stage = TRUE colours by creatinine stage and dashes the reclassified-worse
@@ -2198,8 +2198,8 @@ knitr::kable(.cnt(.g_all, .g_surv, "ckd_shift2"), caption = paste0(
 p <- trend_plot("ckd_shift8", paste0(
   "Creatinine eGFR by baseline CKD stage and Cr-Cys reclassification\n",
   "Carboplatin, all patients"), by_stage = TRUE)
-trend_counts(p)
 p
+trend_counts(p)
 ```
 
 ## 14.3 eGFR trend by creatinine stage and Cr-Cys reclassification (Carboplatin, survivors)
@@ -2216,8 +2216,8 @@ p <- trend_plot("ckd_shift8", paste0(
   "Creatinine eGFR by baseline CKD stage and Cr-Cys reclassification\n",
   "Carboplatin, survivors (follow-up > 365 days)"), by_stage = TRUE)
 dat <- dat_full_cohort
-trend_counts(p)
 p
+trend_counts(p)
 ```
 
 ## 14.4 eGFR trend — reclassified worse vs same or better (Carboplatin, all patients)
@@ -2228,7 +2228,6 @@ p
 #| fig-height: 5.5
 p <- trend_plot("ckd_shift2", paste0(
   "Creatinine eGFR by Cr-Cys reclassification\nCarboplatin, all patients"))
-trend_counts(p)
 p
 ```
 
@@ -2246,6 +2245,5 @@ p <- trend_plot("ckd_shift2", paste0(
   "Creatinine eGFR by Cr-Cys reclassification\n",
   "Carboplatin, survivors (follow-up > 365 days)"))
 dat <- dat_full_cohort
-trend_counts(p)
 p
 ```
