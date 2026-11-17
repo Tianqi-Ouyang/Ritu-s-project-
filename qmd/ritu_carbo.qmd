@@ -2103,15 +2103,35 @@ TREND_MARKS <- c(BL = "eGFR_CRE_baseline", "90" = "eGFR_CRE_d90",
                  "180" = "eGFR_CRE_d180", "270" = "eGFR_CRE_d270",
                  "360" = "eGFR_CRE_d360")
 
+# Day each window closes, used to stop carrying forward at death.
+TREND_CLOSE <- c(BL = 0, "90" = 90, "180" = 180, "270" = 270, "360" = 360)
+
+# Last observation carried forward: a patient with no creatinine inside a window
+# keeps the value from their most recent earlier window. Baseline is present for
+# everyone in a group, so after carrying the only patients still absent from a
+# mark are those who died on or before it. kc counts how many of a mark's values
+# are carried rather than measured in that window.
 .trend_stats <- function(d, grp_var) {
-  st <- dplyr::bind_rows(lapply(names(TREND_MARKS), function(m)
-      tibble::tibble(grp = d[[grp_var]], day = m,
-                     egfr = d[[TREND_MARKS[[m]]]]))) %>%
+  mk <- names(TREND_MARKS)
+  v  <- lapply(TREND_MARKS, function(cl) d[[cl]])
+  names(v) <- mk
+  dd <- if ("death_days_any" %in% names(d)) d$death_days_any else
+          rep(NA_real_, nrow(d))
+  cf <- stats::setNames(lapply(mk, function(.) rep(FALSE, nrow(d))), mk)
+  for (j in seq_along(mk)[-1]) {
+    g <- is.na(v[[j]]) & !is.na(v[[j - 1]]) &
+         (is.na(dd) | dd > TREND_CLOSE[[mk[j]]])
+    v[[j]][g]  <- v[[j - 1]][g]
+    cf[[j]][g] <- TRUE
+  }
+  st <- dplyr::bind_rows(lapply(seq_along(mk), function(j)
+      tibble::tibble(grp = d[[grp_var]], day = mk[j],
+                     egfr = v[[j]], carried = cf[[j]]))) %>%
     filter(!is.na(grp), !is.na(egfr)) %>%
-    mutate(day = factor(day, levels = names(TREND_MARKS))) %>%
+    mutate(day = factor(day, levels = mk)) %>%
     group_by(grp, day) %>%
     summarise(m = mean(egfr), se = sd(egfr) / sqrt(dplyr::n()),
-              k = dplyr::n(), .groups = "drop")
+              k = dplyr::n(), kc = sum(carried), .groups = "drop")
   keep <- st %>% filter(day == "BL", k >= TREND_MIN_N) %>% pull(grp)
   list(stats   = st %>% filter(grp %in% keep, k >= TREND_MIN_N) %>% droplevels(),
        dropped = st %>% filter(day == "BL", k < TREND_MIN_N) %>%
@@ -2134,6 +2154,9 @@ trend_plot <- function(grp_var, ttl, by_stage = FALSE) {
     shift = ifelse(grepl(">=", as.character(grp), fixed = TRUE),
                    "Worse by Cr-Cys", "Same or better"))
   note <- c(
+    paste("Last observation carried forward: a patient with no creatinine in a",
+          "window keeps their most recent earlier value, and carrying stops at",
+          "death. Bracketed counts in the table below are carried values."),
     if (nrow(r$dropped)) sprintf("Not plotted, fewer than %d patients: %s.",
       TREND_MIN_N, paste(sprintf("%s (n = %d)", r$dropped$grp, r$dropped$n),
                          collapse = "; ")),
@@ -2156,8 +2179,11 @@ trend_plot <- function(grp_var, ttl, by_stage = FALSE) {
     theme_minimal(base_size = 13) +
     theme(legend.position = "top", legend.box = "vertical",
           plot.caption = element_text(hjust = 0, size = 9, colour = "grey30"))
-  attr(p, "counts") <- st %>% dplyr::select(grp, day, k) %>%
-    tidyr::pivot_wider(names_from = day, values_from = k) %>%
+  attr(p, "counts") <- st %>%
+    dplyr::mutate(cell = ifelse(kc > 0, sprintf("%d (%d)", k, kc),
+                                as.character(k))) %>%
+    dplyr::select(grp, day, cell) %>%
+    tidyr::pivot_wider(names_from = day, values_from = cell) %>%
     dplyr::rename(Group = grp)
   p
 }
@@ -2167,9 +2193,14 @@ trend_plot <- .wrap_plot(trend_plot)
 trend_counts <- function(p) {
   k <- attr(p, "counts")
   if (is.null(k)) return(invisible(NULL))
-  knitr::kable(k, na = "", caption = paste0(
-    "Patients contributing to each mark. Blank = fewer than ",
-    TREND_MIN_N, " and not plotted."))
+  # The cells are strings now ("215 (69)"), and kable's na= does not blank a
+  # character column, so clear the suppressed ones here.
+  k[] <- lapply(k, function(cl) {
+    cl <- as.character(cl); cl[is.na(cl)] <- ""; cl })
+  knitr::kable(k, caption = paste0(
+    "Patients contributing to each mark; (n) = how many of them carry forward ",
+    "an earlier window's value rather than one measured in that window. ",
+    "Blank = fewer than ", TREND_MIN_N, " and not plotted."))
 }
 
 .g_all  <- .ckd_groups(dat)
@@ -2246,4 +2277,253 @@ p <- trend_plot("ckd_shift2", paste0(
   "Carboplatin, survivors (follow-up > 365 days)"))
 dat <- dat_full_cohort
 p
+```
+
+
+# 15 Baseline-Matched eGFR Trends (Carboplatin)
+
+The Section 14 plots start from different levels: inside every baseline
+creatinine stage the reclassified-worse group sits lower, because cystatin C
+pushes a patient out of a stage band most easily when they already sit near its
+floor. A difference in where two lines end is therefore partly a difference in
+where they began. This section repeats those four plots on a matched cohort, so
+each pair of lines starts from the same baseline creatinine eGFR.
+
+```{r}
+#| label: ritu-carbo-match-setup
+MATCH_CAL <- 2   # caliper on baseline creatinine eGFR, mL/min/1.73m2
+
+# Greedy 1:1 nearest-neighbour matching on baseline creatinine eGFR. Each
+# reclassified-worse patient takes the same-or-better patient closest to it,
+# among those inside MATCH_CAL and in the same baseline creatinine CKD stage.
+# Controls are used once. Treated patients with the fewest eligible controls go
+# first, which maximises the number of pairs. Returns the matched rows only.
+.match_bl <- function(d) {
+  g  <- .ckd_groups(d)
+  ci <- match(as.character(g$ckd_stage_cre), CKD_LV)
+  bl <- g$eGFR_CRE_baseline
+  w  <- !is.na(g$ckd_shift2) &
+        g$ckd_shift2 == "Reclassified worse by Cr-Cys"
+  ok <- !is.na(ci) & ci <= 4 & !is.na(bl) & !is.na(g$ckd_shift2)
+  tr <- which(ok & w); co <- which(ok & !w)
+  if (!length(tr) || !length(co)) return(g[0, , drop = FALSE])
+  elig <- lapply(tr, function(i)
+    co[abs(bl[co] - bl[i]) <= MATCH_CAL & ci[co] == ci[i]])
+  names(elig) <- as.character(tr)
+  used <- integer(0); a <- integer(0); b <- integer(0)
+  for (i in tr[order(lengths(elig))]) {
+    cand <- setdiff(elig[[as.character(i)]], used)
+    if (!length(cand)) next
+    pick <- cand[which.min(abs(bl[cand] - bl[i]))]
+    used <- c(used, pick); a <- c(a, i); b <- c(b, pick)
+  }
+  if (!length(a)) return(g[0, , drop = FALSE])
+  out <- g[c(a, b), , drop = FALSE]
+  out$.pair_id <- rep(seq_along(a), 2)
+  out
+}
+
+# Baseline creatinine eGFR in the two groups before and after matching, with the
+# standardised mean difference.
+.match_balance <- function(d) {
+  sm <- function(x, y) (mean(x) - mean(y)) / sqrt((var(x) + var(y)) / 2)
+  row <- function(lbl, f) {
+    if (!nrow(f)) return(NULL)
+    w <- f$ckd_shift2 == "Reclassified worse by Cr-Cys"
+    a <- f$eGFR_CRE_baseline[w & !is.na(f$eGFR_CRE_baseline)]
+    b <- f$eGFR_CRE_baseline[!w & !is.na(f$eGFR_CRE_baseline)]
+    if (length(a) < 2 || length(b) < 2) return(NULL)
+    tibble::tibble(Set = lbl,
+      `Worse n` = length(a), `Worse mean` = round(mean(a), 1),
+      `Same or better n` = length(b), `Same or better mean` = round(mean(b), 1),
+      Difference = round(mean(a) - mean(b), 1), SMD = round(sm(a, b), 3))
+  }
+  g <- .ckd_groups(d) %>%
+    filter(!is.na(ckd_shift2), !is.na(eGFR_CRE_baseline),
+           !is.na(match(as.character(ckd_stage_cre), CKD_LV[1:4])))
+  dplyr::bind_rows(row("Before matching", g),
+                   row("After matching",  .match_bl(d)))
+}
+.match_balance <- .wrap_tbl(.match_balance)
+```
+
+## 15.1 Matching method
+
+1. **Eligible patients** — baseline creatinine CKD stage G1 to G3b, a known
+   CKD-EPI creatinine–cystatin C stage, and a non-missing baseline creatinine
+   eGFR. G4 and G5 are not matched; there are too few.
+2. **Groups** — *reclassified worse by Cr-Cys* is the treated group, *same or
+   better by Cr-Cys* the control pool, exactly as in Section PREV15.
+3. **Matching variable** — baseline creatinine eGFR (`eGFR_CRE_baseline`), the
+   quantity the two groups differ on at day 0.
+4. **Caliper** — a control must be within **2 mL/min/1.73m²** of the treated
+   patient's baseline creatinine eGFR.
+5. **Exact stratum** — the control must also be in the **same baseline
+   creatinine CKD stage**, so no pair straddles a stage boundary.
+6. **Ratio** — 1:1, **without replacement**; each control is used at most once.
+7. **Choice inside the caliper** — nearest neighbour on baseline creatinine
+   eGFR.
+8. **Order** — treated patients with the fewest eligible controls are matched
+   first, which maximises the number of pairs formed.
+9. **Unmatched patients are dropped**, treated and control alike.
+10. **Balance check** — Section 15.2 gives the standardised mean difference
+    before and after. |SMD| < 0.1 is the usual threshold for adequate balance.
+
+The five windows, the carry-forward rule and the small-cell suppression at 11
+are unchanged from Section PREV15.
+
+> **What this fixes, and what it does not.** Matching removes the baseline gap
+> and leaves the exposure intact — baseline cystatin C stays far apart after
+> matching, because reclassification is defined by cystatin C being high
+> *relative to* creatinine. It does **not** balance comorbidity (Charlson stays
+> higher in the reclassified-worse group), it does not repair the window
+> attrition described in Section 14, and it discards every patient who
+> cannot be paired. Read these plots beside Section 13 rather than in place
+> of it: the mixed model keeps every patient and every value, and its random
+> intercept already absorbs the baseline level matched on here.
+
+## 15.2 Balance before and after matching (Carboplatin)
+
+```{r}
+#| label: ritu-carbo-match-balance
+knitr::kable(.match_balance(dat), caption = paste0(
+  "Baseline creatinine eGFR by group, before and after 1:1 matching within ",
+  MATCH_CAL, " mL/min and the same baseline creatinine CKD stage. ",
+  "SMD = standardised mean difference."))
+```
+
+## 15.3 Matched eGFR trend by creatinine stage and Cr-Cys reclassification (Carboplatin, all patients)
+
+```{r}
+#| label: ritu-carbo-match-trend8-all
+#| fig-width: 9
+#| fig-height: 6
+dat_full_cohort <- dat
+dat <- .match_bl(dat_full_cohort)
+p <- trend_plot("ckd_shift8", paste0(
+  "Matched: creatinine eGFR by baseline CKD stage and Cr-Cys reclassification\n",
+  "Carboplatin, all patients"), by_stage = TRUE)
+dat <- dat_full_cohort
+p
+trend_counts(p)
+```
+
+## 15.4 Matched eGFR trend by creatinine stage and Cr-Cys reclassification (Carboplatin, survivors)
+
+```{r}
+#| label: ritu-carbo-match-trend8-surv
+#| fig-width: 9
+#| fig-height: 6
+dat_full_cohort <- dat
+dat <- .match_bl(dat_full_cohort %>%
+  filter(!is.na(days_last_follow_up), days_last_follow_up > 365))
+p <- trend_plot("ckd_shift8", paste0(
+  "Matched: creatinine eGFR by baseline CKD stage and Cr-Cys reclassification\n",
+  "Carboplatin, survivors (follow-up > 365 days)"), by_stage = TRUE)
+dat <- dat_full_cohort
+p
+trend_counts(p)
+```
+
+## 15.5 Matched eGFR trend — reclassified worse vs same or better (Carboplatin, all patients)
+
+```{r}
+#| label: ritu-carbo-match-trend2-all
+#| fig-width: 9
+#| fig-height: 5.5
+dat_full_cohort <- dat
+dat <- .match_bl(dat_full_cohort)
+p <- trend_plot("ckd_shift2", paste0(
+  "Matched: creatinine eGFR by Cr-Cys reclassification\nCarboplatin, all patients"))
+dat <- dat_full_cohort
+p
+```
+
+## 15.6 Matched eGFR trend — reclassified worse vs same or better (Carboplatin, survivors)
+
+```{r}
+#| label: ritu-carbo-match-trend2-surv
+#| fig-width: 9
+#| fig-height: 5.5
+dat_full_cohort <- dat
+dat <- .match_bl(dat_full_cohort %>%
+  filter(!is.na(days_last_follow_up), days_last_follow_up > 365))
+p <- trend_plot("ckd_shift2", paste0(
+  "Matched: creatinine eGFR by Cr-Cys reclassification\n",
+  "Carboplatin, survivors (follow-up > 365 days)"))
+dat <- dat_full_cohort
+p
+```
+
+## 15.7 Slope over days 0-360 against days 90-360 (Carboplatin, matched)
+
+The matched gap in 15.5 opens almost entirely between baseline and day 90 and
+is then flat. Progressive decline would widen the gap steadily; a step that
+appears at once and plateaus is what differential regression to the mean looks
+like, since the matched controls were picked for an unusually low reading and
+part of that is transient.
+
+This fits the same random-intercept, random-slope model twice on the matched
+cohort — over days 0–360, then over days 90–360 with the first step excluded.
+Slopes are mL/min/1.73m² per year; the difference is reclassified-worse minus
+same-or-better, so a negative value means the worse group falls faster. If the
+day-0 to 90 step is driving the result, the difference shrinks towards zero in
+the days 90–360 rows.
+
+```{r}
+#| label: ritu-carbo-match-post90
+# Mixed model on the matched cohort over a chosen day range. from_day = 0 keeps
+# the baseline anchor as day 0; from_day = 90 drops it and every value before
+# day 90, so the fit sees only the post-step part of the trajectory.
+.match_slope <- function(d, from_day) {
+  pat <- .match_bl(d) %>%
+    dplyr::select(EMPI, ckd_shift2, eGFR_CRE_baseline) %>%
+    filter(!is.na(ckd_shift2), !is.na(eGFR_CRE_baseline))
+  post <- pat %>%
+    dplyr::inner_join(lmm_traj_all %>% dplyr::select(EMPI, cre_day, eGFR_CRE),
+                      by = "EMPI") %>%
+    filter(cre_day >= from_day, cre_day <= 360)
+  lf <- if (from_day == 0)
+          dplyr::bind_rows(
+            pat %>% mutate(cre_day = 0, eGFR_CRE = eGFR_CRE_baseline), post)
+        else post
+  lf <- lf %>% mutate(time_yr = cre_day / 365) %>% droplevels()
+  lmerTest::lmer(eGFR_CRE ~ time_yr * ckd_shift2 + (1 + time_yr | EMPI),
+                 data = lf, control = LMM_CTL)
+}
+
+# One row: each group's annual slope, their difference, and the Satterthwaite
+# test on the interaction.
+.slope_row <- function(d, from_day, lbl) {
+  fit <- .match_slope(d, from_day)
+  b  <- lme4::fixef(fit); cf <- summary(fit)$coefficients; nm <- names(b)
+  it <- grep("^time_yr:ckd_shift2", nm, value = TRUE)[1]
+  if (is.na(it)) return(NULL)
+  est <- cf[it, "Estimate"]; se <- cf[it, "Std. Error"]
+  tibble::tibble(
+    Cohort = lbl,
+    Days = if (from_day == 0) "0-360" else "90-360",
+    Patients = as.integer(lme4::ngrps(fit)[["EMPI"]]),
+    Values = as.integer(stats::nobs(fit)),
+    `Same or better` = sprintf("%.1f", b[["time_yr"]]),
+    `Reclassified worse` = sprintf("%.1f", b[["time_yr"]] + est),
+    `Difference (95% CI)` = sprintf("%.1f (%.1f to %.1f)",
+                                    est, est - 1.96 * se, est + 1.96 * se),
+    `p-value` = style_pvalue(cf[it, "Pr(>|t|)"], digits = 3))
+}
+
+.post90_table <- function() {
+  surv <- dat %>% filter(!is.na(days_last_follow_up), days_last_follow_up > 365)
+  dplyr::bind_rows(
+    .slope_row(dat,  0,  "All patients"),
+    .slope_row(dat,  90, "All patients"),
+    .slope_row(surv, 0,  "Survivors"),
+    .slope_row(surv, 90, "Survivors"))
+}
+.post90_table <- .wrap_tbl(.post90_table)
+
+knitr::kable(.post90_table(), caption = paste0(
+  "Annual creatinine eGFR slope in the matched cohort, over days 0-360 and ",
+  "over days 90-360. Difference is reclassified-worse minus same-or-better; ",
+  "negative means the worse group falls faster."))
 ```
