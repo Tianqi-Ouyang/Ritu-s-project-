@@ -45,6 +45,33 @@ pptx_rel_prefix <- "../pptx/carbo/"
 
 .pptx_written <- new.env()
 .pptx_pair    <- new.env()
+.docx_written <- new.env()
+
+# Relative path for Word-table download links from rendered docs/qmd/*.html
+docx_rel_prefix <- paste0("../", sub("^docs/", "", docx_dir), "/")
+
+# Save a plain data frame to Word and register it, so the chunk hook below can
+# put a download link under the table. Named after the chunk label, as the
+# PPTX files are; a chunk holding two tables passes a suffix for the second.
+.tbl_docx <- function(x, suffix = NULL) {
+  label <- knitr::opts_current$get("label")
+  if (is.null(label)) return(invisible(x))
+  name <- if (is.null(suffix)) label else paste0(label, "_", suffix)
+  ok <- tryCatch({
+    flextable::flextable(as.data.frame(x)) |>
+      flextable::fontsize(size = 9, part = "all") |>
+      flextable::autofit() |>
+      flextable::save_as_docx(path = file.path(docx_dir, paste0(name, ".docx")))
+    TRUE
+  }, error = function(e) FALSE)
+  if (ok) {
+    txt <- if (is.null(suffix)) "Download Word table"
+           else paste0("Download Word table (", suffix, ")")
+    .docx_written[[label]] <- c(.docx_written[[label]],
+      stats::setNames(paste0(docx_rel_prefix, name, ".docx"), txt))
+  }
+  invisible(x)
+}
 
 .save_pptx <- function(p, path) {
   tryCatch({
@@ -98,6 +125,12 @@ local({
           rel[1])
       }
       out <- paste0(out, link)
+    }
+    if (!is.null(label) && !is.null(.docx_written[[label]])) {
+      v <- .docx_written[[label]]
+      out <- paste0(out, paste(sprintf(
+        '\n\n<p style="margin-top:-0.5em;font-size:0.9em;"><a href="%s" download>📄 %s</a></p>\n\n',
+        v, names(v)), collapse = ""))
     }
     out
   })
@@ -596,7 +629,7 @@ cov_tbl <- tibble::tibble(
   dplyr::count(`Windows with a value`, .drop = FALSE) %>%
   dplyr::mutate(`% of cohort` = round(100 * n / nrow(dat), 1))
 
-knitr::kable(cov_tbl, caption = sprintf(paste0(
+knitr::kable(.tbl_docx(cov_tbl), caption = sprintf(paste0(
   "How many of the four windows each patient has at least one creatinine in, ",
   "N = %d."), nrow(dat)))
 
@@ -606,7 +639,7 @@ per_window <- tibble::tibble(
         sum(dat$dgfr_avail_d270), sum(dat$dgfr_avail_d360))) %>%
   dplyr::mutate(`% of cohort` = round(100 * n / nrow(dat), 1))
 
-knitr::kable(per_window, caption = sprintf(paste0(
+knitr::kable(.tbl_docx(per_window, "per_window"), caption = sprintf(paste0(
   "Patients with at least one creatinine in each window, N = %d."), nrow(dat)))
 ```
 
@@ -630,7 +663,7 @@ why_tbl <- purrr::map_dfr(0:3, function(k) {
   )
 })
 
-knitr::kable(why_tbl, caption = sprintf(paste0(
+knitr::kable(.tbl_docx(why_tbl), caption = sprintf(paste0(
   "Why marks are missed, N = %d. Patients are grouped by how many of the three ",
   "marks they cover. The last column is the day of their final creatinine."), nrow(dat)))
 ```
@@ -756,7 +789,8 @@ stg <- dat %>%
   mutate(across(c(ckd_stage_cre, ckd_stage_cre_cys), droplevels))
 
 ct <- table(stg$ckd_stage_cre, stg$ckd_stage_cre_cys)
-knitr::kable(cbind(`Creatinine stage` = rownames(ct), as.data.frame.matrix(ct)),
+knitr::kable(.tbl_docx(cbind(`Creatinine stage` = rownames(ct),
+                           as.data.frame.matrix(ct))),
   row.names = FALSE, caption = sprintf(paste0(
     "CKD stage by creatinine eGFR (rows) against creatinine + cystatin C eGFR ",
     "(columns), N = %d. The diagonal is unchanged; right of it the cystatin C ",
@@ -770,101 +804,148 @@ recl <- stg %>%
   mutate(across(c(`Worse stage`, Unchanged, `Better stage`),
                 ~sprintf("%d (%.1f%%)", .x, 100 * .x / N)))
 
-knitr::kable(recl, caption = paste(
+knitr::kable(.tbl_docx(recl, "direction"), caption = paste(
   "Direction of reclassification when cystatin C is added to the creatinine",
   "equation. A worse stage means the cystatin C estimate puts the patient in a",
   "lower eGFR band."))
 ```
 
 ```{r}
-#| label: ritu-carbo-ckd-stage-sankey
-#| fig-width: 9.5
-#| fig-height: 6.5
+#| label: ritu-carbo-ckd-stage-sankey-fn
 .stage_pal <- c("G1 (>=90)" = "#2E7D32", "G2 (60-89)" = "#1565C0",
                 "G3a (45-59)" = "#EF6C00", "G3b (30-44)" = "#C62828",
                 "G4 (15-29)" = "#6A1B9A", "G5 (<15)" = "#37474F")
 
-.sk  <- stg %>% count(ckd_stage_cre, ckd_stage_cre_cys, name = "n")
-.N   <- sum(.sk$n)
-.gap <- 0.055 * .N
+# Hand-built Sankey: one polygon per creatinine-stage -> Cr-Cys-stage flow,
+# node boxes scaled to their counts. Takes any staged subset, so the same
+# figure can be redrawn on a sub-cohort without the code diverging.
+.stage_sankey <- function(d, sub) {
+  sk  <- d %>% count(ckd_stage_cre, ckd_stage_cre_cys, name = "n")
+  N   <- sum(sk$n)
+  gap <- 0.055 * N
 
-# Node stacks: each stage a box, height proportional to n, separated by a gap.
-.nodes <- function(col) .sk %>%
-  group_by(stage = .data[[col]]) %>% summarise(tot = sum(n), .groups = "drop") %>%
-  arrange(stage) %>%
-  mutate(ntop = lag(cumsum(tot), default = 0) + .gap * (row_number() - 1),
-         nbot = ntop + tot)
-.ln <- .nodes("ckd_stage_cre"); .rn <- .nodes("ckd_stage_cre_cys")
+  # Node stacks: each stage a box, height proportional to n, separated by a gap.
+  nodes <- function(col) sk %>%
+    group_by(stage = .data[[col]]) %>% summarise(tot = sum(n), .groups = "drop") %>%
+    arrange(stage) %>%
+    mutate(ntop = lag(cumsum(tot), default = 0) + gap * (row_number() - 1),
+           nbot = ntop + tot)
+  ln <- nodes("ckd_stage_cre"); rn <- nodes("ckd_stage_cre_cys")
 
-.left <- .sk %>% arrange(ckd_stage_cre, ckd_stage_cre_cys) %>%
-  group_by(ckd_stage_cre) %>%
-  mutate(l0 = lag(cumsum(n), default = 0), l1 = cumsum(n)) %>% ungroup() %>%
-  left_join(.ln %>% select(ckd_stage_cre = stage, b = ntop), by = "ckd_stage_cre") %>%
-  mutate(l0 = l0 + b, l1 = l1 + b)
-.right <- .sk %>% arrange(ckd_stage_cre_cys, ckd_stage_cre) %>%
-  group_by(ckd_stage_cre_cys) %>%
-  mutate(r0 = lag(cumsum(n), default = 0), r1 = cumsum(n)) %>% ungroup() %>%
-  left_join(.rn %>% select(ckd_stage_cre_cys = stage, b = ntop),
-            by = "ckd_stage_cre_cys") %>%
-  mutate(r0 = r0 + b, r1 = r1 + b)
+  lft <- sk %>% arrange(ckd_stage_cre, ckd_stage_cre_cys) %>%
+    group_by(ckd_stage_cre) %>%
+    mutate(l0 = lag(cumsum(n), default = 0), l1 = cumsum(n)) %>% ungroup() %>%
+    left_join(ln %>% select(ckd_stage_cre = stage, b = ntop), by = "ckd_stage_cre") %>%
+    mutate(l0 = l0 + b, l1 = l1 + b)
+  rgt <- sk %>% arrange(ckd_stage_cre_cys, ckd_stage_cre) %>%
+    group_by(ckd_stage_cre_cys) %>%
+    mutate(r0 = lag(cumsum(n), default = 0), r1 = cumsum(n)) %>% ungroup() %>%
+    left_join(rn %>% select(ckd_stage_cre_cys = stage, b = ntop),
+              by = "ckd_stage_cre_cys") %>%
+    mutate(r0 = r0 + b, r1 = r1 + b)
 
-.fl <- .left %>% select(ckd_stage_cre, ckd_stage_cre_cys, n, l0, l1) %>%
-  left_join(.right %>% select(ckd_stage_cre, ckd_stage_cre_cys, r0, r1),
-            by = c("ckd_stage_cre", "ckd_stage_cre_cys")) %>%
-  mutate(flow = row_number(), pct = 100 * n / .N)
+  fl <- lft %>% select(ckd_stage_cre, ckd_stage_cre_cys, n, l0, l1) %>%
+    left_join(rgt %>% select(ckd_stage_cre, ckd_stage_cre_cys, r0, r1),
+              by = c("ckd_stage_cre", "ckd_stage_cre_cys")) %>%
+    mutate(flow = row_number(), pct = 100 * n / N)
 
-.xlb <- 0.07; .xle <- 0.22; .xrb <- 0.78; .xre <- 0.93
-.tt <- seq(0, 1, length.out = 70); .ease <- 0.5 - 0.5 * cos(pi * .tt)
+  xlb <- 0.07; xle <- 0.22; xrb <- 0.78; xre <- 0.93
+  tt <- seq(0, 1, length.out = 70); ease <- 0.5 - 0.5 * cos(pi * tt)
 
-# One polygon per flow: out along its top edge on a cosine ease, back along
-# the bottom. Tinted by the source stage so each origin stays traceable.
-.rib <- purrr::pmap_dfr(
-  list(.fl$flow, .fl$l0, .fl$l1, .fl$r0, .fl$r1, as.character(.fl$ckd_stage_cre)),
-  function(id, l0, l1, r0, r1, src) tibble::tibble(
-    flow = id, Stage = src,
-    x = c(.xle + (.xrb - .xle) * .tt, .xle + (.xrb - .xle) * rev(.tt)),
-    y = c(l0 + (r0 - l0) * .ease, rev(l1 + (r1 - l1) * .ease))))
+  # One polygon per flow: out along its top edge on a cosine ease, back along
+  # the bottom. Tinted by the source stage so each origin stays traceable.
+  rib <- purrr::pmap_dfr(
+    list(fl$flow, fl$l0, fl$l1, fl$r0, fl$r1, as.character(fl$ckd_stage_cre)),
+    function(id, l0, l1, r0, r1, src) tibble::tibble(
+      flow = id, Stage = src,
+      x = c(xle + (xrb - xle) * tt, xle + (xrb - xle) * rev(tt)),
+      y = c(l0 + (r0 - l0) * ease, rev(l1 + (r1 - l1) * ease))))
 
-# Labels sit inside the box when it is tall enough, otherwise just outside it.
-.nd <- dplyr::bind_rows(.ln %>% mutate(xmin = .xlb, xmax = .xle),
-                        .rn %>% mutate(xmin = .xrb, xmax = .xre)) %>%
-  mutate(big = tot >= 0.07 * .N,
-         lab = ifelse(big, sprintf("%s\n%d (%.0f%%)", stage, tot, 100 * tot / .N),
-                           sprintf("%s  %d (%.0f%%)", stage, tot, 100 * tot / .N)),
-         tx = ifelse(big, (xmin + xmax) / 2,
-                     ifelse(xmin < 0.5, xmin - 0.012, xmax + 0.012)),
-         hj = ifelse(big, 0.5, ifelse(xmin < 0.5, 1, 0)))
+  # Labels sit inside the box when it is tall enough, otherwise just outside it.
+  nd <- dplyr::bind_rows(ln %>% mutate(xmin = xlb, xmax = xle),
+                         rn %>% mutate(xmin = xrb, xmax = xre)) %>%
+    mutate(big = tot >= 0.07 * N,
+           lab = ifelse(big, sprintf("%s\n%d (%.0f%%)", stage, tot, 100 * tot / N),
+                             sprintf("%s  %d (%.0f%%)", stage, tot, 100 * tot / N)),
+           tx = ifelse(big, (xmin + xmax) / 2,
+                       ifelse(xmin < 0.5, xmin - 0.012, xmax + 0.012)),
+           hj = ifelse(big, 0.5, ifelse(xmin < 0.5, 1, 0)))
 
-.fll <- .fl %>% filter(pct >= 2.5) %>%
-  mutate(lx = .xle + 0.015, ly = (l0 + l1) / 2,
-         rx = .xrb - 0.015, ry = (r0 + r1) / 2, txt = sprintf("%.0f%%", pct))
+  fll <- fl %>% filter(pct >= 2.5) %>%
+    mutate(lx = xle + 0.015, ly = (l0 + l1) / 2,
+           rx = xrb - 0.015, ry = (r0 + r1) / 2, txt = sprintf("%.0f%%", pct))
 
-ggplot() +
-  geom_polygon(data = .rib, aes(x, y, group = flow, fill = Stage),
-               alpha = 0.55, color = NA) +
-  geom_rect(data = .nd, aes(xmin = xmin, xmax = xmax, ymin = ntop, ymax = nbot,
-                            fill = stage), color = NA) +
-  geom_text(data = dplyr::filter(.nd, big),
-            aes(x = tx, y = (ntop + nbot) / 2, label = lab, hjust = hj),
-            color = "white", fontface = "bold", size = 3.1, lineheight = 0.95) +
-  geom_text(data = dplyr::filter(.nd, !big),
-            aes(x = tx, y = (ntop + nbot) / 2, label = lab, hjust = hj),
-            color = "grey15", size = 2.8) +
-  geom_text(data = .fll, aes(lx, ly, label = txt), hjust = 0, size = 2.9,
-            color = "grey20") +
-  geom_text(data = .fll, aes(rx, ry, label = txt), hjust = 1, size = 2.9,
-            color = "grey20") +
-  annotate("text", x = c((.xlb + .xle) / 2, (.xrb + .xre) / 2),
-           y = -0.055 * max(.nd$nbot), fontface = "bold", size = 4.1,
-           label = c("CKD-EPI creatinine", "CKD-EPI creatinine + cystatin C")) +
-  scale_fill_manual(values = .stage_pal, guide = "none") +
-  scale_y_reverse(expand = expansion(mult = c(0.11, 0.04))) +
-  scale_x_continuous(limits = c(-0.15, 1.15), expand = expansion(mult = 0.005)) +
-  labs(title = "CKD stage: creatinine eGFR vs creatinine + cystatin C eGFR",
-       subtitle = sprintf("Carboplatin cohort, N = %d", nrow(stg)), x = NULL, y = NULL) +
-  theme_minimal(base_size = 13) +
-  theme(panel.grid = element_blank(), axis.text = element_blank(),
-        plot.title = element_text(face = "bold"))
+  ggplot() +
+    geom_polygon(data = rib, aes(x, y, group = flow, fill = Stage),
+                 alpha = 0.55, color = NA) +
+    geom_rect(data = nd, aes(xmin = xmin, xmax = xmax, ymin = ntop, ymax = nbot,
+                             fill = stage), color = NA) +
+    geom_text(data = dplyr::filter(nd, big),
+              aes(x = tx, y = (ntop + nbot) / 2, label = lab, hjust = hj),
+              color = "white", fontface = "bold", size = 3.1, lineheight = 0.95) +
+    geom_text(data = dplyr::filter(nd, !big),
+              aes(x = tx, y = (ntop + nbot) / 2, label = lab, hjust = hj),
+              color = "grey15", size = 2.8) +
+    geom_text(data = fll, aes(lx, ly, label = txt), hjust = 0, size = 2.9,
+              color = "grey20") +
+    geom_text(data = fll, aes(rx, ry, label = txt), hjust = 1, size = 2.9,
+              color = "grey20") +
+    annotate("text", x = c((xlb + xle) / 2, (xrb + xre) / 2),
+             y = -0.055 * max(nd$nbot), fontface = "bold", size = 4.1,
+             label = c("CKD-EPI creatinine", "CKD-EPI creatinine + cystatin C")) +
+    scale_fill_manual(values = .stage_pal, guide = "none") +
+    scale_y_reverse(expand = expansion(mult = c(0.11, 0.04))) +
+    scale_x_continuous(limits = c(-0.15, 1.15), expand = expansion(mult = 0.005)) +
+    labs(title = "CKD stage: creatinine eGFR vs creatinine + cystatin C eGFR",
+         subtitle = sub, x = NULL, y = NULL) +
+    theme_minimal(base_size = 13) +
+    theme(panel.grid = element_blank(), axis.text = element_blank(),
+          plot.title = element_text(face = "bold"))
+}
+```
+
+```{r}
+#| label: ritu-carbo-ckd-stage-sankey
+#| fig-width: 9.5
+#| fig-height: 6.5
+.stage_sankey(stg, sprintf("Carboplatin cohort, N = %d", nrow(stg)))
+```
+
+## 4.5 CKD Stage Reclassification — survivors only (follow-up > 365 days)
+
+The same reclassification restricted to patients followed beyond one year
+(`days_last_follow_up > 365`), the cohort the survivors models run on. Deaths
+in the first year fall disproportionately in the low-eGFR stages, so the
+all-patients figure above and this one need not reclassify in the same
+proportions.
+
+```{r}
+#| label: ritu-carbo-ckd-stage-xtab-surv
+stg_surv <- dat %>%
+  filter(!is.na(ckd_stage_cre), !is.na(ckd_stage_cre_cys),
+         !is.na(days_last_follow_up), days_last_follow_up > 365) %>%
+  mutate(across(c(ckd_stage_cre, ckd_stage_cre_cys), droplevels))
+
+recl_surv <- stg_surv %>%
+  summarise(N = n(),
+    `Worse stage`  = sum(as.integer(ckd_stage_cre_cys) > as.integer(ckd_stage_cre)),
+    `Unchanged`    = sum(as.integer(ckd_stage_cre_cys) == as.integer(ckd_stage_cre)),
+    `Better stage` = sum(as.integer(ckd_stage_cre_cys) < as.integer(ckd_stage_cre))) %>%
+  mutate(across(c(`Worse stage`, Unchanged, `Better stage`),
+                ~sprintf("%d (%.1f%%)", .x, 100 * .x / N)))
+
+knitr::kable(.tbl_docx(recl_surv), caption = paste(
+  "Direction of reclassification among survivors (follow-up > 365 days).",
+  "A worse stage means the cystatin C estimate puts the patient in a lower",
+  "eGFR band."))
+```
+
+```{r}
+#| label: ritu-carbo-ckd-stage-sankey-surv
+#| fig-width: 9.5
+#| fig-height: 6.5
+.stage_sankey(stg_surv, sprintf(
+  "Carboplatin cohort, survivors (follow-up > 365 days), N = %d", nrow(stg_surv)))
 ```
 
 # 5 Fine-Gray Models — eGFR Difference as (CysC − Cr) / Cr, adjusted for CKD-EPI 2021 creatinine eGFR (unindexed, mL/min) (Carboplatin)
@@ -1403,7 +1484,7 @@ grp_tbl <- dplyr::bind_rows(.grp_row(d0, ">= -10% (reference)"), .grp_row(d1, "<
                 error = function(e) NULL)
 .tt <- tryCatch(t.test(delta_egfr_d360 ~ egfr_diff_pct_sens_cat, data = dat),
                 error = function(e) NULL)
-knitr::kable(grp_tbl, caption = sprintf(paste0(
+knitr::kable(.tbl_docx(grp_tbl), caption = sprintf(paste0(
   "360-day delta eGFR by binary eGFR difference (sens). Negative = decline. ",
   "Wilcoxon p = %s; Welch t-test p = %s."),
   if (is.null(.wt)) "—" else format.pval(.wt$p.value, digits = 3),
@@ -1642,7 +1723,142 @@ dat <- dat_full_cohort
 q_ckd_surv
 ```
 
-## 12.6 360-Day Delta eGFR by Quartile
+## 12.6 Adjusted Cumulative Incidence — AKI within 1 Year (Carboplatin, all patients)
+
+Section 12.2 reports subdistribution hazard ratios; these curves give the
+absolute risk the same fit implies. They are **model-standardised**: every
+patient in the analysis set is assigned to one quartile in turn, their
+cumulative incidence is predicted from the adjusted Fine-Gray model, and the
+predictions are averaged across the cohort. A curve is therefore the incidence
+the whole cohort would show if all of it sat in that quartile with the
+covariate mix held fixed — not the observed curve of the patients who happen to
+fall in it. Death is the competing event, so these are cumulative incidence
+functions, not 1 − Kaplan-Meier.
+
+The band is a pointwise 95 % interval from 500 bootstrap resamples of the
+patients, each one refitted and re-standardised. It carries no multiplicity
+correction and is not a test of the gap between quartiles — that is the
+p-value in the Section 12.2 table.
+
+```{r}
+#| label: ritu-carbo-q4-cif-setup
+CIF_BOOT <- 500   # bootstrap resamples behind the pointwise band
+
+PAL_Q4 <- c("Q4 (least discordant)" = "#1F78B4", "Q3"                   = "#A6CEE3",
+            "Q2"                    = "#FDBF6F", "Q1 (most discordant)" = "#E31A1C")
+
+# g-formula standardisation. Set the quartile dummies of the fitted design
+# matrix to one level for every patient, predict each patient's CIF, average
+# over the cohort, then read the step function onto a common time grid so
+# bootstrap replicates with different event times can be stacked.
+.cif_std <- function(fitobj, lv, tg, pred) {
+  X <- as.matrix(stats::model.matrix(fitobj))
+  dplyr::bind_rows(lapply(seq_along(lv), function(i) {
+    Xq <- X
+    Xq[, grep(paste0("^", pred), colnames(Xq))] <- 0
+    nm <- paste0(pred, lv[i])
+    if (nm %in% colnames(Xq)) Xq[, nm] <- 1
+    pr <- stats::predict(fitobj$cmprsk, cov1 = Xq)
+    tibble::tibble(Quartile = factor(lv[i], levels = lv), time = tg,
+      cif = stats::approx(pr[, 1], rowMeans(pr[, -1, drop = FALSE]),
+                          xout = tg, method = "constant", f = 0,
+                          yleft = 0, rule = 2)$y)
+  }))
+}
+
+# Fit the adjusted Fine-Gray model exactly as fg_model() does, standardise it,
+# and bootstrap the whole pipeline for the band.
+.cif_q4 <- function(time_var, status_var, d = dat, boot = CIF_BOOT) {
+  pred <- "egfr_diff_pct_sens_q4"
+  # .adj_set() takes pred_var on the whole / entire pages and not on the
+  # carboplatin ones, so call whichever signature this page defines.
+  adj  <- if ("pred_var" %in% names(formals(.adj_set)))
+            .adj_set(pred, NULL, "cre_idx") else .adj_set(NULL, "cre_idx")
+  cc <- d %>% tidyr::drop_na(dplyr::all_of(c(time_var, status_var, pred, adj)))
+  fml <- stats::as.formula(paste0("Surv(", time_var, ", ", status_var, ") ~ ",
+                                  paste(c(pred, adj), collapse = " + ")))
+  fit <- tidycmprsk::crr(fml, failcode = 1, data = cc)
+  lv  <- levels(droplevels(cc[[pred]]))
+  tg  <- seq(0, max(cc[[time_var]][cc[[status_var]] != 0]), length.out = 200)
+  est <- .cif_std(fit, lv, tg, pred)
+  nrw <- length(lv) * length(tg)
+  bs  <- vapply(seq_len(boot), function(b) tryCatch({
+      i <- sample.int(nrow(cc), nrow(cc), replace = TRUE)
+      .cif_std(tidycmprsk::crr(fml, failcode = 1, data = cc[i, ]), lv, tg, pred)$cif
+    }, error = function(e) rep(NA_real_, nrw)), numeric(nrw))
+  ok <- colSums(is.na(bs)) == 0
+  est$lo <- if (any(ok)) apply(bs[, ok, drop = FALSE], 1, stats::quantile, .025) else NA_real_
+  est$hi <- if (any(ok)) apply(bs[, ok, drop = FALSE], 1, stats::quantile, .975) else NA_real_
+  attr(est, "meta") <- list(n = nrow(cc), ev = sum(cc[[status_var]] == 1),
+                            cmp = sum(cc[[status_var]] == 2), nb = sum(ok))
+  est
+}
+
+.cif_plot <- function(x, ttl, sub) {
+  m  <- attr(x, "meta")
+  en <- x %>% dplyr::group_by(Quartile) %>% dplyr::slice_max(time, n = 1) %>%
+    dplyr::ungroup()
+  # A bootstrap band that spans most of the 0-100 % range carries no
+  # information and squashes the curves against the floor of the panel. Drop
+  # it and say so, rather than draw a figure that cannot be read.
+  bw   <- stats::median(x$hi - x$lo, na.rm = TRUE)
+  wide <- !is.finite(bw) || bw > 0.5
+  note <- if (!is.finite(bw))
+      "Model-standardised; band omitted, the bootstrap did not converge"
+    else if (wide)
+      sprintf("Model-standardised; band omitted, %d bootstraps span %.0f points",
+              m$nb, 100 * bw)
+    else
+      sprintf("Model-standardised; band = pointwise 95%% from %d bootstraps", m$nb)
+  ggplot(x, aes(time, cif, color = Quartile, fill = Quartile)) +
+    (if (wide) NULL else
+       geom_ribbon(aes(ymin = lo, ymax = hi), alpha = 0.13, color = NA)) +
+    geom_step(linewidth = 0.9) +
+    ggrepel::geom_text_repel(data = en, aes(label = sprintf("%.0f%%", 100 * cif)),
+      direction = "y", hjust = 0, nudge_x = 6, size = 3.5, fontface = "bold",
+      segment.color = NA, show.legend = FALSE) +
+    scale_color_manual(values = PAL_Q4) + scale_fill_manual(values = PAL_Q4) +
+    scale_x_continuous(expand = expansion(mult = c(0.01, 0.09))) +
+    scale_y_continuous(labels = scales::percent_format(accuracy = 1),
+                       expand = expansion(mult = c(0, 0.05))) +
+    labs(title = ttl, subtitle = sprintf("%s | N = %d, %d events, %d competing deaths\n%s",
+           sub, m$n, m$ev, m$cmp, note),
+         x = "Days from baseline", y = "Adjusted cumulative incidence",
+         color = NULL, fill = NULL) +
+    theme_minimal(base_size = 13) +
+    theme(legend.position = "bottom", plot.title = element_text(face = "bold"),
+          panel.grid.minor = element_blank())
+}
+
+.cif_fig <- .wrap_plot(function(time_var, status_var, ttl, sub)
+  .cif_plot(.cif_q4(time_var, status_var), ttl, sub))
+```
+
+```{r}
+#| label: ritu-carbo-q4-cif-aki
+#| fig-width: 9
+#| fig-height: 5.5
+.cif_fig("cmp_time_aki_365", "cmp_status_aki_365",
+         "Adjusted cumulative incidence of AKI within 1 year",
+         "Carboplatin, all patients")
+```
+
+## 12.7 Adjusted Cumulative Incidence — CKD Composite (Carboplatin, all patients)
+
+The same standardisation applied to the Section 12.3 model. The CKD composite
+runs to the last creatinine rather than stopping at one year, so the x-axis
+reaches further and the competing-death count is larger.
+
+```{r}
+#| label: ritu-carbo-q4-cif-ckd
+#| fig-width: 9
+#| fig-height: 5.5
+.cif_fig("cmp_time_ckd_composite", "cmp_status_ckd_composite",
+         "Adjusted cumulative incidence of the CKD composite",
+         "Carboplatin, all patients")
+```
+
+## 12.8 360-Day Delta eGFR by Quartile
 
 ```{r}
 #| label: ritu-carbo-q4-groups
@@ -1665,7 +1881,7 @@ knitr::kable(qd, caption = sprintf(paste0(
   if (is.null(.kw)) "—" else format.pval(.kw$p.value, digits = 3)))
 ```
 
-## 12.7 Linear model — 360-day delta eGFR on quartiles (Carboplatin, all patients)
+## 12.9 Linear model — 360-day delta eGFR on quartiles (Carboplatin, all patients)
 
 [📄 Download Word table](../tables/carbo/sec12_lm_d360_q4.docx)
 
@@ -1674,7 +1890,7 @@ knitr::kable(qd, caption = sprintf(paste0(
 lm_d360("egfr_diff_pct_sens_q4", docx_name = "sec12_lm_d360_q4")
 ```
 
-## 12.8 Linear model — 360-day delta eGFR on quartiles (Carboplatin, survivors)
+## 12.10 Linear model — 360-day delta eGFR on quartiles (Carboplatin, survivors)
 
 [📄 Download Word table](../tables/carbo/sec12_lm_d360_q4_surv.docx)
 
@@ -2197,7 +2413,7 @@ trend_counts <- function(p) {
   # character column, so clear the suppressed ones here.
   k[] <- lapply(k, function(cl) {
     cl <- as.character(cl); cl[is.na(cl)] <- ""; cl })
-  knitr::kable(k, caption = paste0(
+  knitr::kable(.tbl_docx(k, "counts"), caption = paste0(
     "Patients contributing to each mark; (n) = how many of them carry forward ",
     "an earlier window's value rather than one measured in that window. ",
     "Blank = fewer than ", TREND_MIN_N, " and not plotted."))
@@ -2386,7 +2602,7 @@ are unchanged from Section PREV15.
 
 ```{r}
 #| label: ritu-carbo-match-balance
-knitr::kable(.match_balance(dat), caption = paste0(
+knitr::kable(.tbl_docx(.match_balance(dat)), caption = paste0(
   "Baseline creatinine eGFR by group, before and after 1:1 matching within ",
   MATCH_CAL, " mL/min and the same baseline creatinine CKD stage. ",
   "SMD = standardised mean difference."))
@@ -2522,7 +2738,7 @@ the days 90–360 rows.
 }
 .post90_table <- .wrap_tbl(.post90_table)
 
-knitr::kable(.post90_table(), caption = paste0(
+knitr::kable(.tbl_docx(.post90_table()), caption = paste0(
   "Annual creatinine eGFR slope in the matched cohort, over days 0-360 and ",
   "over days 90-360. Difference is reclassified-worse minus same-or-better; ",
   "negative means the worse group falls faster."))
