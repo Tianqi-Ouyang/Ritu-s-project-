@@ -1,5 +1,6 @@
 project:
   type: website
+  execute-dir: project
   output-dir: docs
   render:
     - index.qmd
@@ -41,7 +42,3 @@ execute:
   eval: false
   warning: false
   message: false
-
-knitr:
-  opts_knit:
-    root.dir: "/Users/to909/Desktop/Meg/Cystain C redcap/Ritu project"

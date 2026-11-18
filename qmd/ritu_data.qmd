@@ -291,6 +291,10 @@ library(comorbidity)
 library(readr)
 library(cowplot)
 library(scales)
+
+# Local-only input paths (PATH_REDCAP, PATH_RPDR_*). _paths.R is gitignored,
+# so the folder layout of the source data never reaches the published site.
+source("_paths.R")   # execute-dir: project, so cwd is the project root
 ```
 
 ---
@@ -843,9 +847,7 @@ get_ckd_stage <- function(egfr) {
 # not carry -- name, mgh_mrn, dob. They are dropped here, at read time, so they
 # never reach final_master, the saved .rds, any table or the rendered site.
 # Do not remove this select(); the site is published publicly.
-redcap_path <- paste0('/Users/to909/Partners HealthCare Dropbox/Tianqi Ouyang/',
-                      'Thoracic Oncology Spreadsheets/Ritu_project/',
-                      'CystatinCInPatientsO_DATA_2026-10-09_1107.csv')
+redcap_path <- PATH_REDCAP
 restricted_cols <- c("name", "mgh_mrn", "dob")
 
 master <- read_csv(redcap_path) %>%
@@ -1008,7 +1010,7 @@ final_master$platin_dose          <- as.numeric(final_master$platin_dose)
 
 
 # Diagnoses
-dia <- read.table('/Users/to909/Partners HealthCare Dropbox/Tianqi Ouyang/Thoracic Oncology Spreadsheets/Carboplatin Paper/RPDR 2026-03-19/mes98_03182614492143216_Dia.txt',
+dia <- read.table(PATH_RPDR_DIA,
   sep = "|", fill = TRUE, quote = "", header = TRUE)
 dia$Date <- as.Date(dia$Date, "%m/%d/%Y")
 
@@ -1026,12 +1028,8 @@ dia$Date <- as.Date(dia$Date, "%m/%d/%Y")
 # HGB / PLT / ALB / GHBA1C are NOT in that pull, so they still come from the
 # original 2026-03-19 extract. It is the only source for them, and the anemia
 # and thrombocytopenia outcomes depend on HGB and PLT.
-cre_new_path <- paste0('/Users/to909/Partners HealthCare Dropbox/Tianqi Ouyang/',
-                       'Thoracic Oncology Spreadsheets/Ritu_project/RPDR/',
-                       'mes98_100826163401502663_Lab.txt')
-lab_old_path <- paste0('/Users/to909/Partners HealthCare Dropbox/Tianqi Ouyang/',
-                       'Thoracic Oncology Spreadsheets/Carboplatin Paper/',
-                       'RPDR 2026-03-19/mes98_03182614492143216_Lab.txt')
+cre_new_path <- PATH_RPDR_LAB_CRE
+lab_old_path <- PATH_RPDR_LAB_OTHER
 
 lab_cre <- read.table(cre_new_path, sep = "|", fill = TRUE, quote = "",
                       header = TRUE) %>%
@@ -1051,7 +1049,7 @@ cat("Non-CRE rows (original 2026-03-19 pull):", nrow(lab_other), "\n")
 print(table(lab$Group_Id))
 
 # Medications
-med <- read.table('/Users/to909/Partners HealthCare Dropbox/Tianqi Ouyang/Thoracic Oncology Spreadsheets/Carboplatin Paper/RPDR 2026-03-19/mes98_03182614492143216_Med.txt',
+med <- read.table(PATH_RPDR_MED,
   sep = "|", fill = TRUE, quote = "", header = TRUE) %>%
   select(EMPI, Medication_Date, Medication)
 med$Medication_Date <- as.Date(med$Medication_Date, "%m/%d/%Y")
@@ -1063,9 +1061,7 @@ med$Medication_Date <- as.Date(med$Medication_Date, "%m/%d/%Y")
 # 306 deceased vs 280, 288 with a usable date vs 262, and the most recent death
 # roughly three months later. The 26 extra dates are additions, not corrections
 # -- no death date present in both files disagrees.
-dem <- read.table(paste0('/Users/to909/Partners HealthCare Dropbox/Tianqi Ouyang/',
-                         'Thoracic Oncology Spreadsheets/Ritu_project/RPDR/',
-                         'mes98_100826163401502663_Dem.txt'),
+dem <- read.table(PATH_RPDR_DEM,
   sep = "|", fill = TRUE, quote = "", header = TRUE) %>%
   select(EMPI, Vital_status, Date_Of_Death)
 dem$death_date <- as.Date(dem$Date_Of_Death, "%m/%d/%Y")

@@ -968,7 +968,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(comorbidity)</span>
 <span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(readr)</span>
 <span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(cowplot)</span>
-<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(scales)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(scales)</span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a><span class="co"># Local-only input paths (PATH_REDCAP, PATH_RPDR_*). _paths.R is gitignored,</span></span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a><span class="co"># so the folder layout of the source data never reaches the published site.</span></span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a><span class="fu">source</span>(<span class="st">"_paths.R"</span>)   <span class="co"># execute-dir: project, so cwd is the project root</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 </div>
 <hr>
@@ -1510,18 +1514,16 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="co"># not carry -- name, mgh_mrn, dob. They are dropped here, at read time, so they</span></span>
 <span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a><span class="co"># never reach final_master, the saved .rds, any table or the rendered site.</span></span>
 <span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Do not remove this select(); the site is published publicly.</span></span>
-<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>redcap_path <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">'/Users/to909/Partners HealthCare Dropbox/Tianqi Ouyang/'</span>,</span>
-<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>                      <span class="st">'Thoracic Oncology Spreadsheets/Ritu_project/'</span>,</span>
-<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>                      <span class="st">'CystatinCInPatientsO_DATA_2026-10-09_1107.csv'</span>)</span>
-<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>restricted_cols <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"name"</span>, <span class="st">"mgh_mrn"</span>, <span class="st">"dob"</span>)</span>
-<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a>master <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(redcap_path) <span class="sc">%&gt;%</span></span>
-<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span><span class="fu">any_of</span>(restricted_cols))</span>
-<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="sc">!</span><span class="fu">any</span>(restricted_cols <span class="sc">%in%</span> <span class="fu">names</span>(master)))</span>
-<span id="cb15-17"><a href="#cb15-17" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"REDCap export:"</span>, <span class="fu">basename</span>(redcap_path), <span class="st">"|"</span>, <span class="fu">nrow</span>(master), <span class="st">"records |"</span>,</span>
-<span id="cb15-18"><a href="#cb15-18" aria-hidden="true" tabindex="-1"></a>    <span class="fu">ncol</span>(master), <span class="st">"columns after dropping"</span>, <span class="fu">length</span>(restricted_cols),</span>
-<span id="cb15-19"><a href="#cb15-19" aria-hidden="true" tabindex="-1"></a>    <span class="st">"identifier columns</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>redcap_path <span class="ot">&lt;-</span> PATH_REDCAP</span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>restricted_cols <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"name"</span>, <span class="st">"mgh_mrn"</span>, <span class="st">"dob"</span>)</span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>master <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(redcap_path) <span class="sc">%&gt;%</span></span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span><span class="fu">any_of</span>(restricted_cols))</span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="sc">!</span><span class="fu">any</span>(restricted_cols <span class="sc">%in%</span> <span class="fu">names</span>(master)))</span>
+<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"REDCap export:"</span>, <span class="fu">basename</span>(redcap_path), <span class="st">"|"</span>, <span class="fu">nrow</span>(master), <span class="st">"records |"</span>,</span>
+<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a>    <span class="fu">ncol</span>(master), <span class="st">"columns after dropping"</span>, <span class="fu">length</span>(restricted_cols),</span>
+<span id="cb15-17"><a href="#cb15-17" aria-hidden="true" tabindex="-1"></a>    <span class="st">"identifier columns</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>REDCap export: CystatinCInPatientsO_DATA_2026-10-09_1107.csv | 974 records | 261 columns after dropping 3 identifier columns</code></pre>
@@ -1692,7 +1694,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Diagnoses</span></span>
-<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>dia <span class="ot">&lt;-</span> <span class="fu">read.table</span>(<span class="st">'/Users/to909/Partners HealthCare Dropbox/Tianqi Ouyang/Thoracic Oncology Spreadsheets/Carboplatin Paper/RPDR 2026-03-19/mes98_03182614492143216_Dia.txt'</span>,</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>dia <span class="ot">&lt;-</span> <span class="fu">read.table</span>(PATH_RPDR_DIA,</span>
 <span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">sep =</span> <span class="st">"|"</span>, <span class="at">fill =</span> <span class="cn">TRUE</span>, <span class="at">quote =</span> <span class="st">""</span>, <span class="at">header =</span> <span class="cn">TRUE</span>)</span>
 <span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>dia<span class="sc">$</span>Date <span class="ot">&lt;-</span> <span class="fu">as.Date</span>(dia<span class="sc">$</span>Date, <span class="st">"%m/%d/%Y"</span>)</span>
 <span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a></span>
@@ -1710,27 +1712,23 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb24-17"><a href="#cb24-17" aria-hidden="true" tabindex="-1"></a><span class="co"># HGB / PLT / ALB / GHBA1C are NOT in that pull, so they still come from the</span></span>
 <span id="cb24-18"><a href="#cb24-18" aria-hidden="true" tabindex="-1"></a><span class="co"># original 2026-03-19 extract. It is the only source for them, and the anemia</span></span>
 <span id="cb24-19"><a href="#cb24-19" aria-hidden="true" tabindex="-1"></a><span class="co"># and thrombocytopenia outcomes depend on HGB and PLT.</span></span>
-<span id="cb24-20"><a href="#cb24-20" aria-hidden="true" tabindex="-1"></a>cre_new_path <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">'/Users/to909/Partners HealthCare Dropbox/Tianqi Ouyang/'</span>,</span>
-<span id="cb24-21"><a href="#cb24-21" aria-hidden="true" tabindex="-1"></a>                       <span class="st">'Thoracic Oncology Spreadsheets/Ritu_project/RPDR/'</span>,</span>
-<span id="cb24-22"><a href="#cb24-22" aria-hidden="true" tabindex="-1"></a>                       <span class="st">'mes98_100826163401502663_Lab.txt'</span>)</span>
-<span id="cb24-23"><a href="#cb24-23" aria-hidden="true" tabindex="-1"></a>lab_old_path <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">'/Users/to909/Partners HealthCare Dropbox/Tianqi Ouyang/'</span>,</span>
-<span id="cb24-24"><a href="#cb24-24" aria-hidden="true" tabindex="-1"></a>                       <span class="st">'Thoracic Oncology Spreadsheets/Carboplatin Paper/'</span>,</span>
-<span id="cb24-25"><a href="#cb24-25" aria-hidden="true" tabindex="-1"></a>                       <span class="st">'RPDR 2026-03-19/mes98_03182614492143216_Lab.txt'</span>)</span>
-<span id="cb24-26"><a href="#cb24-26" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-27"><a href="#cb24-27" aria-hidden="true" tabindex="-1"></a>lab_cre <span class="ot">&lt;-</span> <span class="fu">read.table</span>(cre_new_path, <span class="at">sep =</span> <span class="st">"|"</span>, <span class="at">fill =</span> <span class="cn">TRUE</span>, <span class="at">quote =</span> <span class="st">""</span>,</span>
-<span id="cb24-28"><a href="#cb24-28" aria-hidden="true" tabindex="-1"></a>                      <span class="at">header =</span> <span class="cn">TRUE</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb24-29"><a href="#cb24-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(EMPI, Seq_Date_Time, Result, Group_Id, Test_Description) <span class="sc">%&gt;%</span></span>
-<span id="cb24-30"><a href="#cb24-30" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(Group_Id <span class="sc">==</span> <span class="st">"CRE"</span>)</span>
-<span id="cb24-31"><a href="#cb24-31" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-32"><a href="#cb24-32" aria-hidden="true" tabindex="-1"></a>lab_other <span class="ot">&lt;-</span> <span class="fu">read.table</span>(lab_old_path, <span class="at">sep =</span> <span class="st">"|"</span>, <span class="at">fill =</span> <span class="cn">TRUE</span>, <span class="at">quote =</span> <span class="st">""</span>,</span>
-<span id="cb24-33"><a href="#cb24-33" aria-hidden="true" tabindex="-1"></a>                        <span class="at">header =</span> <span class="cn">TRUE</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb24-34"><a href="#cb24-34" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(EMPI, Seq_Date_Time, Result, Group_Id, Test_Description) <span class="sc">%&gt;%</span></span>
-<span id="cb24-35"><a href="#cb24-35" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(Group_Id <span class="sc">!=</span> <span class="st">"CRE"</span>)</span>
-<span id="cb24-36"><a href="#cb24-36" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-37"><a href="#cb24-37" aria-hidden="true" tabindex="-1"></a>lab <span class="ot">&lt;-</span> <span class="fu">bind_rows</span>(lab_cre, lab_other)</span>
-<span id="cb24-38"><a href="#cb24-38" aria-hidden="true" tabindex="-1"></a>lab<span class="sc">$</span>Seq_Date_Time <span class="ot">&lt;-</span> <span class="fu">as.Date</span>(lab<span class="sc">$</span>Seq_Date_Time, <span class="st">"%m/%d/%Y"</span>)</span>
-<span id="cb24-39"><a href="#cb24-39" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-40"><a href="#cb24-40" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"CRE rows (Ritu_project Oct 2026 pull):"</span>, <span class="fu">nrow</span>(lab_cre), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb24-20"><a href="#cb24-20" aria-hidden="true" tabindex="-1"></a>cre_new_path <span class="ot">&lt;-</span> PATH_RPDR_LAB_CRE</span>
+<span id="cb24-21"><a href="#cb24-21" aria-hidden="true" tabindex="-1"></a>lab_old_path <span class="ot">&lt;-</span> PATH_RPDR_LAB_OTHER</span>
+<span id="cb24-22"><a href="#cb24-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-23"><a href="#cb24-23" aria-hidden="true" tabindex="-1"></a>lab_cre <span class="ot">&lt;-</span> <span class="fu">read.table</span>(cre_new_path, <span class="at">sep =</span> <span class="st">"|"</span>, <span class="at">fill =</span> <span class="cn">TRUE</span>, <span class="at">quote =</span> <span class="st">""</span>,</span>
+<span id="cb24-24"><a href="#cb24-24" aria-hidden="true" tabindex="-1"></a>                      <span class="at">header =</span> <span class="cn">TRUE</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb24-25"><a href="#cb24-25" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(EMPI, Seq_Date_Time, Result, Group_Id, Test_Description) <span class="sc">%&gt;%</span></span>
+<span id="cb24-26"><a href="#cb24-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(Group_Id <span class="sc">==</span> <span class="st">"CRE"</span>)</span>
+<span id="cb24-27"><a href="#cb24-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-28"><a href="#cb24-28" aria-hidden="true" tabindex="-1"></a>lab_other <span class="ot">&lt;-</span> <span class="fu">read.table</span>(lab_old_path, <span class="at">sep =</span> <span class="st">"|"</span>, <span class="at">fill =</span> <span class="cn">TRUE</span>, <span class="at">quote =</span> <span class="st">""</span>,</span>
+<span id="cb24-29"><a href="#cb24-29" aria-hidden="true" tabindex="-1"></a>                        <span class="at">header =</span> <span class="cn">TRUE</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb24-30"><a href="#cb24-30" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(EMPI, Seq_Date_Time, Result, Group_Id, Test_Description) <span class="sc">%&gt;%</span></span>
+<span id="cb24-31"><a href="#cb24-31" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(Group_Id <span class="sc">!=</span> <span class="st">"CRE"</span>)</span>
+<span id="cb24-32"><a href="#cb24-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-33"><a href="#cb24-33" aria-hidden="true" tabindex="-1"></a>lab <span class="ot">&lt;-</span> <span class="fu">bind_rows</span>(lab_cre, lab_other)</span>
+<span id="cb24-34"><a href="#cb24-34" aria-hidden="true" tabindex="-1"></a>lab<span class="sc">$</span>Seq_Date_Time <span class="ot">&lt;-</span> <span class="fu">as.Date</span>(lab<span class="sc">$</span>Seq_Date_Time, <span class="st">"%m/%d/%Y"</span>)</span>
+<span id="cb24-35"><a href="#cb24-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-36"><a href="#cb24-36" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"CRE rows (Ritu_project Oct 2026 pull):"</span>, <span class="fu">nrow</span>(lab_cre), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>CRE rows (Ritu_project Oct 2026 pull): 50046 </code></pre>
@@ -1754,7 +1752,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Medications</span></span>
-<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>med <span class="ot">&lt;-</span> <span class="fu">read.table</span>(<span class="st">'/Users/to909/Partners HealthCare Dropbox/Tianqi Ouyang/Thoracic Oncology Spreadsheets/Carboplatin Paper/RPDR 2026-03-19/mes98_03182614492143216_Med.txt'</span>,</span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>med <span class="ot">&lt;-</span> <span class="fu">read.table</span>(PATH_RPDR_MED,</span>
 <span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">sep =</span> <span class="st">"|"</span>, <span class="at">fill =</span> <span class="cn">TRUE</span>, <span class="at">quote =</span> <span class="st">""</span>, <span class="at">header =</span> <span class="cn">TRUE</span>) <span class="sc">%&gt;%</span></span>
 <span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(EMPI, Medication_Date, Medication)</span>
 <span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a>med<span class="sc">$</span>Medication_Date <span class="ot">&lt;-</span> <span class="fu">as.Date</span>(med<span class="sc">$</span>Medication_Date, <span class="st">"%m/%d/%Y"</span>)</span>
@@ -1766,29 +1764,27 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb30-11"><a href="#cb30-11" aria-hidden="true" tabindex="-1"></a><span class="co"># 306 deceased vs 280, 288 with a usable date vs 262, and the most recent death</span></span>
 <span id="cb30-12"><a href="#cb30-12" aria-hidden="true" tabindex="-1"></a><span class="co"># roughly three months later. The 26 extra dates are additions, not corrections</span></span>
 <span id="cb30-13"><a href="#cb30-13" aria-hidden="true" tabindex="-1"></a><span class="co"># -- no death date present in both files disagrees.</span></span>
-<span id="cb30-14"><a href="#cb30-14" aria-hidden="true" tabindex="-1"></a>dem <span class="ot">&lt;-</span> <span class="fu">read.table</span>(<span class="fu">paste0</span>(<span class="st">'/Users/to909/Partners HealthCare Dropbox/Tianqi Ouyang/'</span>,</span>
-<span id="cb30-15"><a href="#cb30-15" aria-hidden="true" tabindex="-1"></a>                         <span class="st">'Thoracic Oncology Spreadsheets/Ritu_project/RPDR/'</span>,</span>
-<span id="cb30-16"><a href="#cb30-16" aria-hidden="true" tabindex="-1"></a>                         <span class="st">'mes98_100826163401502663_Dem.txt'</span>),</span>
-<span id="cb30-17"><a href="#cb30-17" aria-hidden="true" tabindex="-1"></a>  <span class="at">sep =</span> <span class="st">"|"</span>, <span class="at">fill =</span> <span class="cn">TRUE</span>, <span class="at">quote =</span> <span class="st">""</span>, <span class="at">header =</span> <span class="cn">TRUE</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb30-18"><a href="#cb30-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(EMPI, Vital_status, Date_Of_Death)</span>
-<span id="cb30-19"><a href="#cb30-19" aria-hidden="true" tabindex="-1"></a>dem<span class="sc">$</span>death_date <span class="ot">&lt;-</span> <span class="fu">as.Date</span>(dem<span class="sc">$</span>Date_Of_Death, <span class="st">"%m/%d/%Y"</span>)</span>
-<span id="cb30-20"><a href="#cb30-20" aria-hidden="true" tabindex="-1"></a>dem <span class="ot">&lt;-</span> dem <span class="sc">%&gt;%</span></span>
-<span id="cb30-21"><a href="#cb30-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">rpdr_deceased =</span> <span class="fu">as.integer</span>(Vital_status <span class="sc">!=</span> <span class="st">"Not reported as deceased"</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb30-22"><a href="#cb30-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(EMPI, rpdr_deceased, death_date)</span>
-<span id="cb30-23"><a href="#cb30-23" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb30-24"><a href="#cb30-24" aria-hidden="true" tabindex="-1"></a><span class="co"># Patient index: EMPI + baseline date (needed by pre/post lab functions)</span></span>
-<span id="cb30-25"><a href="#cb30-25" aria-hidden="true" tabindex="-1"></a>master_list <span class="ot">&lt;-</span> final_master <span class="sc">%&gt;%</span> <span class="fu">select</span>(EMPI, baseline_sample_date)</span>
-<span id="cb30-26"><a href="#cb30-26" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb30-27"><a href="#cb30-27" aria-hidden="true" tabindex="-1"></a>master_lab     <span class="ot">&lt;-</span> <span class="fu">merge</span>(master_list, lab,     <span class="at">by =</span> <span class="st">"EMPI"</span>, <span class="at">all.x =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb30-28"><a href="#cb30-28" aria-hidden="true" tabindex="-1"></a>master_dia     <span class="ot">&lt;-</span> <span class="fu">merge</span>(master_list, dia,     <span class="at">by =</span> <span class="st">"EMPI"</span>, <span class="at">all.y =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb30-29"><a href="#cb30-29" aria-hidden="true" tabindex="-1"></a>master_med     <span class="ot">&lt;-</span> <span class="fu">merge</span>(master_list, med,     <span class="at">by =</span> <span class="st">"EMPI"</span>, <span class="at">all.y =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb30-30"><a href="#cb30-30" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb30-31"><a href="#cb30-31" aria-hidden="true" tabindex="-1"></a><span class="co"># Exclude patients with no RPDR labs</span></span>
-<span id="cb30-32"><a href="#cb30-32" aria-hidden="true" tabindex="-1"></a>empis_with_labs <span class="ot">&lt;-</span> <span class="fu">unique</span>(lab<span class="sc">$</span>EMPI[lab<span class="sc">$</span>EMPI <span class="sc">%in%</span> final_master<span class="sc">$</span>EMPI])</span>
-<span id="cb30-33"><a href="#cb30-33" aria-hidden="true" tabindex="-1"></a>empis_no_labs   <span class="ot">&lt;-</span> <span class="fu">setdiff</span>(final_master<span class="sc">$</span>EMPI, empis_with_labs)</span>
-<span id="cb30-34"><a href="#cb30-34" aria-hidden="true" tabindex="-1"></a>n_no_labs       <span class="ot">&lt;-</span> <span class="fu">length</span>(empis_no_labs)</span>
-<span id="cb30-35"><a href="#cb30-35" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb30-36"><a href="#cb30-36" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Patients before RPDR lab exclusion:"</span>, <span class="fu">nrow</span>(final_master), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb30-14"><a href="#cb30-14" aria-hidden="true" tabindex="-1"></a>dem <span class="ot">&lt;-</span> <span class="fu">read.table</span>(PATH_RPDR_DEM,</span>
+<span id="cb30-15"><a href="#cb30-15" aria-hidden="true" tabindex="-1"></a>  <span class="at">sep =</span> <span class="st">"|"</span>, <span class="at">fill =</span> <span class="cn">TRUE</span>, <span class="at">quote =</span> <span class="st">""</span>, <span class="at">header =</span> <span class="cn">TRUE</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb30-16"><a href="#cb30-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(EMPI, Vital_status, Date_Of_Death)</span>
+<span id="cb30-17"><a href="#cb30-17" aria-hidden="true" tabindex="-1"></a>dem<span class="sc">$</span>death_date <span class="ot">&lt;-</span> <span class="fu">as.Date</span>(dem<span class="sc">$</span>Date_Of_Death, <span class="st">"%m/%d/%Y"</span>)</span>
+<span id="cb30-18"><a href="#cb30-18" aria-hidden="true" tabindex="-1"></a>dem <span class="ot">&lt;-</span> dem <span class="sc">%&gt;%</span></span>
+<span id="cb30-19"><a href="#cb30-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">rpdr_deceased =</span> <span class="fu">as.integer</span>(Vital_status <span class="sc">!=</span> <span class="st">"Not reported as deceased"</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb30-20"><a href="#cb30-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(EMPI, rpdr_deceased, death_date)</span>
+<span id="cb30-21"><a href="#cb30-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-22"><a href="#cb30-22" aria-hidden="true" tabindex="-1"></a><span class="co"># Patient index: EMPI + baseline date (needed by pre/post lab functions)</span></span>
+<span id="cb30-23"><a href="#cb30-23" aria-hidden="true" tabindex="-1"></a>master_list <span class="ot">&lt;-</span> final_master <span class="sc">%&gt;%</span> <span class="fu">select</span>(EMPI, baseline_sample_date)</span>
+<span id="cb30-24"><a href="#cb30-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-25"><a href="#cb30-25" aria-hidden="true" tabindex="-1"></a>master_lab     <span class="ot">&lt;-</span> <span class="fu">merge</span>(master_list, lab,     <span class="at">by =</span> <span class="st">"EMPI"</span>, <span class="at">all.x =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb30-26"><a href="#cb30-26" aria-hidden="true" tabindex="-1"></a>master_dia     <span class="ot">&lt;-</span> <span class="fu">merge</span>(master_list, dia,     <span class="at">by =</span> <span class="st">"EMPI"</span>, <span class="at">all.y =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb30-27"><a href="#cb30-27" aria-hidden="true" tabindex="-1"></a>master_med     <span class="ot">&lt;-</span> <span class="fu">merge</span>(master_list, med,     <span class="at">by =</span> <span class="st">"EMPI"</span>, <span class="at">all.y =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb30-28"><a href="#cb30-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-29"><a href="#cb30-29" aria-hidden="true" tabindex="-1"></a><span class="co"># Exclude patients with no RPDR labs</span></span>
+<span id="cb30-30"><a href="#cb30-30" aria-hidden="true" tabindex="-1"></a>empis_with_labs <span class="ot">&lt;-</span> <span class="fu">unique</span>(lab<span class="sc">$</span>EMPI[lab<span class="sc">$</span>EMPI <span class="sc">%in%</span> final_master<span class="sc">$</span>EMPI])</span>
+<span id="cb30-31"><a href="#cb30-31" aria-hidden="true" tabindex="-1"></a>empis_no_labs   <span class="ot">&lt;-</span> <span class="fu">setdiff</span>(final_master<span class="sc">$</span>EMPI, empis_with_labs)</span>
+<span id="cb30-32"><a href="#cb30-32" aria-hidden="true" tabindex="-1"></a>n_no_labs       <span class="ot">&lt;-</span> <span class="fu">length</span>(empis_no_labs)</span>
+<span id="cb30-33"><a href="#cb30-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-34"><a href="#cb30-34" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Patients before RPDR lab exclusion:"</span>, <span class="fu">nrow</span>(final_master), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>Patients before RPDR lab exclusion: 946 </code></pre>

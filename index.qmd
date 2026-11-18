@@ -342,7 +342,7 @@ Table 1 row. They are descriptive Table 1 rows only; no model adjusts for them
 # Reproducing
 
 ```bash
-cd "/Users/to909/Desktop/Meg/Cystain C redcap/Ritu project" && quarto render
+quarto render   # from the project root
 ```
 
 `ritu_data.qmd` renders first and produces the `ritu_final_master.rds` that the

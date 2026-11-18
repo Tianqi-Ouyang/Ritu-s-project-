@@ -13,3 +13,5 @@
 Data/
 Reference code/
 *.csv
+# Local-only machine paths; keeps the source folder layout out of the repo
+_paths.R
