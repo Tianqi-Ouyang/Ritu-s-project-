@@ -1745,7 +1745,7 @@ CIF_BOOT <- 500   # bootstrap resamples behind the pointwise band
 
 # Shared ordered ramp: blue = least discordant / earliest stage, red = most.
 # PAL_Q4, PAL8 and PAL2 all draw from it so the figures read alike.
-PAL_RAMP <- c("#1F78B4", "#A6CEE3", "#FDBF6F", "#E31A1C")
+PAL_RAMP <- c("#1F78B4", "#FFD92F", "#FDBF6F", "#E31A1C")
 .pal_n <- function(n) {
   if (n <= 1) return(PAL_RAMP[1])
   if (n == 2) return(PAL_RAMP[c(1, 4)])
